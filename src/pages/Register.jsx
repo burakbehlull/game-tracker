@@ -11,6 +11,7 @@ export default function Register({ onLogin }) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [email, setEmail] = useState('');
+  const [globalName, setGlobalName] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
@@ -27,7 +28,7 @@ export default function Register({ onLogin }) {
     }
 
     try {
-      const result = await api.register({ username, password, email });
+      const result = await api.register({ username, password, email, globalName });
       localStorage.setItem('token', result.token);
       
       if (window.electronAPI) {
@@ -61,6 +62,18 @@ export default function Register({ onLogin }) {
               </div>
             )}
             <div className="space-y-2">
+              <Label htmlFor="globalName">Görünen Adınız</Label>
+              <Input
+                id="globalName"
+                type="text"
+                placeholder="Görünen Adınız"
+                value={globalName}
+                onChange={(e) => setGlobalName(e.target.value)}
+                disabled={loading}
+              />
+            </div>
+
+            <div className="space-y-2">
               <Label htmlFor="username">Kullanıcı Adı</Label>
               <Input
                 id="username"
@@ -75,7 +88,7 @@ export default function Register({ onLogin }) {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="email">E-posta (Opsiyonel)</Label>
+              <Label htmlFor="email">E-posta</Label>
               <Input
                 id="email"
                 type="email"

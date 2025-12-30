@@ -20,6 +20,7 @@ export default function Profile({ user: currentUser }) {
   // Edit Modal State
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [newUsername, setNewUsername] = useState('');
+  const [newGlobalName, setNewGlobalName] = useState('');
   const [updateLoading, setUpdateLoading] = useState(false);
   const [editError, setEditError] = useState('');
 
@@ -35,7 +36,7 @@ export default function Profile({ user: currentUser }) {
     setUpdateLoading(true);
     setEditError('');
     try {
-      const updatedUser = await api.updateProfile({ username: newUsername });
+      const updatedUser = await api.updateProfile({ username: newUsername, globalName: newGlobalName });
       setProfileUser(updatedUser);
       // Reload page or force update to reflect changes globally if needed
       // Ideally, we should update app-level user state, but window reload is safer for now to sync everything
@@ -156,7 +157,7 @@ export default function Profile({ user: currentUser }) {
               {/* User Info */}
               <div className="flex-1 min-w-0 pb-1">
                 <div className="flex items-center gap-3 mb-1">
-                  <h1 className="text-3xl font-bold text-foreground tracking-tight">{profileUser?.username}</h1>
+                  <h1 className="text-3xl font-bold text-foreground tracking-tight">{profileUser?.globalName || profileUser?.username}</h1>
                   <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-primary/20 text-primary border border-primary/20 uppercase tracking-wider">
                     PRO
                   </span>
@@ -167,13 +168,13 @@ export default function Profile({ user: currentUser }) {
                     PC Gamer
                   </span>
                   <span className="w-1 h-1 rounded-full bg-white/20" />
-                  <span>{profileUser?.email}</span>
+                  <span>{profileUser?.username}</span>
                   <span className="w-1 h-1 rounded-full bg-white/20" />
-                  <span className="text-primary/80">User ID: #82910</span>
+                  <span className="text-primary/80">User ID: #00000</span>
                 </div>
               </div>
 
-                {/* Actions */}
+                
               <div className="flex gap-3 mt-4 md:mt-0">
                 {isOwnProfile && (
                   <>
@@ -201,8 +202,9 @@ export default function Profile({ user: currentUser }) {
                           <p className="text-sm text-muted-foreground mb-6">Kullanıcı bilgilerinizi güncelleyin.</p>
                           
                           <div className="space-y-4">
+
                             <div className="space-y-2">
-                              <label className="text-sm font-medium text-gray-300">Kullanıcı Adı</label>
+                              <label className="text-sm font-medium text-gray-300">Görünen Adınız</label>
                               <input 
                                 type="text" 
                                 value={newUsername}
@@ -211,7 +213,18 @@ export default function Profile({ user: currentUser }) {
                                 placeholder="Yeni kullanıcı adı"
                               />
                             </div>
-                            
+
+                            <div className="space-y-2">
+                              <label className="text-sm font-medium text-gray-300">Görünen Adınız</label>
+                              <input 
+                                type="text" 
+                                value={newGlobalName}
+                                onChange={(e) => setNewGlobalName(e.target.value)}
+                                className="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-primary/50 transition-colors"
+                                placeholder="Yeni görünen adınız"
+                              />
+                            </div>
+
                             {editError && <div className="text-sm text-red-400">{editError}</div>}
                             
                             <div className="flex justify-end gap-3 pt-2">

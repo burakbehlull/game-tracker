@@ -10,6 +10,13 @@ const userSchema = new mongoose.Schema({
     minlength: 3,
     maxlength: 20
   },
+  globalName: {
+    type: String,
+    required: false,
+    trim: true,
+    minlength: 3,
+    maxlength: 20
+  },
   password: {
     type: String,
     required: true,

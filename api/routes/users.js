@@ -18,7 +18,7 @@ router.get('/me', auth, async (req, res) => {
 // Update current user
 router.put('/me', auth, async (req, res) => {
   try {
-    const { username } = req.body;
+    const { username, globalName } = req.body;
     
     // Validations could go here
     if (username && username.length < 3) {
@@ -27,6 +27,7 @@ router.put('/me', auth, async (req, res) => {
 
     const updates = {};
     if (username) updates.username = username;
+    if (globalName) updates.globalName = globalName;
 
     const user = await User.findByIdAndUpdate(
       req.userId,

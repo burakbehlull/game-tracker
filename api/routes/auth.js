@@ -8,7 +8,7 @@ const JWT_SECRET = process.env.JWT_SECRET || 'secret_key_change_me';
 // Register
 router.post('/register', async (req, res) => {
   try {
-    const { username, password, email } = req.body;
+    const { username, password, email, globalName } = req.body;
     
     const existingUser = await User.findOne({ username });
     if (existingUser) {

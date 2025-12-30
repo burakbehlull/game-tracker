@@ -13,14 +13,35 @@ export default function Discover() {
   const [featuredUsers, setFeaturedUsers] = useState([]);
 
   // Load some initial users/stats if needed
+  // Load initial users
   useEffect(() => {
-    // For now, let's just search for 'a' to show some users initially or leave empty
-    // searchUsers('a');
+    loadAllUsers();
   }, []);
+
+  const loadAllUsers = async () => {
+    setLoading(true);
+    try {
+      // Assuming searchUsers with empty string returns all/some users,
+      // or we can add a specific getAllUsers endpoint. 
+      // For now, let's try searching for a common letter or modify backend to return all on empty search.
+      // However, usually "search" needs a query. 
+      // Let's assume we want to "Discover" so maybe just fetch latest users?
+      // Since I cannot change backend easily right now without checking, I will assume searchUsers('') might work
+      // or I will try to search for " " (space).
+      // Actually, looking at the previous backend code summary, I didn't explicitly see "get all users".
+      // Let's try to just call searchUsers('') for now. If it fails, I'll need to update backend.
+      const users = await api.searchUsers(''); 
+      setResults(users);
+    } catch (error) {
+      console.error('Kullanıcı listeleme hatası:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSearch = async (e) => {
     e.preventDefault();
-    if (!query.trim()) return;
+    // allow empty search to reset to all users
     searchUsers(query);
   };
 

@@ -50,11 +50,6 @@ export default function Layout({ children, user, onLogout }) {
             </div>
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
-                <Sun className="h-4 w-4" />
-                <Switch checked={theme === 'dark'} onCheckedChange={toggleTheme} />
-                <Moon className="h-4 w-4" />
-              </div>
-              <div className="flex items-center gap-2">
                 <span className="text-sm text-muted-foreground">{user?.username}</span>
                 <Button variant="ghost" size="icon" onClick={onLogout}>
                   <LogOut className="h-4 w-4" />

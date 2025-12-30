@@ -19,11 +19,16 @@ router.get('/me', auth, async (req, res) => {
 router.get('/search', async (req, res) => {
   try {
     const { q } = req.query;
-    if (!q) return res.json([]);
+    let query = {};
+    if (q) {
+      query = { username: { $regex: q, $options: 'i' } };
+    }
     
-    const users = await User.find({ 
-      username: { $regex: q, $options: 'i' } 
-    }).select('username avatar createdAt');
+    // Default to latest 20 users if no query or just searching
+    const users = await User.find(query)
+      .select('username avatar createdAt')
+      .sort({ createdAt: -1 })
+      .limit(20);
     
     res.json(users);
   } catch (error) {

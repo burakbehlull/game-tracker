@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Settings, MessageSquare, Award, Monitor, Clock, Trophy, Zap, Star } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { Button } from '../components/ui/button';
+import { api } from '../services/api';
 
 export default function Profile({ user }) {
   const [stats, setStats] = useState([]);
@@ -14,20 +15,18 @@ export default function Profile({ user }) {
 
   const loadStats = async () => {
     try {
-      if (window.electronAPI) {
-        const statsData = await window.electronAPI.getGameStats();
-        // Sort by last played (descending)
-        statsData.sort((a, b) => {
-          const dateA = a.lastPlayed ? new Date(a.lastPlayed) : new Date(0);
-          const dateB = b.lastPlayed ? new Date(b.lastPlayed) : new Date(0);
-          return dateB - dateA;
-        });
-        setStats(statsData);
-        
-        const total = statsData.reduce((sum, stat) => sum + stat.totalTime, 0);
-        setTotalTime(total);
-        setLoading(false);
-      }
+      const statsData = await api.getStats();
+      // Sort by last played (descending)
+      statsData.sort((a, b) => {
+        const dateA = a.lastPlayed ? new Date(a.lastPlayed) : new Date(0);
+        const dateB = b.lastPlayed ? new Date(b.lastPlayed) : new Date(0);
+        return dateB - dateA;
+      });
+      setStats(statsData);
+      
+      const total = statsData.reduce((sum, stat) => sum + stat.totalTime, 0);
+      setTotalTime(total);
+      setLoading(false);
     } catch (error) {
       console.error('İstatistik yükleme hatası:', error);
       setLoading(false);

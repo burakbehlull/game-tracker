@@ -5,6 +5,7 @@ import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '../components/ui/card';
 import { Gamepad2 } from 'lucide-react';
+import { api } from '../services/api';
 
 export default function Register({ onLogin }) {
   const [username, setUsername] = useState('');
@@ -26,21 +27,17 @@ export default function Register({ onLogin }) {
     }
 
     try {
+      const result = await api.register({ username, password, email });
+      localStorage.setItem('token', result.token);
+      
       if (window.electronAPI) {
-        const result = await window.electronAPI.register({ username, password, email });
-        if (result.success) {
-          // Otomatik giriş yap
-          const loginResult = await window.electronAPI.login({ username, password });
-          if (loginResult.success) {
-            onLogin(loginResult.user);
-            navigate('/');
-          }
-        } else {
-          setError(result.error || 'Kayıt başarısız');
-        }
+        await window.electronAPI.setAuthToken(result.token);
       }
+      
+      onLogin(result.user);
+      navigate('/');
     } catch (err) {
-      setError('Bir hata oluştu');
+      setError(err.error || 'Kayıt başarısız');
     } finally {
       setLoading(false);
     }

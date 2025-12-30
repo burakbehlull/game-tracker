@@ -2,6 +2,7 @@ import { cn } from '../lib/utils';
 import { useState, useEffect } from 'react';
 
 export default function TitleBar({ title = "Game Tracker" }) {
+  if (!window.electronAPI) return null;
   const [isMaximized, setIsMaximized] = useState(false);
 
   const handleMinimize = () => {

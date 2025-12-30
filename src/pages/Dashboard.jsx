@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { Gamepad2, Clock, Calendar, TrendingUp } from 'lucide-react';
+import { api } from '../services/api';
 
 export default function Dashboard({ user }) {
   const [sessions, setSessions] = useState([]);
@@ -21,15 +22,13 @@ export default function Dashboard({ user }) {
 
   const loadData = async () => {
     try {
-      if (window.electronAPI) {
-        const [sessionsData, statsData] = await Promise.all([
-          window.electronAPI.getGameSessions(),
-          window.electronAPI.getGameStats()
-        ]);
-        setSessions(sessionsData);
-        setStats(statsData);
-        setLoading(false);
-      }
+      const [sessionsData, statsData] = await Promise.all([
+        api.getSessions(),
+        api.getStats()
+      ]);
+      setSessions(sessionsData);
+      setStats(statsData);
+      setLoading(false);
     } catch (error) {
       console.error('Veri yükleme hatası:', error);
       setLoading(false);

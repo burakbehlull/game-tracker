@@ -6,6 +6,7 @@ import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import Profile from './pages/Profile';
 import Layout from './components/Layout';
+import { api } from './services/api';
 
 import TitleBar from './components/TitleBar';
 
@@ -19,12 +20,17 @@ function App() {
 
   const checkAuth = async () => {
     try {
-      if (window.electronAPI) {
-        const currentUser = await window.electronAPI.getCurrentUser();
+      if (localStorage.getItem('token')) {
+        const currentUser = await api.getCurrentUser();
         setUser(currentUser);
+        // If in Electron, restore token
+        if (window.electronAPI) {
+          await window.electronAPI.setAuthToken(localStorage.getItem('token'));
+        }
       }
     } catch (error) {
       console.error('Auth kontrol hatası:', error);
+      localStorage.removeItem('token');
     } finally {
       setLoading(false);
     }
@@ -37,8 +43,9 @@ function App() {
   const handleLogout = async () => {
     try {
       if (window.electronAPI) {
-        await window.electronAPI.logout();
+        await window.electronAPI.logout(); // IPC to clear Main Process token
       }
+      localStorage.removeItem('token');
       setUser(null);
     } catch (error) {
       console.error('Logout hatası:', error);

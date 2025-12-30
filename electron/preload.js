@@ -2,6 +2,7 @@ const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('electronAPI', {
   // Authentication
+  setAuthToken: (token) => ipcRenderer.invoke('set-auth-token', token),
   register: (data) => ipcRenderer.invoke('register', data),
   login: (data) => ipcRenderer.invoke('login', data),
   logout: () => ipcRenderer.invoke('logout'),

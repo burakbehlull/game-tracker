@@ -7,9 +7,11 @@
     "dev": "concurrently \"npm run dev:vite\" \"wait-on http://localhost:5173 && electron .\"",
     "dev:vite": "vite",
     "build": "vite build",
+    "build:web": "vite build",
+    "build:desktop": "vite build && electron-builder",
     "preview": "vite preview",
     "start": "electron .",
-    "build:electron": "electron-builder"
+    "dist": "electron-builder"
   },
   "dependencies": {
     "react": "^18.2.0",

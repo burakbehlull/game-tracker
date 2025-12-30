@@ -15,6 +15,34 @@ router.get('/me', auth, async (req, res) => {
   }
 });
 
+// Update current user
+router.put('/me', auth, async (req, res) => {
+  try {
+    const { username } = req.body;
+    
+    // Validations could go here
+    if (username && username.length < 3) {
+       return res.status(400).json({ error: 'Kullanıcı adı en az 3 karakter olmalıdır' });
+    }
+
+    const updates = {};
+    if (username) updates.username = username;
+
+    const user = await User.findByIdAndUpdate(
+      req.userId,
+      { $set: updates },
+      { new: true, runValidators: true }
+    ).select('-password');
+
+    res.json(user);
+  } catch (error) {
+    if (error.code === 11000) {
+      return res.status(400).json({ error: 'Bu kullanıcı adı zaten kullanımda' });
+    }
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Search users
 router.get('/search', async (req, res) => {
   try {

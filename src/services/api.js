@@ -35,6 +35,16 @@ export const api = {
     return res.json();
   },
 
+  updateProfile: async (data) => {
+    const res = await fetch(`${API_URL}/users/me`, {
+      method: 'PUT',
+      headers: getHeaders(),
+      body: JSON.stringify(data)
+    });
+    if (!res.ok) throw await res.json();
+    return res.json();
+  },
+
   getStats: async () => {
     const res = await fetch(`${API_URL}/games/stats`, { headers: getHeaders() });
     if (!res.ok) throw await res.json();

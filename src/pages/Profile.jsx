@@ -7,14 +7,49 @@ import { api } from '../services/api';
 
 export default function Profile({ user: currentUser }) {
   const { username } = useParams();
+  
+  // If we have a username in URL, we are viewing someone else.
+  // If no username (or it matches current), we are viewing ours.
+  const isOwnProfile = !username || (currentUser && username === currentUser.username);
+
   const [profileUser, setProfileUser] = useState(null);
   const [stats, setStats] = useState([]);
   const [totalTime, setTotalTime] = useState(0);
   const [loading, setLoading] = useState(true);
+  
+  // Edit Modal State
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [newUsername, setNewUsername] = useState('');
+  const [updateLoading, setUpdateLoading] = useState(false);
+  const [editError, setEditError] = useState('');
+
+  // Initialize form when user data is available
+  useEffect(() => {
+    if (currentUser && isOwnProfile) {
+       setNewUsername(currentUser.username);
+    }
+  }, [currentUser, isOwnProfile]);
+
+  const handleUpdateProfile = async () => {
+    if (!newUsername.trim()) return;
+    setUpdateLoading(true);
+    setEditError('');
+    try {
+      const updatedUser = await api.updateProfile({ username: newUsername });
+      setProfileUser(updatedUser);
+      // Reload page or force update to reflect changes globally if needed
+      // Ideally, we should update app-level user state, but window reload is safer for now to sync everything
+      window.location.reload(); 
+    } catch (error) {
+      setEditError(error.error || 'Güncelleme başarısız');
+    } finally {
+      setUpdateLoading(false);
+    }
+  };
 
   // If we have a username in URL, we are viewing someone else.
   // If no username (or it matches current), we are viewing ours.
-  const isOwnProfile = !username || (currentUser && username === currentUser.username);
+
 
   useEffect(() => {
     loadProfile();
@@ -138,13 +173,60 @@ export default function Profile({ user: currentUser }) {
                 </div>
               </div>
 
-              {/* Actions */}
+                {/* Actions */}
               <div className="flex gap-3 mt-4 md:mt-0">
                 {isOwnProfile && (
-                  <Button variant="outline" className="bg-white/5 border-white/10 hover:bg-white/10 gap-2">
-                    <Settings className="w-4 h-4" />
-                    Düzenle
-                  </Button>
+                  <>
+                    <Button 
+                      onClick={() => setIsEditModalOpen(true)}
+                      variant="outline" 
+                      className="bg-white/5 border-white/10 hover:bg-white/10 gap-2"
+                    >
+                      <Settings className="w-4 h-4" />
+                      Düzenle
+                    </Button>
+                    
+                    {/* Edit Profile Modal */}
+                    {isEditModalOpen && (
+                      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+                        <div className="w-full max-w-md bg-[#121212] border border-white/10 rounded-2xl shadow-2xl p-6 relative animate-in zoom-in-95 duration-200">
+                          <button 
+                            onClick={() => setIsEditModalOpen(false)}
+                            className="absolute top-4 right-4 text-gray-400 hover:text-white"
+                          >
+                            ✕
+                          </button>
+                          
+                          <h2 className="text-xl font-bold mb-1">Profili Düzenle</h2>
+                          <p className="text-sm text-muted-foreground mb-6">Kullanıcı bilgilerinizi güncelleyin.</p>
+                          
+                          <div className="space-y-4">
+                            <div className="space-y-2">
+                              <label className="text-sm font-medium text-gray-300">Kullanıcı Adı</label>
+                              <input 
+                                type="text" 
+                                value={newUsername}
+                                onChange={(e) => setNewUsername(e.target.value)}
+                                className="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-primary/50 transition-colors"
+                                placeholder="Yeni kullanıcı adı"
+                              />
+                            </div>
+                            
+                            {editError && <div className="text-sm text-red-400">{editError}</div>}
+                            
+                            <div className="flex justify-end gap-3 pt-2">
+                              <Button variant="ghost" onClick={() => setIsEditModalOpen(false)}>
+                                İptal
+                              </Button>
+                              <Button onClick={handleUpdateProfile} disabled={updateLoading}>
+                                {updateLoading ? 'Kaydediliyor...' : 'Kaydet'}
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </>
                 )}
                 <Button className="bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20 gap-2">
                   <MessageSquare className="w-4 h-4" />

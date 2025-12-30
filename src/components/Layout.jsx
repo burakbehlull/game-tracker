@@ -2,7 +2,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { useTheme } from '../contexts/ThemeContext';
 import { Button } from './ui/button';
 import { Switch } from './ui/switch';
-import { Moon, Sun, Home, User, LogOut, Gamepad2 } from 'lucide-react';
+import { Moon, Sun, Home, User, LogOut, Gamepad2, Globe } from 'lucide-react';
 
 export default function Layout({ children, user, onLogout }) {
   const { theme, toggleTheme } = useTheme();
@@ -24,8 +24,17 @@ export default function Layout({ children, user, onLogout }) {
                     variant={location.pathname === '/' ? 'default' : 'ghost'}
                     className="flex items-center gap-2"
                   >
+                    <Globe className="h-4 w-4" />
+                    Keşfet
+                  </Button>
+                </Link>
+                <Link to="/dashboard">
+                  <Button 
+                    variant={location.pathname === '/dashboard' ? 'default' : 'ghost'}
+                    className="flex items-center gap-2"
+                  >
                     <Home className="h-4 w-4" />
-                    Ana Sayfa
+                    Dashboard
                   </Button>
                 </Link>
                 <Link to="/profile">

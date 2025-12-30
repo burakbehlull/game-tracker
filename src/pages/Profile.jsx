@@ -1,36 +1,60 @@
 import { useState, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
 import { Settings, MessageSquare, Award, Monitor, Clock, Trophy, Zap, Star } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { Button } from '../components/ui/button';
 import { api } from '../services/api';
 
-export default function Profile({ user }) {
+export default function Profile({ user: currentUser }) {
+  const { username } = useParams();
+  const [profileUser, setProfileUser] = useState(null);
   const [stats, setStats] = useState([]);
   const [totalTime, setTotalTime] = useState(0);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    loadStats();
-  }, []);
+  // If we have a username in URL, we are viewing someone else.
+  // If no username (or it matches current), we are viewing ours.
+  const isOwnProfile = !username || (currentUser && username === currentUser.username);
 
-  const loadStats = async () => {
+  useEffect(() => {
+    loadProfile();
+  }, [username, currentUser]);
+
+  const loadProfile = async () => {
+    setLoading(true);
     try {
-      const statsData = await api.getStats();
-      // Sort by last played (descending)
-      statsData.sort((a, b) => {
-        const dateA = a.lastPlayed ? new Date(a.lastPlayed) : new Date(0);
-        const dateB = b.lastPlayed ? new Date(b.lastPlayed) : new Date(0);
-        return dateB - dateA;
-      });
-      setStats(statsData);
-      
-      const total = statsData.reduce((sum, stat) => sum + stat.totalTime, 0);
-      setTotalTime(total);
-      setLoading(false);
+      if (isOwnProfile && currentUser) {
+        // Load own stats
+        setProfileUser(currentUser);
+        await loadStats();
+      } else if (username) {
+        // Load public profile
+        const data = await api.getUserProfile(username);
+        setProfileUser(data.user);
+        processStats(data.stats);
+      }
     } catch (error) {
-      console.error('İstatistik yükleme hatası:', error);
+      console.error('Profil yükleme hatası:', error);
+    } finally {
       setLoading(false);
     }
+  };
+
+  const loadStats = async () => {
+     const statsData = await api.getStats();
+     processStats(statsData);
+  };
+
+  const processStats = (statsData) => {
+    if (!statsData) return;
+    statsData.sort((a, b) => {
+      const dateA = a.lastPlayed ? new Date(a.lastPlayed) : new Date(0);
+      const dateB = b.lastPlayed ? new Date(b.lastPlayed) : new Date(0);
+      return dateB - dateA;
+    });
+    setStats(statsData);
+    const total = statsData.reduce((sum, stat) => sum + stat.totalTime, 0);
+    setTotalTime(total);
   };
 
   const formatTotalHours = (seconds) => {
@@ -97,7 +121,7 @@ export default function Profile({ user }) {
               {/* User Info */}
               <div className="flex-1 min-w-0 pb-1">
                 <div className="flex items-center gap-3 mb-1">
-                  <h1 className="text-3xl font-bold text-foreground tracking-tight">{user?.username}</h1>
+                  <h1 className="text-3xl font-bold text-foreground tracking-tight">{profileUser?.username}</h1>
                   <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-primary/20 text-primary border border-primary/20 uppercase tracking-wider">
                     PRO
                   </span>
@@ -108,7 +132,7 @@ export default function Profile({ user }) {
                     PC Gamer
                   </span>
                   <span className="w-1 h-1 rounded-full bg-white/20" />
-                  <span>{user?.email}</span>
+                  <span>{profileUser?.email}</span>
                   <span className="w-1 h-1 rounded-full bg-white/20" />
                   <span className="text-primary/80">User ID: #82910</span>
                 </div>
@@ -116,10 +140,12 @@ export default function Profile({ user }) {
 
               {/* Actions */}
               <div className="flex gap-3 mt-4 md:mt-0">
-                <Button variant="outline" className="bg-white/5 border-white/10 hover:bg-white/10 gap-2">
-                  <Settings className="w-4 h-4" />
-                  Düzenle
-                </Button>
+                {isOwnProfile && (
+                  <Button variant="outline" className="bg-white/5 border-white/10 hover:bg-white/10 gap-2">
+                    <Settings className="w-4 h-4" />
+                    Düzenle
+                  </Button>
+                )}
                 <Button className="bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20 gap-2">
                   <MessageSquare className="w-4 h-4" />
                   Mesaj

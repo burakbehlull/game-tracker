@@ -3,6 +3,8 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { ThemeProvider } from './contexts/ThemeContext';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import Discover from './pages/Discover';
+
 import Dashboard from './pages/Dashboard';
 import Profile from './pages/Profile';
 import Layout from './components/Layout';
@@ -80,6 +82,18 @@ function App() {
                 element={
                   user ? (
                     <Layout user={user} onLogout={handleLogout}>
+                      <Discover />
+                    </Layout>
+                  ) : (
+                    <Navigate to="/login" />
+                  )
+                }
+              />
+              <Route
+                path="/dashboard"
+                element={
+                  user ? (
+                    <Layout user={user} onLogout={handleLogout}>
                       <Dashboard user={user} />
                     </Layout>
                   ) : (
@@ -88,7 +102,7 @@ function App() {
                 }
               />
               <Route
-                path="/profile"
+                path="/profile/:username?"
                 element={
                   user ? (
                     <Layout user={user} onLogout={handleLogout}>
@@ -108,4 +122,3 @@ function App() {
 }
 
 export default App;
-

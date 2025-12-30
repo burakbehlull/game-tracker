@@ -4,21 +4,23 @@ const execAsync = promisify(exec);
 
 class ProcessMonitor {
   constructor() {
-    this.checkInterval = 2000; 
+    this.checkInterval = 2000; // 2 saniyede bir kontrol
     this.gameProcesses = {
-      'valorant': ['VALORANT-Win64-Shipping.exe']
+      'valorant': ['VALORANT-Win64-Shipping.exe'],
+      "stardew valley": ["Stardew Valley.exe"],
     };
   }
 
   async getRunningProcesses() {
     try {
+      // Windows tasklist komutunu kullan
       const { stdout } = await execAsync('tasklist /FO CSV');
-      const lines = stdout.split('\n').slice(1); 
+      const lines = stdout.split('\n').slice(1); // İlk satırı atla (başlık)
       
       const processes = [];
       for (const line of lines) {
         if (line.trim()) {
-          
+          // CSV formatından process adını çıkar (ilk sütun, tırnak işaretleri olmadan)
           const match = line.match(/^"([^"]+)"/);
           if (match) {
             processes.push(match[1]);
@@ -42,7 +44,7 @@ class ProcessMonitor {
         return false;
       }
 
-      
+      // Herhangi bir oyun process'i çalışıyor mu kontrol et
       return processes.some(proc => {
         const procName = proc.toLowerCase();
         return gameProcesses.some(gameProc => 
@@ -59,7 +61,7 @@ class ProcessMonitor {
     try {
       const processes = await this.getRunningProcesses();
       
-      
+      // Tüm tanımlı oyunları kontrol et
       for (const [gameName, gameProcesses] of Object.entries(this.gameProcesses)) {
         const isRunning = processes.some(proc => {
           const procName = proc.toLowerCase();

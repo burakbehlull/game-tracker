@@ -55,7 +55,7 @@ export default function Layout({ children, user, onLogout }) {
           </div>
         </div>
       </nav>
-      <main className="container mx-auto px-4 py-8">
+      <main className={location.pathname === '/profile' ? 'w-full' : 'container mx-auto px-4 py-8'}>
         {children}
       </main>
     </div>

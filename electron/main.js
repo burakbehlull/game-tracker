@@ -23,6 +23,8 @@ function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1400,
     height: 900,
+    frame: false, // Custom frame için
+    backgroundColor: '#00000000', // Saydamlık için başlangıç rengi
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
@@ -64,6 +66,25 @@ app.on('before-quit', () => {
   if (gameTracker) {
     gameTracker.stop();
   }
+});
+
+// IPC Handlers - Window Controls
+ipcMain.handle('minimize-window', () => {
+  if (mainWindow) mainWindow.minimize();
+});
+
+ipcMain.handle('maximize-window', () => {
+  if (mainWindow) {
+    if (mainWindow.isMaximized()) {
+      mainWindow.unmaximize();
+    } else {
+      mainWindow.maximize();
+    }
+  }
+});
+
+ipcMain.handle('close-window', () => {
+  if (mainWindow) mainWindow.close();
 });
 
 // IPC Handlers - Authentication

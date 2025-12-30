@@ -23,7 +23,7 @@ const gameSessionSchema = new mongoose.Schema({
     type: Date
   },
   duration: {
-    type: Number,
+    type: Number, // saniye cinsinden
     default: 0
   }
 });

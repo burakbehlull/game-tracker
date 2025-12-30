@@ -27,6 +27,7 @@ class GameTracker {
       this.checkInterval = null;
     }
     
+    // Aktif oturumu sonlandır
     if (this.currentSession) {
       this.endSession();
     }
@@ -38,10 +39,13 @@ class GameTracker {
     const runningGame = await this.processMonitor.getRunningGameProcess();
     const isGameRunning = runningGame !== null;
 
+    // Oyun durumu değişti mi?
     if (isGameRunning !== this.lastGameState) {
       if (isGameRunning && !this.currentSession) {
+        // Oyun başladı
         await this.startSession(runningGame);
       } else if (!isGameRunning && this.currentSession) {
+        // Oyun bitti
         await this.endSession();
       }
       this.lastGameState = isGameRunning;

@@ -28,6 +28,7 @@ export default function Profile({ user: currentUser }) {
   useEffect(() => {
     if (currentUser && isOwnProfile) {
        setNewUsername(currentUser.username);
+       setNewGlobalName(currentUser.globalName);
     }
   }, [currentUser, isOwnProfile]);
 
@@ -204,7 +205,7 @@ export default function Profile({ user: currentUser }) {
                           <div className="space-y-4">
 
                             <div className="space-y-2">
-                              <label className="text-sm font-medium text-gray-300">Görünen Adınız</label>
+                              <label className="text-sm font-medium text-gray-300">Kullanıcı Adınız</label>
                               <input 
                                 type="text" 
                                 value={newUsername}

@@ -12,9 +12,8 @@ class ProcessMonitor {
 
   async getRunningProcesses() {
     try {
-      // Windows tasklist komutunu kullan
       const { stdout } = await execAsync('tasklist /FO CSV');
-      const lines = stdout.split('\n').slice(1);
+      const lines = stdout.split('\n').slice(1); 
       
       const processes = [];
       for (const line of lines) {

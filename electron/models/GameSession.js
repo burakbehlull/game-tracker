@@ -1,6 +1,11 @@
 const mongoose = require('mongoose');
 
 const gameSessionSchema = new mongoose.Schema({
+  userId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true
+  },
   gameName: {
     type: String,
     required: true

@@ -2,11 +2,16 @@ const ProcessMonitor = require('./processMonitor');
 const GameSession = require('../models/GameSession');
 
 class GameTracker {
-  constructor() {
+  constructor(userId = null) {
     this.processMonitor = new ProcessMonitor();
     this.currentSession = null;
     this.checkInterval = null;
     this.lastGameState = false;
+    this.userId = userId;
+  }
+
+  setUserId(userId) {
+    this.userId = userId;
   }
 
   start() {
@@ -44,8 +49,14 @@ class GameTracker {
   }
 
   async startSession(gameInfo) {
+    if (!this.userId) {
+      console.log('Kullanıcı giriş yapmamış, oyun takibi başlatılamıyor');
+      return;
+    }
+
     try {
       const session = new GameSession({
+        userId: this.userId,
         gameName: gameInfo.gameName,
         processName: gameInfo.processName,
         startTime: new Date()
@@ -53,7 +64,7 @@ class GameTracker {
 
       await session.save();
       this.currentSession = session;
-      console.log(`Oyun başladı: ${gameInfo.gameName}`);
+      console.log(`Oyun başladı: ${gameInfo.gameName} (Kullanıcı: ${this.userId})`);
     } catch (error) {
       console.error('Oturum başlatma hatası:', error);
     }

@@ -1,37 +1,47 @@
 {
   "name": "game-time-tracker",
   "version": "1.0.0",
-  "description": "",
+  "description": "Oyun süre takip uygulaması",
   "main": "electron/main.js",
   "scripts": {
+    "dev": "concurrently \"npm run dev:vite\" \"wait-on http://localhost:5173 && electron .\"",
+    "dev:vite": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
     "start": "electron .",
-    "dev": "concurrently \"npm run dev:react\" \"wait-on http://localhost:3000 && electron .\"",
-    "dev:react": "react-scripts start",
-    "build": "react-scripts build",
     "build:electron": "electron-builder"
   },
   "dependencies": {
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
+    "react-router-dom": "^6.20.0",
     "mongoose": "^8.0.0",
-    "electron": "^27.0.0"
+    "electron": "^27.0.0",
+    "bcryptjs": "^2.4.3",
+    "class-variance-authority": "^0.7.0",
+    "clsx": "^2.0.0",
+    "tailwind-merge": "^2.1.0",
+    "lucide-react": "^0.294.0",
+    "@radix-ui/react-dialog": "^1.0.5",
+    "@radix-ui/react-dropdown-menu": "^2.0.6",
+    "@radix-ui/react-label": "^2.0.2",
+    "@radix-ui/react-select": "^2.0.0",
+    "@radix-ui/react-slot": "^1.0.2",
+    "@radix-ui/react-switch": "^1.0.3",
+    "@radix-ui/react-tabs": "^1.0.4",
+    "@radix-ui/react-toast": "^1.1.5"
   },
   "devDependencies": {
-    "react-scripts": "5.0.1",
+    "@types/react": "^18.2.43",
+    "@types/react-dom": "^18.2.17",
+    "@vitejs/plugin-react": "^4.2.1",
+    "vite": "^5.0.8",
+    "vite-plugin-electron": "^0.15.5",
     "concurrently": "^8.2.2",
     "wait-on": "^7.2.0",
-    "electron-builder": "^24.9.1"
-  },
-  "browserslist": {
-    "production": [
-      ">0.2%",
-      "not dead",
-      "not op_mini all"
-    ],
-    "development": [
-      "last 1 chrome version",
-      "last 1 firefox version",
-      "last 1 safari version"
-    ]
+    "electron-builder": "^24.9.1",
+    "tailwindcss": "^3.3.6",
+    "postcss": "^8.4.32",
+    "autoprefixer": "^10.4.16"
   }
 }

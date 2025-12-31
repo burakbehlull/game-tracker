@@ -2,13 +2,14 @@
   "name": "game-time-tracker",
   "version": "1.0.0",
   "description": "Oyun süre takip uygulaması",
+  "author": "Burak Behlül",
   "main": "electron/main.js",
   "scripts": {
     "dev": "concurrently \"npm run dev:vite\" \"wait-on http://localhost:5173 && electron .\"",
     "dev:vite": "vite",
     "build": "vite build",
     "build:web": "vite build",
-    "build:desktop": "vite build && electron-packager . GameTracker --platform=win32 --arch=x64 --out=dist/pkg --overwrite --icon=public/icon.png --ignore=\"(src|tailwind.config.js|postcss.config.js|vite.config.js|.git)\"",
+    "build:desktop": "npm run build && electron-builder --win nsis",
     "preview": "vite preview",
     "start": "electron .",
     "dist": "electron-builder"
@@ -44,7 +45,7 @@
     "autoprefixer": "^10.4.16",
     "concurrently": "^8.2.2",
     "electron": "^27.0.0",
-    "electron-packager": "^17.1.2",
+    "electron-builder": "24.13.3",
     "postcss": "^8.4.32",
     "tailwindcss": "^3.3.6",
     "vite": "^5.0.8",
@@ -52,21 +53,33 @@
     "wait-on": "^7.2.0"
   },
   "build": {
-    "appId": "com.burakyabgu.gametracker",
+    "appId": "com.gametracker.app",
     "productName": "Game Tracker",
     "asar": true,
+    "directories": {
+      "output": "dist/build"
+    },
     "files": [
       "dist/**/*",
       "electron/**/*",
       "api/**/*",
-      "!api/node_modules",
-      "!src/**/*",
-      "!public/**/*",
-      "!.git/**/*"
+      "package.json"
     ],
     "win": {
-      "target": "portable",
-      "sign": false
+      "target": "nsis",
+      "signAndEditExecutable": false
+    },
+    "mac": {
+      "target": []
+    },
+    "linux": {
+      "target": []
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": false,
+      "deleteAppDataOnUninstall": true
     }
   }
 }

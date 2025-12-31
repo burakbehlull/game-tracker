@@ -4,33 +4,18 @@ require('dotenv').config({ path: path.join(__dirname, '../.env') });
 const GameTracker = require('./services/gameTracker');
 const url = require('url');
 
+const startServer = require('../api/server');
+
 let mainWindow;
 let gameTracker = new GameTracker();
+let serverInstance;
 
 const isDev = !app.isPackaged;
-let backendProcess;
 
 function startBackend() {
-  const backendPath = isDev 
-    ? path.join(__dirname, '../api/server.js')
-    : path.join(process.resourcesPath, 'app/api/server.js');
-  
-  // Eğer production'da ise backend'i başlat
-  // Dev modda zaten npm run dev içinde backend'i ayrı başlatıyor olabilirsiniz 
-  // ya da burada da başlatabiliriz. Şu anki dev script'i backend'i başlatmıyor.
-  // O yüzden her iki durumda da başlatalım.
-  
   try {
-    const { fork } = require('child_process');
-    backendProcess = fork(backendPath, [], {
-      env: { ...process.env, PORT: 3000 }
-    });
-
-    backendProcess.on('error', (err) => {
-      console.error('Backend process error:', err);
-    });
-
-    console.log('Backend server started via fork');
+    serverInstance = startServer();
+    console.log('Backend server started directly inside Electron');
   } catch (err) {
     console.error('Failed to start backend:', err);
   }
@@ -78,8 +63,8 @@ app.on('window-all-closed', () => {
 
 app.on('before-quit', () => {
   gameTracker?.stop();
-  if (backendProcess) {
-    backendProcess.kill();
+  if (serverInstance) {
+    serverInstance.close();
   }
 });
 

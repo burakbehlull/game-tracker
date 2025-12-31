@@ -1,4 +1,4 @@
-require('dotenv').config();
+// Backend logic integrated into Electron process
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
@@ -27,6 +27,11 @@ app.use('/api/games', gameRoutes);
 app.use('/api/users', userRoutes);
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+
+function startServer() {
+  return app.listen(PORT, () => {
+    console.log(`Backend Server running on port ${PORT}`);
+  });
+}
+
+module.exports = startServer;

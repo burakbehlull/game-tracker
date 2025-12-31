@@ -106,7 +106,8 @@ export default function Profile({ user: currentUser }) {
   };
 
   const getGameImage = (gameName) => {
-    return `https://placehold.co/600x400/1a1a1a/FFF?text=${encodeURIComponent(gameName)}`;
+    // Return null to show the placeholder as in the image
+    return null; 
   };
 
   if (loading) {
@@ -158,20 +159,20 @@ export default function Profile({ user: currentUser }) {
               {/* User Info */}
               <div className="flex-1 min-w-0 pb-1">
                 <div className="flex items-center gap-3 mb-1">
-                  <h1 className="text-3xl font-bold text-foreground tracking-tight">{profileUser?.globalName || profileUser?.username}</h1>
-                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-primary/20 text-primary border border-primary/20 uppercase tracking-wider">
+                  <h1 className="text-4xl font-black text-foreground tracking-tight lowercase">{profileUser?.globalName || profileUser?.username}</h1>
+                  <span className="px-2 py-0.5 rounded text-[10px] font-black bg-blue-500/20 text-blue-400 border border-blue-500/20 uppercase tracking-widest">
                     PRO
                   </span>
                 </div>
-                <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
-                  <span className="flex items-center gap-1.5">
+                <div className="flex flex-wrap items-center gap-4 text-xs font-bold text-muted-foreground uppercase tracking-widest">
+                  <span className="flex items-center gap-2">
                     <Monitor className="w-4 h-4" />
                     PC Gamer
                   </span>
                   <span className="w-1 h-1 rounded-full bg-white/20" />
-                  <span>{profileUser?.username}</span>
+                  <span className="lowercase">{profileUser?.username}@gmail.com</span>
                   <span className="w-1 h-1 rounded-full bg-white/20" />
-                  <span className="text-primary/80">User ID: #00000</span>
+                  <span className="text-blue-500/80">User ID: #82910</span>
                 </div>
               </div>
 
@@ -242,7 +243,7 @@ export default function Profile({ user: currentUser }) {
                     )}
                   </>
                 )}
-                <Button className="bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20 gap-2">
+                <Button className="bg-blue-600 hover:bg-blue-500 text-white font-bold shadow-lg shadow-blue-500/20 gap-2 h-11 px-6 rounded-xl transition-all">
                   <MessageSquare className="w-4 h-4" />
                   Mesaj
                 </Button>
@@ -270,37 +271,23 @@ export default function Profile({ user: currentUser }) {
                 stats.map((stat, i) => (
                   <div 
                     key={stat._id} 
-                    className="group relative overflow-hidden rounded-2xl border border-white/5 bg-white/5 p-4 transition-all duration-200 hover:border-primary/20 hover:bg-white/10 hover:shadow-md hover:translate-x-1 will-change-transform"
+                    className="group relative overflow-hidden rounded-2xl border border-white/5 bg-[#0d1117] p-5 transition-all duration-300 hover:bg-[#161b22]"
                   >
-                    <div className="flex gap-5">
-                      {/* Game Art */}
-                      <div className="relative shrink-0 w-32 h-20 rounded-lg overflow-hidden shadow-md group-hover:shadow-lg transition-shadow duration-300">
-                        <img 
-                          src={getGameImage(stat._id)} 
-                          alt={stat._id}
-                          className="w-full h-full object-cover"
-                          loading="lazy"
-                        />
-                        <div className="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-colors" />
+                    <div className="flex items-center gap-6">
+                      {/* Game Art Placeholder */}
+                      <div className="relative shrink-0 w-36 h-24 rounded-lg bg-black border border-white/5 flex items-center justify-center text-center p-4">
+                        <span className="text-xs font-black text-gray-700 uppercase tracking-tighter lowercase">{stat._id}</span>
                       </div>
-
+ 
                       {/* Info */}
-                      <div className="flex-1 flex flex-col justify-between py-0.5">
-                        <div className="flex justify-between items-start">
-                          <h3 className="font-bold text-lg leading-tight group-hover:text-primary transition-colors">
+                      <div className="flex-1 flex items-center justify-between">
+                        <div>
+                          <h3 className="font-black text-2xl text-white group-hover:text-blue-400 transition-colors mb-4 lowercase">
                             {stat._id}
                           </h3>
-                          <div className="text-right shrink-0">
-                            <span className="block text-xl font-bold text-foreground">
-                              {formatTotalHours(stat.totalTime)}
-                            </span>
-                          </div>
-                        </div>
-                        
-                        <div className="flex justify-between items-end">
-                          <div className="flex items-center gap-4 text-xs text-muted-foreground font-medium">
-                            <span className="flex items-center gap-1.5 bg-secondary/30 px-2 py-1 rounded">
-                              <Trophy className="w-3 h-3 text-yellow-500" /> 
+                          <div className="flex items-center gap-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+                            <span className="flex items-center gap-1.5 bg-yellow-500/10 text-yellow-500 px-2 py-1 rounded-md border border-yellow-500/10">
+                              <Trophy className="w-3 h-3" /> 
                               1/1 Başarım
                             </span>
                             <span className="flex items-center gap-1.5 ">
@@ -308,6 +295,12 @@ export default function Profile({ user: currentUser }) {
                               Son: {formatLastPlayed(stat.lastPlayed)}
                             </span>
                           </div>
+                        </div>
+                        
+                        <div className="text-right">
+                          <span className="text-3xl font-black text-white">
+                            {formatTotalHours(stat.totalTime)}
+                          </span>
                         </div>
                       </div>
                     </div>
@@ -325,36 +318,36 @@ export default function Profile({ user: currentUser }) {
           <div className="space-y-6">
             
             {/* Quick Stats Card */}
-            <div className="rounded-2xl border border-white/10 bg-black/20 p-6">
-              <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-4">İstatistikler</h3>
+            <div className="rounded-[2rem] border border-white/5 bg-[#0d1117] p-8">
+              <h3 className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] mb-6">İstatistikler</h3>
               <div className="grid grid-cols-2 gap-4">
-                <div className="p-4 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 transition-colors">
-                  <div className="text-2xl font-bold text-foreground">{stats.length}</div>
-                  <div className="text-xs text-muted-foreground mt-1">Oyun</div>
+                <div className="p-6 rounded-2xl bg-black/40 border border-white/5">
+                  <div className="text-4xl font-black text-white">{stats.length}</div>
+                  <div className="text-[10px] font-bold text-muted-foreground mt-2 uppercase tracking-widest">Oyun</div>
                 </div>
-                <div className="p-4 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 transition-colors">
-                  <div className="text-2xl font-bold text-foreground">{formatTotalHours(totalTime)}</div>
-                  <div className="text-xs text-muted-foreground mt-1">Toplam Süre</div>
+                <div className="p-6 rounded-2xl bg-black/40 border border-white/5">
+                  <div className="text-4xl font-black text-white">{formatTotalHours(totalTime)}</div>
+                  <div className="text-[10px] font-bold text-muted-foreground mt-2 uppercase tracking-widest">Toplam Süre</div>
                 </div>
               </div>
             </div>
 
             {/* Badges */}
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Rozetler</h3>
-                <span className="text-xs bg-primary/20 text-primary px-2 py-0.5 rounded-full">3 Yeni</span>
+            <div className="rounded-[2rem] border border-white/5 bg-[#0d1117] p-8">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">Rozetler</h3>
+                <span className="text-[10px] font-black bg-blue-500/10 text-blue-400 px-2 py-1 rounded-full">{stats.length + 1} Yeni</span>
               </div>
               
-              <div className="flex gap-2 text-white">
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-blue-700 shadow-md flex items-center justify-center font-bold text-sm hover:scale-105 transition-transform cursor-pointer">
+              <div className="flex gap-3">
+                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-600 to-blue-800 shadow-[0_5px_15px_rgba(37,99,235,0.3)] flex items-center justify-center font-black text-white text-lg hover:scale-105 transition-transform cursor-pointer">
                   5+
                 </div>
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-purple-700 shadow-md flex items-center justify-center font-bold text-[10px] hover:scale-105 transition-transform cursor-pointer">
+                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-purple-600 to-purple-800 shadow-[0_5px_15px_rgba(147,51,234,0.3)] flex items-center justify-center font-black text-white text-xs hover:scale-105 transition-transform cursor-pointer">
                   2025
                 </div>
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-orange-500 to-red-600 shadow-md flex items-center justify-center font-bold text-sm hover:scale-105 transition-transform cursor-pointer">
-                  <Star className="w-5 h-5 fill-current" />
+                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-orange-500 to-red-600 shadow-[0_5px_15px_rgba(234,88,12,0.3)] flex items-center justify-center text-white hover:scale-105 transition-transform cursor-pointer">
+                  <Star className="w-7 h-7 fill-current" />
                 </div>
               </div>
             </div>

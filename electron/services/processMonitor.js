@@ -7,7 +7,14 @@ class ProcessMonitor {
     this.checkInterval = 2000; // 2 saniyede bir kontrol
     this.gameProcesses = {
       'valorant': ['VALORANT-Win64-Shipping.exe'],
-      "stardew valley": ["Stardew Valley.exe"],
+      'stardew valley': ['Stardew Valley.exe'],
+      'league of legends': ['LeagueClient.exe', 'League of Legends.exe'],
+      'counter-strike 2': ['cs2.exe'],
+      'minecraft': ['Minecraft.exe', 'javaw.exe'],
+      'roblox': ['RobloxPlayerBeta.exe'],
+      'gta v': ['GTA5.exe'],
+      'euro truck simulator 2': ['eurotrucks2.exe'],
+      'fortnite': ['FortniteClient-Win64-Shipping.exe']
     };
   }
 

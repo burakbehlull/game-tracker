@@ -94,51 +94,57 @@ export default function Dashboard({ user }) {
         </div>
 
         {/* Live Game Card - Hero Section */}
-        {currentGame && (
-          <div className="mb-10 relative group overflow-hidden rounded-3xl border border-primary/30 bg-gradient-to-br from-primary/20 to-purple-900/20 backdrop-blur-xl shadow-2xl">
-            <div className="absolute inset-0 bg-gradient-to-r from-primary/10 to-transparent opacity-50"></div>
-            <div className="p-8 relative z-10">
-              <div className="flex items-center justify-between mb-6">
+        {currentGame ? (
+          <div className="mb-10 relative group overflow-hidden rounded-3xl border border-blue-500/30 bg-[#0a0f1d] backdrop-blur-xl shadow-[0_0_40px_rgba(59,130,246,0.15)]">
+            <div className="absolute inset-0 bg-gradient-to-r from-blue-600/10 via-transparent to-transparent opacity-50"></div>
+            <div className="p-10 relative z-10">
+              <div className="flex items-center justify-between mb-8">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-primary/20 text-primary animate-pulse">
+                  <div className="p-2.5 rounded-xl bg-blue-500/20 text-blue-400">
                     <Gamepad2 className="h-6 w-6" />
                   </div>
-                  <h2 className="text-xl font-bold text-white tracking-wide">ŞU ANDA OYNANIYOR</h2>
+                  <h2 className="text-sm font-black text-gray-400 tracking-[0.2em] uppercase">ŞU ANDA OYNANIYOR</h2>
                 </div>
-                <span className="px-3 py-1 rounded-full bg-green-500/20 text-green-400 border border-green-500/20 text-sm font-bold flex items-center gap-2 shadow-[0_0_15px_rgba(74,222,128,0.3)]">
-                  <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+                <span className="px-4 py-1.5 rounded-full bg-green-500/10 text-green-400 border border-green-500/20 text-[10px] font-black flex items-center gap-2 group-hover:shadow-[0_0_20px_rgba(74,222,128,0.2)] transition-all">
+                  <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
                   CANLI
                 </span>
               </div>
               
-              <div className="flex flex-col md:flex-row gap-8 items-center">
-                 <div className="flex-1">
-                    <div className="text-5xl font-black text-white mb-2 tracking-tight uppercase drop-shadow-sm">
+              <div className="flex flex-col lg:flex-row gap-10 items-center">
+                 <div className="flex-1 text-center lg:text-left">
+                    <div className="text-6xl font-black text-white mb-3 tracking-tighter uppercase">
                       {currentGame.gameName}
                     </div>
-                    <div className="text-primary/80 font-medium">Oturum Devam Ediyor...</div>
+                    <div className="text-blue-400/80 font-bold text-lg">Oturum Devam Ediyor...</div>
                  </div>
                  
-                 <div className="flex gap-6 text-white/90">
-                    <div className="px-6 py-4 rounded-2xl bg-black/40 border border-white/5 backdrop-blur-md">
-                       <div className="text-sm text-gray-400 mb-1 flex items-center gap-2">
-                         <Clock className="w-4 h-4" /> Süre
+                 <div className="flex gap-4 text-white">
+                    <div className="px-8 py-5 rounded-3xl bg-black/40 border border-white/5 backdrop-blur-md min-w-[140px]">
+                       <div className="text-[10px] text-gray-500 mb-2 font-bold uppercase tracking-widest flex items-center gap-2">
+                         <Clock className="w-3 h-3" /> Süre
                        </div>
-                       <div className="text-2xl font-mono font-bold tracking-wider">{formatDuration(currentGame.duration)}</div>
+                       <div className="text-2xl font-black">{formatDuration(currentGame.duration)}</div>
                     </div>
-                    <div className="px-6 py-4 rounded-2xl bg-black/40 border border-white/5 backdrop-blur-md">
-                       <div className="text-sm text-gray-400 mb-1 flex items-center gap-2">
-                          <Calendar className="w-4 h-4" /> Başlangıç
+                    <div className="px-8 py-5 rounded-3xl bg-black/40 border border-white/5 backdrop-blur-md min-w-[160px]">
+                       <div className="text-[10px] text-gray-500 mb-2 font-bold uppercase tracking-widest flex items-center gap-2">
+                          <Calendar className="w-3 h-3" /> Başlangıç
                        </div>
-                       <div className="text-xl font-medium">{formatDate(currentGame.startTime).split(' ')[1]}</div>
+                       <div className="text-2xl font-black">{formatDate(currentGame.startTime).split(' ')[1]}</div>
                     </div>
                  </div>
               </div>
             </div>
-            {/* Animated Bottom Bar */}
-            <div className="h-1 w-full bg-primary/20 mt-4">
-               <div className="h-full bg-primary animate-[loading_2s_ease-in-out_infinite] w-1/3"></div>
+            {/* Blue Progress Indicator */}
+            <div className="h-1.5 w-full bg-blue-900/20 overflow-hidden">
+               <div className="h-full bg-blue-500 w-1/3 shadow-[0_0_15px_rgba(59,130,246,0.6)] animate-[pulse_2s_ease-in-out_infinite]"></div>
             </div>
+          </div>
+        ) : (
+          <div className="mb-10 p-10 rounded-3xl border border-white/5 bg-white/5 text-center">
+            <Gamepad2 className="w-12 h-12 text-gray-700 mx-auto mb-4" />
+            <div className="text-xl font-bold text-gray-500 uppercase tracking-widest">Şu Anda Bir Oyun Tespit Edilmedi</div>
+            <p className="text-gray-600 mt-2 text-sm italic">Desteklenen bir oyunu başlattığınızda burada görünecektir.</p>
           </div>
         )}
 
@@ -152,31 +158,30 @@ export default function Dashboard({ user }) {
           <TabsContent value="stats" className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
               {stats.map((stat, index) => (
-                <div key={index} className="group relative rounded-2xl border border-white/5 bg-white/5 p-6 hover:bg-white/10 hover:border-white/20 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
-                  <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                <div key={index} className="group relative rounded-[2rem] border border-white/5 bg-[#0d1117] p-8 hover:bg-[#161b22] hover:border-blue-500/20 transition-all duration-300">
                   <div className="relative z-10">
-                    <div className="flex justify-between items-start mb-4">
-                       <h3 className="text-xl font-bold truncate pr-4 text-white group-hover:text-primary transition-colors">{stat._id}</h3>
-                       <div className="p-2 rounded-lg bg-white/5 group-hover:bg-primary/20 transition-colors">
-                         <TrendingUp className="w-5 h-5 text-gray-400 group-hover:text-primary" />
+                    <div className="flex justify-between items-start mb-6">
+                       <h3 className="text-2xl font-bold text-gray-200 group-hover:text-white transition-colors lowercase">{stat._id}</h3>
+                       <div className="p-2.5 rounded-xl bg-white/5">
+                         <TrendingUp className="w-5 h-5 text-gray-500" />
                        </div>
                     </div>
                     
-                    <div className="space-y-4">
+                    <div className="space-y-6">
                       <div>
-                        <div className="text-sm text-gray-400 mb-1">Toplam Süre</div>
-                        <div className="text-3xl font-bold text-white tracking-tight">{formatDuration(stat.totalTime)}</div>
+                        <div className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-1.5">Toplam Süre</div>
+                        <div className="text-4xl font-black text-white tracking-tight">{formatDuration(stat.totalTime)}</div>
                       </div>
                       
-                      <div className="grid grid-cols-2 gap-4 pt-4 border-t border-white/5">
-                        <div className="flex flex-col">
-                           <span className="text-xs text-gray-500">Oturumlar</span>
-                           <span className="font-medium text-gray-300">{stat.sessionCount} adet</span>
+                      <div className="grid grid-cols-2 gap-4 pt-6 border-t border-white/5">
+                        <div className="flex flex-col gap-1">
+                           <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Oturumlar</span>
+                           <span className="font-bold text-gray-300">{stat.sessionCount} adet</span>
                         </div>
                         {stat.lastPlayed && (
-                          <div className="flex flex-col text-right">
-                             <span className="text-xs text-gray-500">Son Oynama</span>
-                             <span className="font-medium text-gray-300">{new Date(stat.lastPlayed).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' })}</span>
+                          <div className="flex flex-col gap-1 text-right">
+                             <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Son Oynama</span>
+                             <span className="font-bold text-gray-300">{new Date(stat.lastPlayed).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' })}</span>
                           </div>
                         )}
                       </div>

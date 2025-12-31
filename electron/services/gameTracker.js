@@ -1,4 +1,7 @@
 const ProcessMonitor = require('./processMonitor');
+const path = require('path');
+const envPath = path.join(__dirname, '../../.env');
+require('dotenv').config({ path: envPath });
 
 class GameTracker {
   constructor() {
@@ -7,7 +10,7 @@ class GameTracker {
     this.checkInterval = null;
     this.lastGameState = false;
     this.authToken = null;
-    this.apiUrl = 'http://localhost:3000/api'; // Configurable
+    this.apiUrl = process.env.VITE_API_URL || 'http://localhost:3000/api'; // Configurable
   }
 
   setAuthToken(token) {
@@ -20,7 +23,7 @@ class GameTracker {
     this.checkInterval = setInterval(() => {
       this.checkGameStatus();
     }, this.processMonitor.checkInterval);
-  }
+  } 
 
   stop() {
     if (this.checkInterval) {
@@ -40,17 +43,22 @@ class GameTracker {
     const runningGame = await this.processMonitor.getRunningGameProcess();
     const isGameRunning = runningGame !== null;
 
-    // Oyun durumu değişti mi?
-    if (isGameRunning !== this.lastGameState) {
-      if (isGameRunning && !this.currentSession) {
-        // Oyun başladı
-        await this.startSession(runningGame);
-      } else if (!isGameRunning && this.currentSession) {
-        // Oyun bitti
+    // Oyun durumu veya oynanan oyun değişti mi?
+    const currentRunningGameName = runningGame ? runningGame.gameName : null;
+    const lastRunningGameName = this.currentSession ? this.currentSession.gameName : null;
+
+    if (currentRunningGameName !== lastRunningGameName) {
+      if (lastRunningGameName) {
+        // Eski oyun bitti
         await this.endSession();
       }
-      this.lastGameState = isGameRunning;
+      if (currentRunningGameName) {
+        // Yeni oyun başladı
+        await this.startSession(runningGame);
+      }
     }
+    
+    this.lastGameState = isGameRunning;
   }
 
   async startSession(gameInfo) {

@@ -4,7 +4,7 @@ import { Button } from './ui/button';
 import { Switch } from './ui/switch';
 import { Moon, Sun, User, LogOut, Gamepad2, Globe, BarChart3, Download } from 'lucide-react';
 
-const DownloadURL = import.meta.env.VITE_DOWNLOAD_URL || null;
+const DownloadURL = import.meta.env.VITE_DOWNLOAD_URL;
 
 export default function Layout({ children, user, onLogout }) {
   const { theme, toggleTheme } = useTheme();
@@ -47,13 +47,14 @@ export default function Layout({ children, user, onLogout }) {
 
             <div className="flex items-center gap-4">
               {isWeb && (
-                <Button 
-                  onClick={() => window.open(DownloadURL, '_blank')}
-                  className="hidden lg:flex items-center gap-2 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 h-9 font-bold rounded-xl animate-pulse-subtle"
-                >
-                  <Download className="h-4 w-4" />
-                  Uygulamayı İndir
-                </Button>
+                <a href={DownloadURL} target='_blank'>  
+                  <Button 
+                    className="hidden lg:flex items-center gap-2 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 h-9 font-bold rounded-xl animate-pulse-subtle"
+                  >
+                    <Download className="h-4 w-4" />
+                    Uygulamayı İndir
+                  </Button>
+                </a>
               )}
               <div className="hidden sm:flex items-center gap-2 mr-2">
                 <Sun className="h-4 w-4 text-muted-foreground" />

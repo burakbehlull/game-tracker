@@ -81,25 +81,17 @@ function App() {
               <Route
                 path="/"
                 element={
-                  user ? (
-                    <Layout user={user} onLogout={handleLogout}>
-                      <Home user={user} />
-                    </Layout>
-                  ) : (
-                    <Home user={null} />
-                  )
+                  <Layout user={user} onLogout={handleLogout}>
+                    <Home user={user} />
+                  </Layout>
                 }
               />
               <Route
                 path="/discover"
                 element={
-                  user ? (
-                    <Layout user={user} onLogout={handleLogout}>
-                      <Discover />
-                    </Layout>
-                  ) : (
-                    <Navigate to="/login" />
-                  )
+                  <Layout user={user} onLogout={handleLogout}>
+                    <Discover />
+                  </Layout>
                 }
               />
               <Route

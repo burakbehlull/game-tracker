@@ -31,15 +31,17 @@ export default function Layout({ children, user, onLogout }) {
                     <span className="hidden md:inline">Keşfet</span>
                   </Button>
                 </Link>
-                <Link to="/dashboard">
-                  <Button 
-                    variant={location.pathname === '/dashboard' ? 'default' : 'ghost'}
-                    className="flex items-center gap-2 h-9 px-3"
-                  >
-                    <BarChart3 className="h-4 w-4" />
-                    <span className="hidden md:inline">Panel</span>
-                  </Button>
-                </Link>
+                {user && (
+                  <Link to="/dashboard">
+                    <Button 
+                      variant={location.pathname === '/dashboard' ? 'default' : 'ghost'}
+                      className="flex items-center gap-2 h-9 px-3"
+                    >
+                      <BarChart3 className="h-4 w-4" />
+                      <span className="hidden md:inline">Panel</span>
+                    </Button>
+                  </Link>
+                )}
               </div>
             </div>
 
@@ -59,22 +61,33 @@ export default function Layout({ children, user, onLogout }) {
                 <Moon className="h-4 w-4 text-muted-foreground" />
               </div>
               
-              <div className="flex items-center gap-2 bg-secondary/50 p-1 pr-1.5 rounded-full border border-white/5">
-                <Link to={`/profile/${user?.username}`} className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center border border-primary/20">
-                    <User className="w-4 h-4 text-primary" />
-                  </div>
-                  <span className="text-sm font-bold text-white hidden md:inline">{user?.username}</span>
-                </Link>
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  className="h-8 w-8 rounded-full hover:bg-destructive/10 hover:text-destructive transition-colors" 
-                  onClick={onLogout}
-                >
-                  <LogOut className="h-4 w-4" />
-                </Button>
-              </div>
+              {user ? (
+                <div className="flex items-center gap-2 bg-secondary/50 p-1 pr-1.5 rounded-full border border-white/5">
+                  <Link to={`/profile/${user?.username}`} className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center border border-primary/20">
+                      <User className="w-4 h-4 text-primary" />
+                    </div>
+                    <span className="text-sm font-bold text-white hidden md:inline">{user?.username}</span>
+                  </Link>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-8 w-8 rounded-full hover:bg-destructive/10 hover:text-destructive transition-colors" 
+                    onClick={onLogout}
+                  >
+                    <LogOut className="h-4 w-4" />
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <Link to="/login">
+                    <Button variant="ghost" className="h-9 font-bold">Giriş Yap</Button>
+                  </Link>
+                  <Link to="/register">
+                    <Button className="h-9 font-bold rounded-xl">Katıl</Button>
+                  </Link>
+                </div>
+              )}
             </div>
           </div>
         </div>

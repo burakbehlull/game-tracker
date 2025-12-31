@@ -68,11 +68,7 @@ export default function Home({ user }) {
                       ÜCRETSİZ BAŞLA <ChevronRight className="ml-2 w-6 h-6" />
                     </Button>
                   </Link>
-                  <Link to="/login">
-                    <Button size="lg" variant="outline" className="h-14 px-10 font-bold text-xl border-white/10 bg-white/5 backdrop-blur-xl rounded-2xl hover:bg-white/10 transition-all">
-                      Giriş Yap
-                    </Button>
-                  </Link>
+                  
                 </>
               )}
             </div>

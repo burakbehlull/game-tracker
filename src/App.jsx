@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider } from './contexts/ThemeContext';
 import Login from './pages/Login';
 import Register from './pages/Register';
@@ -15,6 +15,7 @@ import TitleBar from './components/TitleBar';
 function App() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+
 
   useEffect(() => {
     checkAuth();

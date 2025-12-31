@@ -3,8 +3,8 @@ import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { ThemeProvider } from './contexts/ThemeContext';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import Home from './pages/Home';
 import Discover from './pages/Discover';
-
 import Dashboard from './pages/Dashboard';
 import Profile from './pages/Profile';
 import Layout from './components/Layout';
@@ -80,6 +80,18 @@ function App() {
               />
               <Route
                 path="/"
+                element={
+                  user ? (
+                    <Layout user={user} onLogout={handleLogout}>
+                      <Home user={user} />
+                    </Layout>
+                  ) : (
+                    <Home user={null} />
+                  )
+                }
+              />
+              <Route
+                path="/discover"
                 element={
                   user ? (
                     <Layout user={user} onLogout={handleLogout}>

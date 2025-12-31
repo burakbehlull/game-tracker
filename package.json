@@ -8,7 +8,7 @@
     "dev:vite": "vite",
     "build": "vite build",
     "build:web": "vite build",
-    "build:desktop": "vite build && electron-packager . GameTracker --platform=win32 --arch=x64 --out=dist/pkg --overwrite --ignore=\"(src|public|tailwind.config.js|postcss.config.js|vite.config.js|.git)\"",
+    "build:desktop": "vite build && electron-packager . GameTracker --platform=win32 --arch=x64 --out=dist/pkg --overwrite --icon=public/icon.png --ignore=\"(src|tailwind.config.js|postcss.config.js|vite.config.js|.git)\"",
     "preview": "vite preview",
     "start": "electron .",
     "dist": "electron-builder"
@@ -44,7 +44,6 @@
     "autoprefixer": "^10.4.16",
     "concurrently": "^8.2.2",
     "electron": "^27.0.0",
-    "electron-builder": "^24.13.3",
     "electron-packager": "^17.1.2",
     "postcss": "^8.4.32",
     "tailwindcss": "^3.3.6",

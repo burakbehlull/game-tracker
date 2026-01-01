@@ -12,6 +12,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getGameSessions: () => ipcRenderer.invoke('get-game-sessions'),
   getGameStats: () => ipcRenderer.invoke('get-game-stats'),
   getCurrentGame: () => ipcRenderer.invoke('get-current-game'),
+  checkAdminStatus: () => ipcRenderer.invoke('check-admin-status'),
 
   // Window Controls
   minimizeWindow: () => ipcRenderer.invoke('minimize-window'),

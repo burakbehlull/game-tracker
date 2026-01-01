@@ -100,3 +100,8 @@ ipcMain.handle('logout', () => {
 ipcMain.handle('get-current-game', async () => {
   return gameTracker?.getCurrentGame() ?? null;
 });
+
+ipcMain.handle('check-admin-status', async () => {
+  if (!gameTracker || !gameTracker.processMonitor) return false;
+  return await gameTracker.processMonitor.isAdmin();
+});

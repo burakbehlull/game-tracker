@@ -8,6 +8,7 @@ export default function Dashboard({ user }) {
   const [sessions, setSessions] = useState([]);
   const [stats, setStats] = useState([]);
   const [currentGame, setCurrentGame] = useState(null);
+  const [isAdmin, setIsAdmin] = useState(true);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -16,6 +17,14 @@ export default function Dashboard({ user }) {
       loadData();
       updateCurrentGame();
     }, 2000);
+
+    const checkAdmin = async () => {
+      if (window.electronAPI) {
+        const adminStatus = await window.electronAPI.checkAdminStatus();
+        setIsAdmin(adminStatus);
+      }
+    };
+    checkAdmin();
 
     return () => clearInterval(interval);
   }, []);
@@ -92,6 +101,19 @@ export default function Dashboard({ user }) {
              <span className="text-sm font-medium">Sistem Çevrimiçi</span>
           </div>
         </div>
+
+        {/* Admin Warning Banner */}
+        {!isAdmin && (
+          <div className="mb-6 p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-500 flex items-center gap-4 animate-in fade-in slide-in-from-top-4 duration-500">
+            <div className="p-2 rounded-xl bg-amber-500/20">
+              <Gamepad2 className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="font-bold text-sm">Yönetici Yetkisi Gerekiyor</div>
+              <p className="text-xs opacity-80">Valorant ve diğer korumalı oyunların tespiti için uygulamayı yönetici olarak çalıştırmanız önerilir.</p>
+            </div>
+          </div>
+        )}
 
         {/* Live Game Card - Hero Section */}
         {currentGame ? (

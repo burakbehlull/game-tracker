@@ -162,7 +162,7 @@ export default function Home({ user }) {
           <div className="text-center space-y-4 mb-20">
             <h2 className="text-4xl font-black text-white">Güçlü Özellikler</h2>
             <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-              MesDel ile oyun deneyiminizi bir üst seviyeye taşıyın. İhtiyacınız olan her şey tek bir platformda.
+              Game Tracker ile oyun deneyiminizi bir üst seviyeye taşıyın. İhtiyacınız olan her şey tek bir platformda.
             </p>
           </div>
 

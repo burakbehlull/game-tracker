@@ -20,22 +20,37 @@ class ProcessMonitor {
 
   async getRunningProcesses() {
     try {
-      // Windows tasklist komutunu kullan
-      const { stdout } = await execAsync('tasklist /FO CSV');
-      const lines = stdout.split('\n').slice(1); // İlk satırı atla (başlık)
+      // Windows tasklist komutunu kullan, buffer boyutunu artır
+      // Bazı bilgisayarlarda tasklist yavaş olabilir veya kısıtlanmış olabilir
+      // Bu yüzden hem tasklist hem de powershell (alternatif olarak) denenebilir
+      let stdout = '';
+      try {
+        const result = await execAsync('tasklist /FO CSV', { maxBuffer: 1024 * 1024 * 2 }); // 2MB buffer
+        stdout = result.stdout;
+      } catch (e) {
+        console.error('Tasklist hatası, Powershell deneniyor...', e);
+        const result = await execAsync('powershell "Get-Process | Select-Object ProcessName"', { maxBuffer: 1024 * 1024 * 2 });
+        stdout = result.stdout;
+      }
       
+      const lines = stdout.split(/\r?\n/).slice(1);
       const processes = [];
+      
       for (const line of lines) {
-        if (line.trim()) {
-          // CSV formatından process adını çıkar (ilk sütun, tırnak işaretleri olmadan)
-          const match = line.match(/^"([^"]+)"/);
-          if (match) {
-            processes.push(match[1]);
+        const trimmedLine = line.trim();
+        if (trimmedLine) {
+          // Tasklist CSV formatı için (tırnak içindeki ilk sütun)
+          const csvMatch = trimmedLine.match(/^"([^"]+)"/);
+          if (csvMatch) {
+            processes.push(csvMatch[1].toLowerCase());
+          } else {
+            // Powershell veya diğer düz metin formatları için
+            processes.push(trimmedLine.toLowerCase());
           }
         }
       }
       
-      return processes;
+      return [...new Set(processes)]; // Tekrar edenleri temizle
     } catch (error) {
       console.error('Process listesi alma hatası:', error);
       return [];
@@ -45,19 +60,16 @@ class ProcessMonitor {
   async isGameRunning(gameName) {
     try {
       const processes = await this.getRunningProcesses();
-      const gameProcesses = this.gameProcesses[gameName.toLowerCase()];
+      const targetGames = this.gameProcesses[gameName.toLowerCase()];
       
-      if (!gameProcesses) {
-        return false;
-      }
+      if (!targetGames) return false;
 
-      // Herhangi bir oyun process'i çalışıyor mu kontrol et
-      return processes.some(proc => {
-        const procName = proc.toLowerCase();
-        return gameProcesses.some(gameProc => 
-          procName.includes(gameProc.toLowerCase())
-        );
-      });
+      return processes.some(proc => 
+        targetGames.some(gameProc => 
+          proc.includes(gameProc.toLowerCase()) || 
+          gameProc.toLowerCase().includes(proc)
+        )
+      );
     } catch (error) {
       console.error('Process kontrol hatası:', error);
       return false;
@@ -68,23 +80,22 @@ class ProcessMonitor {
     try {
       const processes = await this.getRunningProcesses();
       
-      // Tüm tanımlı oyunları kontrol et
-      for (const [gameName, gameProcesses] of Object.entries(this.gameProcesses)) {
-        const isRunning = processes.some(proc => {
-          const procName = proc.toLowerCase();
-          return gameProcesses.some(gameProc => 
-            procName.includes(gameProc.toLowerCase())
-          );
-        });
+      for (const [gameName, gameProcs] of Object.entries(this.gameProcesses)) {
+        const isRunning = processes.some(proc => 
+          gameProcs.some(gameProc => {
+            const lowProc = proc.toLowerCase();
+            const lowGameProc = gameProc.toLowerCase();
+            return lowProc.includes(lowGameProc) || lowGameProc.includes(lowProc);
+          })
+        );
         
         if (isRunning) {
           return {
             gameName: gameName,
-            processName: gameProcesses[0]
+            processName: gameProcs[0]
           };
         }
       }
-      
       return null;
     } catch (error) {
       console.error('Oyun process kontrol hatası:', error);

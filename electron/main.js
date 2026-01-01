@@ -2,12 +2,14 @@ const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '../.env') });
 const GameTracker = require('./services/gameTracker');
+const UpdateService = require('./services/updateService');
 const url = require('url');
 
 const startServer = require('../api/server');
 
 let mainWindow;
 let gameTracker = new GameTracker();
+let updateService;
 let serverInstance;
 
 const isDev = !app.isPackaged;
@@ -51,6 +53,10 @@ app.whenReady().then(() => {
   startBackend();
   createWindow();
   gameTracker.start();
+  
+  // Güncelleme servisini başlat
+  updateService = new UpdateService(mainWindow);
+  updateService.checkForUpdates();
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();

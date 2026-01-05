@@ -56,11 +56,11 @@ export default function Layout({ children, user, onLogout }) {
                   </Button>
                 </a>
               )}
-              <div className="hidden sm:flex items-center gap-2 mr-2">
+              {/*<div className="hidden sm:flex items-center gap-2 mr-2">
                 <Sun className="h-4 w-4 text-muted-foreground" />
                 <Switch checked={theme === 'dark'} onCheckedChange={toggleTheme} />
                 <Moon className="h-4 w-4 text-muted-foreground" />
-              </div>
+              </div>*/}
               
               {user ? (
                 <div className="flex items-center gap-2 bg-secondary/50 p-1 pr-1.5 rounded-full border border-white/5">

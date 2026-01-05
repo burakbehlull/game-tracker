@@ -170,9 +170,9 @@ export default function Profile({ user: currentUser }) {
                     PC Gamer
                   </span>
                   <span className="w-1 h-1 rounded-full bg-white/20" />
-                  <span className="lowercase">{profileUser?.username}@gmail.com</span>
-                  <span className="w-1 h-1 rounded-full bg-white/20" />
-                  <span className="text-blue-500/80">User ID: #82910</span>
+                  <span className="lowercase">{profileUser?.username}</span>
+                  {/*<span className="w-1 h-1 rounded-full bg-white/20" />
+                  <span className="text-blue-500/80">User ID: {profileUser?.id}</span>*/}
                 </div>
               </div>
 
@@ -243,10 +243,10 @@ export default function Profile({ user: currentUser }) {
                     )}
                   </>
                 )}
-                <Button className="bg-blue-600 hover:bg-blue-500 text-white font-bold shadow-lg shadow-blue-500/20 gap-2 h-11 px-6 rounded-xl transition-all">
+                {/*<Button className="bg-blue-600 hover:bg-blue-500 text-white font-bold shadow-lg shadow-blue-500/20 gap-2 h-11 px-6 rounded-xl transition-all">
                   <MessageSquare className="w-4 h-4" />
                   Mesaj
-                </Button>
+                </Button>*/}
               </div>
             </div>
           </div>

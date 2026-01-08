@@ -22,18 +22,26 @@ function App() {
   }, []);
 
   const checkAuth = async () => {
+    const token = localStorage.getItem('token');
+    
+    // 1. Optimistically send token to Electron immediately
+    if (token && window.electronAPI) {
+      window.electronAPI.setAuthToken(token).catch(err => console.error('Failed to sync token:', err));
+    }
+
     try {
-      if (localStorage.getItem('token')) {
+      if (token) {
+        // 2. Then validate with backend
         const currentUser = await api.getCurrentUser();
         setUser(currentUser);
-        // If in Electron, restore token
-        if (window.electronAPI) {
-          await window.electronAPI.setAuthToken(localStorage.getItem('token'));
-        }
       }
     } catch (error) {
-      console.error('Auth kontrol hatası:', error);
-      localStorage.removeItem('token');
+      console.error('Auth verification failed:', error);
+      // Only clear token on explicit 401 Unauthorized, preserve it on network errors (startup)
+      if (error.response && error.response.status === 401) {
+        localStorage.removeItem('token');
+        if (window.electronAPI) window.electronAPI.logout();
+      }
     } finally {
       setLoading(false);
     }

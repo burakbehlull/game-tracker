@@ -67,10 +67,23 @@ app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();
 });
 
-app.on('before-quit', () => {
-  gameTracker?.stop();
-  if (serverInstance) {
-    serverInstance.close();
+let isQuitting = false;
+app.on('before-quit', async (e) => {
+  if (!isQuitting) {
+    e.preventDefault();
+    isQuitting = true;
+    
+    console.log('App closing, cleaning up...');
+    
+    if (gameTracker) {
+      await gameTracker.stop();
+    }
+    
+    if (serverInstance) {
+      serverInstance.close();
+    }
+    
+    app.quit();
   }
 });
 
@@ -98,7 +111,7 @@ ipcMain.handle('logout', () => {
 });
 
 ipcMain.handle('get-current-game', async () => {
-  return gameTracker?.getCurrentGame() ?? null;
+  return gameTracker?.getCurrentSession() ?? null;
 });
 
 ipcMain.handle('check-admin-status', async () => {

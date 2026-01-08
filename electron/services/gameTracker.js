@@ -1,158 +1,163 @@
 const ProcessMonitor = require('./processMonitor');
-const path = require('path');
-const envPath = path.join(__dirname, '../../.env');
-require('dotenv').config({ path: envPath });
 
 class GameTracker {
   constructor() {
     this.processMonitor = new ProcessMonitor();
     this.currentSession = null;
-    this.checkInterval = null;
-    this.lastGameState = false;
     this.authToken = null;
-    this.apiUrl = process.env.VITE_API_URL || 'http://localhost:3000/api'; // Configurable
-  }   
+    this.checkInterval = null;
+    this.isTracking = false;
+    this.apiUrl = 'http://localhost:3000/api'; // Fallback if env not set
+  }
 
   setAuthToken(token) {
     this.authToken = token;
-    console.log('Auth token set for GameTracker');
+    console.log('Auth token updated in GameTracker');
   }
 
   start() {
-    console.log('Oyun takip servisi başlatıldı');
-    this.checkInterval = setInterval(() => {
-      this.checkGameStatus();
-    }, this.processMonitor.checkInterval);
-  } 
+    if (this.isTracking) return;
+    
+    // Explicitly check env, fallback to default if missing in Main process
+    if (process.env.API_URL) this.apiUrl = process.env.API_URL;
+    console.log(`[GameTracker] Service started. API: ${this.apiUrl}`);
+
+    this.isTracking = true;
+
+    // Start the tracking loop
+    this.checkInterval = setInterval(async () => {
+      await this.checkGameStatus();
+    }, 3000);
+  }
 
   stop() {
     if (this.checkInterval) {
       clearInterval(this.checkInterval);
       this.checkInterval = null;
     }
-    
-    // Aktif oturumu sonlandır
-    if (this.currentSession) {
-      this.endSession();
-    }
-    
-    console.log('Oyun takip servisi durduruldu');
+    this.isTracking = false;
+    // Attempt to close any open session explicitly
+    return this.endSession(); 
   }
 
   async checkGameStatus() {
-    const runningGame = await this.processMonitor.getRunningGameProcess();
-    const isGameRunning = runningGame !== null;
-
-    if (isGameRunning) {
-      console.log(`[GameTracker] Tespit edilen oyun: ${runningGame.gameName}`);
-    }
-
-    // Oyun durumu veya oynanan oyun değişti mi?
-    const currentRunningGameName = runningGame ? runningGame.gameName : null;
-    const lastRunningGameName = this.currentSession ? this.currentSession.gameName : null;
-
-    if (currentRunningGameName !== lastRunningGameName) {
-      if (lastRunningGameName) {
-        console.log(`[GameTracker] ${lastRunningGameName} bitti, oturum sonlandırılıyor...`);
-        await this.endSession();
-      }
-      if (currentRunningGameName) {
-        console.log(`[GameTracker] ${currentRunningGameName} başladı, oturum açılıyor...`);
-        await this.startSession(runningGame);
-      }
-    }
-    
-    this.lastGameState = isGameRunning;
-  }
-
-  async startSession(gameInfo) {
     if (!this.authToken) {
-      console.warn('[GameTracker] Kullanıcı giriş yapmamış (Auth Token eksik). Oyun süresi kaydedilmeyecek.');
+      // console.warn('[GameTracker] No Auth Token available. Waiting for login...');
       return;
     }
 
     try {
-      console.log(`[GameTracker] API'ye oyun başlatma isteği gönderiliyor: ${gameInfo.gameName}`);
-      const response = await fetch(`${this.apiUrl}/games/start`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${this.authToken}`
-        },
-        body: JSON.stringify({
-          gameName: gameInfo.gameName,
-          processName: gameInfo.processName
-        })
-      });
+      const runningGame = await this.processMonitor.getRunningGameProcess();
 
-      if (response.ok) {
-        const data = await response.json();
-        this.currentSession = {
-          _id: data.sessionId,
-          gameName: gameInfo.gameName,
-          startTime: new Date(data.startTime),
-          processName: gameInfo.processName
-        };
-        console.log(`[GameTracker] Başarılı: ${gameInfo.gameName} oturumu veritabanına kaydedildi.`);
+      if (this.currentSession) {
+        // We have an active session
+        if (!runningGame || runningGame.gameName !== this.currentSession.gameName) {
+          // Game stopped or changed
+          await this.endSession();
+
+          // If changed directly to another game
+          if (runningGame) {
+            await this.startSession(runningGame);
+          }
+        } else {
+          // Game is still running, send heartbeat
+          await this.sendHeartbeat();
+        }
       } else {
-        const errorText = await response.text();
-        console.error(`[GameTracker] API Hatası (Oturum Başlatma): ${response.status} - ${errorText}`);
+        // No active session
+        if (runningGame) {
+          await this.startSession(runningGame);
+        }
       }
     } catch (error) {
-      console.error('[GameTracker] Ağ Hatası (Oturum Başlatma):', error);
+      console.error('Game tracking error:', error);
+    }
+  }
+
+  getCurrentSession() {
+    return this.currentSession;
+  }
+
+  async sendHeartbeat() {
+    // throttle heartbeat to every 1 minute
+    const now = Date.now();
+    if (this.lastHeartbeat && (now - this.lastHeartbeat < 60000)) {
+      return;
+    }
+
+    if (!this.currentSession || !this.authToken) return;
+
+    try {
+      const res = await fetch(`${this.apiUrl}/games/${this.currentSession.id}/heartbeat`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${this.authToken}`
+        }
+      });
+      
+      if (res.ok) {
+        this.lastHeartbeat = now;
+        // console.log('Heartbeat sent');
+      }
+    } catch (err) {
+      console.error('Heartbeat failed:', err);
+    }
+  }
+
+  async startSession(game) {
+    if (!this.authToken) return;
+
+    try {
+      console.log(`Starting session for: ${game.gameName}`);
+      const res = await fetch(`${this.apiUrl}/games/start`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${this.authToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(game)
+      });
+
+      if (!res.ok) {
+        throw new Error(`API Error: ${res.statusText}`);
+      }
+
+      const data = await res.json();
+      this.currentSession = {
+        id: data.sessionId,
+        gameName: game.gameName,
+        startTime: new Date(data.startTime)
+      };
+      console.log(`Session started: ${data.sessionId}`);
+    } catch (err) {
+      console.error('Failed to start session:', err);
     }
   }
 
   async endSession() {
-    if (!this.currentSession || !this.authToken) {
-      this.currentSession = null;
-      return;
-    }
+    if (!this.currentSession || !this.authToken) return;
 
     try {
-      const endTime = new Date();
-      const duration = Math.floor((endTime - this.currentSession.startTime) / 1000);
-
-      console.log(`[GameTracker] API'ye oturum sonlandırma isteği gönderiliyor: ${this.currentSession.gameName}, Süre: ${duration}s`);
-      const response = await fetch(`${this.apiUrl}/games/end`, {
+      console.log(`Ending session for: ${this.currentSession.gameName}`);
+      
+      const res = await fetch(`${this.apiUrl}/games/end`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${this.authToken}`
+          'Authorization': `Bearer ${this.authToken}`,
+          'Content-Type': 'application/json'
         },
-        body: JSON.stringify({
-          sessionId: this.currentSession._id,
-          duration: duration
-        })
+        body: JSON.stringify({ sessionId: this.currentSession.id })
       });
 
-      if (response.ok) {
-        console.log(`[GameTracker] Başarılı: ${this.currentSession.gameName} oturumu kapatıldı.`);
-      } else {
-        const errorText = await response.text();
-        console.error(`[GameTracker] API Hatası (Oturum Sonlandırma): ${response.status} - ${errorText}`);
+      if (!res) {
+        console.error('Failed to end session: No response');
       }
       
       this.currentSession = null;
-    } catch (error) {
-      console.error('[GameTracker] Ağ Hatası (Oturum Sonlandırma):', error);
-      this.currentSession = null;
+    } catch (err) {
+      console.error('Failed to end session:', err);
     }
-  }
-
-  getCurrentGame() {
-    if (this.currentSession) {
-      const now = new Date();
-      const currentDuration = Math.floor((now - this.currentSession.startTime) / 1000);
-      return {
-        gameName: this.currentSession.gameName,
-        startTime: this.currentSession.startTime,
-        duration: currentDuration
-      };
-    }
-    return null;
   }
 }
 
 module.exports = GameTracker;
-

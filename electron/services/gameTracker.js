@@ -1,4 +1,7 @@
 const ProcessMonitor = require('./processMonitor');
+const path = require('path');
+const envPath = path.join(__dirname, '../../.env');
+require('dotenv').config({ path: envPath });
 
 class GameTracker {
   constructor() {
@@ -7,7 +10,7 @@ class GameTracker {
     this.authToken = null;
     this.checkInterval = null;
     this.isTracking = false;
-    this.apiUrl = 'http://localhost:3000/api'; // Fallback if env not set
+    this.apiUrl = process.env.VITE_API_URL || 'http://localhost:3000/api'; // Fallback if env not set
   }
 
   setAuthToken(token) {
@@ -18,8 +21,6 @@ class GameTracker {
   start() {
     if (this.isTracking) return;
     
-    // Explicitly check env, fallback to default if missing in Main process
-    if (process.env.API_URL) this.apiUrl = process.env.API_URL;
     console.log(`[GameTracker] Service started. API: ${this.apiUrl}`);
 
     this.isTracking = true;

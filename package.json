@@ -74,6 +74,9 @@
       "api/**/*",
       "package.json"
     ],
+    "extraResources": [
+      "./.env"
+    ],
     "win": {
       "target": "nsis",
       "signAndEditExecutable": false

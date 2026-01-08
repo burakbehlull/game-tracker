@@ -1,7 +1,15 @@
 const ProcessMonitor = require('./processMonitor');
 const path = require('path');
-const envPath = path.join(__dirname, '../../.env');
-require('dotenv').config({ path: envPath });
+const log = require('electron-log');
+// Use a more robust way to load env or defaults
+// In production (asar), .env might not exist.
+const dotenv = require('dotenv');
+
+// Attempt to load .env only if likely in dev environment
+if (process.env.NODE_ENV !== 'production') {
+  const envPath = path.join(__dirname, '../../.env');
+  dotenv.config({ path: envPath });
+}
 
 class GameTracker {
   constructor() {
@@ -10,25 +18,28 @@ class GameTracker {
     this.authToken = null;
     this.checkInterval = null;
     this.isTracking = false;
-    this.apiUrl = process.env.VITE_API_URL || 'http://localhost:3000/api'; // Fallback if env not set
+    // Hardcoded fallback because internal server listens on 3000
+    this.apiUrl = process.env.VITE_API_URL || 'http://localhost:3000/api'; 
+    
+    log.info(`[GameTracker] Initialized. API URL: ${this.apiUrl}`);
   }
 
   setAuthToken(token) {
     this.authToken = token;
-    console.log('Auth token updated in GameTracker');
+    log.info('Auth token updated in GameTracker');
   }
 
   start() {
     if (this.isTracking) return;
     
-    console.log(`[GameTracker] Service started. API: ${this.apiUrl}`);
+    log.info(`[GameTracker] Service started.`);
 
     this.isTracking = true;
 
     // Start the tracking loop
     this.checkInterval = setInterval(async () => {
       await this.checkGameStatus();
-    }, 3000);
+    }, 3000); // Check every 3 seconds
   }
 
   stop() {
@@ -43,7 +54,7 @@ class GameTracker {
 
   async checkGameStatus() {
     if (!this.authToken) {
-      // console.warn('[GameTracker] No Auth Token available. Waiting for login...');
+      // log.warn('[GameTracker] No Auth Token available. Waiting for login...');
       return;
     }
 
@@ -71,7 +82,7 @@ class GameTracker {
         }
       }
     } catch (error) {
-      console.error('Game tracking error:', error);
+      log.error('Game tracking error:', error);
     }
   }
 
@@ -98,10 +109,12 @@ class GameTracker {
       
       if (res.ok) {
         this.lastHeartbeat = now;
-        // console.log('Heartbeat sent');
+        // log.info('Heartbeat sent');
+      } else {
+        log.warn(`Heartbeat failed: ${res.status} ${res.statusText}`);
       }
     } catch (err) {
-      console.error('Heartbeat failed:', err);
+      log.error('Heartbeat failed:', err);
     }
   }
 
@@ -109,7 +122,7 @@ class GameTracker {
     if (!this.authToken) return;
 
     try {
-      console.log(`Starting session for: ${game.gameName}`);
+      log.info(`Starting session for: ${game.gameName}`);
       const res = await fetch(`${this.apiUrl}/games/start`, {
         method: 'POST',
         headers: {
@@ -120,7 +133,8 @@ class GameTracker {
       });
 
       if (!res.ok) {
-        throw new Error(`API Error: ${res.statusText}`);
+        const text = await res.text();
+        throw new Error(`API Error: ${res.statusText} ${text}`);
       }
 
       const data = await res.json();
@@ -129,9 +143,9 @@ class GameTracker {
         gameName: game.gameName,
         startTime: new Date(data.startTime)
       };
-      console.log(`Session started: ${data.sessionId}`);
+      log.info(`Session started: ${data.sessionId}`);
     } catch (err) {
-      console.error('Failed to start session:', err);
+      log.error('Failed to start session:', err);
     }
   }
 
@@ -139,7 +153,7 @@ class GameTracker {
     if (!this.currentSession || !this.authToken) return;
 
     try {
-      console.log(`Ending session for: ${this.currentSession.gameName}`);
+      log.info(`Ending session for: ${this.currentSession.gameName}`);
       
       const res = await fetch(`${this.apiUrl}/games/end`, {
         method: 'POST',
@@ -151,12 +165,12 @@ class GameTracker {
       });
 
       if (!res) {
-        console.error('Failed to end session: No response');
+        log.error('Failed to end session: No response');
       }
       
       this.currentSession = null;
     } catch (err) {
-      console.error('Failed to end session:', err);
+      log.error('Failed to end session:', err);
     }
   }
 }

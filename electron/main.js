@@ -1,25 +1,36 @@
 const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
-require('dotenv').config({ path: path.join(__dirname, '../.env') });
+const log = require('electron-log');
+
+// Setup environment variables
+const isDev = !app.isPackaged;
+const envPath = isDev 
+  ? path.join(__dirname, '../.env') 
+  : path.join(process.resourcesPath, '.env');
+
+require('dotenv').config({ path: envPath });
+
 const GameTracker = require('./services/gameTracker');
 const UpdateService = require('./services/updateService');
-const url = require('url');
-
 const startServer = require('../api/server');
+
+// Configure Logger
+log.transports.file.level = 'info';
+log.transports.console.format = '{h}:{i}:{s} {text}';
+log.transports.console.level = 'info';
+log.info('App starting...');
 
 let mainWindow;
 let gameTracker = new GameTracker();
 let updateService;
 let serverInstance;
 
-const isDev = !app.isPackaged;
-
 function startBackend() {
   try {
     serverInstance = startServer();
-    console.log('Backend server started directly inside Electron');
+    log.info('Backend server started directly inside Electron');
   } catch (err) {
-    console.error('Failed to start backend:', err);
+    log.error('Failed to start backend:', err);
   }
 }
 
@@ -50,13 +61,24 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
+  log.info('App Ready');
   startBackend();
   createWindow();
-  gameTracker.start();
   
-  // Güncelleme servisini başlat
-  updateService = new UpdateService(mainWindow);
-  updateService.checkForUpdates();
+  try {
+    gameTracker.start();
+    log.info('GameTracker service started.');
+  } catch (e) {
+    log.error('Error starting GameTracker:', e);
+  }
+  
+  // Update service
+  try {
+    updateService = new UpdateService(mainWindow);
+    updateService.checkForUpdates();
+  } catch (e) {
+    log.error('Error starting UpdateService:', e);
+  }
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
@@ -73,7 +95,7 @@ app.on('before-quit', async (e) => {
     e.preventDefault();
     isQuitting = true;
     
-    console.log('App closing, cleaning up...');
+    log.info('App closing, cleaning up...');
     
     if (gameTracker) {
       await gameTracker.stop();

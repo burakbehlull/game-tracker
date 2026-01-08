@@ -1,7 +1,12 @@
 const { exec } = require('child_process');
 const { promisify } = require('util');
 const path = require('path');
+const log = require('electron-log');
 const execAsync = promisify(exec);
+
+// Configure logging
+log.transports.file.level = 'info';
+log.transports.console.level = 'info';
 
 class ProcessMonitor {
   constructor() {
@@ -51,7 +56,7 @@ class ProcessMonitor {
       // Strategy 1: PowerShell (Preferred - Structured Data)
       return await this.getProcessesFromPowershell();
     } catch (err) {
-      console.warn('PowerShell process scan failed, falling back to legacy tasklist method:', err);
+      log.warn('PowerShell process scan failed, falling back to legacy tasklist method:', err);
       // Strategy 2: Tasklist (Fallback)
       return await this.getProcessesFromTasklist();
     }
@@ -73,7 +78,7 @@ class ProcessMonitor {
       const parsed = JSON.parse(stdout);
       processList = Array.isArray(parsed) ? parsed : [parsed];
     } catch (parseErr) {
-      console.error('Failed to parse PowerShell output:', parseErr);
+      log.error('Failed to parse PowerShell output:', parseErr);
       throw parseErr;
     }
 
@@ -115,14 +120,13 @@ class ProcessMonitor {
   async getRunningGameProcess() {
     const runningProcesses = await this.getRunningProcesses();
     
-    // Debug logging occasionally or if needed
-    // console.log(`Scanned ${runningProcesses.size} processes`);
+    // log.info(`Scanned ${runningProcesses.size} processes`);
 
     for (const [gameName, exeList] of Object.entries(this.gameProcesses)) {
       for (const exe of exeList) {
         const targetExe = this.normalize(exe);
         if (runningProcesses.has(targetExe)) {
-          console.log(`[ProcessMonitor] DETECTED GAME: ${gameName} (Executable: ${exe})`);
+          log.info(`[ProcessMonitor] DETECTED GAME: ${gameName} (Executable: ${exe})`);
           return { gameName, processName: exe };
         }
       }

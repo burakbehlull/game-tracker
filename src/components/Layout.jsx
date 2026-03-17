@@ -2,7 +2,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { useTheme } from '../contexts/ThemeContext';
 import { Button } from './ui/button';
 import { Switch } from './ui/switch';
-import { Moon, Sun, User, LogOut, Gamepad2, Globe, BarChart3, Download } from 'lucide-react';
+import { Moon, Sun, User, LogOut, Gamepad2, Globe, BarChart3, Download, Clock } from 'lucide-react';
 
 const DownloadURL = import.meta.env.VITE_DOWNLOAD_URL;
 
@@ -32,15 +32,26 @@ export default function Layout({ children, user, onLogout }) {
                   </Button>
                 </Link>
                 {user && (
-                  <Link to="/dashboard">
-                    <Button 
-                      variant={location.pathname === '/dashboard' ? 'default' : 'ghost'}
-                      className="flex items-center gap-2 h-9 px-3"
-                    >
-                      <BarChart3 className="h-4 w-4" />
-                      <span className="hidden md:inline">Panel</span>
-                    </Button>
-                  </Link>
+                  <>
+                    <Link to="/dashboard">
+                      <Button 
+                        variant={location.pathname === '/dashboard' ? 'default' : 'ghost'}
+                        className="flex items-center gap-2 h-9 px-3"
+                      >
+                        <BarChart3 className="h-4 w-4" />
+                        <span className="hidden md:inline">Panel</span>
+                      </Button>
+                    </Link>
+                    <Link to="/timer">
+                      <Button 
+                        variant={location.pathname === '/timer' ? 'default' : 'ghost'}
+                        className="flex items-center gap-2 h-9 px-3"
+                      >
+                        <Clock className="h-4 w-4" />
+                        <span className="hidden md:inline">Zamanlayıcı</span>
+                      </Button>
+                    </Link>
+                  </>
                 )}
               </div>
             </div>

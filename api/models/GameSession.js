@@ -25,7 +25,11 @@ const gameSessionSchema = new mongoose.Schema({
   duration: {
     type: Number, // saniye cinsinden
     default: 0
-  }
+  },
+  // Analitik için:
+  startHour: Number, // 0-23
+  dayOfWeek: Number, // 0-6 (Pazar-Cumartesi)
+  isNightSession: Boolean 
 });
 
 module.exports = mongoose.model('GameSession', gameSessionSchema);

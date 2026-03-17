@@ -1,4 +1,6 @@
 const ProcessMonitor = require('./processMonitor');
+const { exec } = require('child_process');
+const { Notification } = require('electron');
 const path = require('path');
 const log = require('electron-log');
 // Use a more robust way to load env or defaults
@@ -42,6 +44,13 @@ class GameTracker {
     }, 3000); // Check every 3 seconds
   }
 
+  async setSessionLimit(minutes) {
+    if (this.currentSession) {
+      this.currentSession.limitMinutes = minutes;
+      log.info(`[GameTracker] Limit set for current session: ${minutes} minutes`);
+    }
+  }
+
   stop() {
     if (this.checkInterval) {
       clearInterval(this.checkInterval);
@@ -73,6 +82,7 @@ class GameTracker {
           }
         } else {
           // Game is still running, send heartbeat
+          this.checkSessionLimits();
           await this.sendHeartbeat();
         }
       } else {
@@ -141,9 +151,10 @@ class GameTracker {
       this.currentSession = {
         id: data.sessionId,
         gameName: game.gameName,
+        processName: game.processName, // Crucial for taskkill
         startTime: new Date(data.startTime)
       };
-      log.info(`Session started: ${data.sessionId}`);
+      log.info(`[GameTracker] Session started: ${data.sessionId} (Process: ${game.processName})`);
     } catch (err) {
       log.error('Failed to start session:', err);
     }
@@ -172,6 +183,62 @@ class GameTracker {
     } catch (err) {
       log.error('Failed to end session:', err);
     }
+  }
+
+  checkSessionLimits() {
+    if (!this.currentSession || !this.currentSession.limitMinutes) return;
+
+    const elapsedMs = Date.now() - this.currentSession.startTime.getTime();
+    const elapsedMinutes = Math.floor(elapsedMs / 60000);
+    const remainingMinutes = this.currentSession.limitMinutes - elapsedMinutes;
+
+    log.debug(`[GameTracker Timer] Elapsed: ${elapsedMinutes}m, Limit: ${this.currentSession.limitMinutes}m, Remaining: ${remainingMinutes}m`);
+
+    // 10 dakika uyarısı
+    if (remainingMinutes === 10 && !this.currentSession.warned10) {
+      this.sendWarning('10 Dakika Kaldı', 'Oyunun kapanmasına 10 dakika kaldı. Kaydetmeyi unutma!');
+      this.currentSession.warned10 = true;
+    }
+
+    // 2 dakika uyarısı
+    if (remainingMinutes === 2 && !this.currentSession.warned2) {
+      this.sendWarning('Son 2 Dakika!', 'Süre dolmak üzere, oyun otomatik olarak kapatılacak!');
+      this.currentSession.warned2 = true;
+    }
+
+    // Kapatma
+    if (remainingMinutes <= 0) {
+      this.forceQuitGame();
+    }
+  }
+
+  sendWarning(title, body) {
+    log.info(`[GameTracker Notification] ${title}: ${body}`);
+    if (Notification.isSupported()) {
+      new Notification({ title, body }).show();
+    }
+  }
+
+  async forceQuitGame() {
+    if (!this.currentSession) return;
+    const { processName, gameName } = this.currentSession;
+    
+    if (!processName) {
+      log.error(`[GameTracker] cannot terminate ${gameName}: processName is missing!`);
+      return;
+    }
+
+    log.info(`[GameTracker] LIMIT REACHED for ${gameName} (${processName}). Terminating...`);
+
+    exec(`taskkill /F /IM "${processName}"`, (err) => {
+      if (err) {
+        log.error(`Failed to kill process ${processName}:`, err);
+      } else {
+        this.sendWarning('Süre Doldu', `${gameName} tanımlanan süre dolduğu için kapatıldı.`);
+      }
+    });
+
+    await this.endSession();
   }
 }
 

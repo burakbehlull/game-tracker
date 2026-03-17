@@ -37,6 +37,42 @@ const userSchema = new mongoose.Schema({
   },
   lastLogin: {
     type: Date
+  },
+  // XP & Level Sistemi
+  level: {
+    type: Number,
+    default: 1
+  },
+  xp: {
+    type: Number,
+    default: 0
+  },
+  // Kişiselleştirme & Ayarlar
+  settings: {
+    theme: {
+      type: String,
+      default: 'dark' // dark, neon, retro
+    },
+    notificationSound: {
+      type: String,
+      default: 'default'
+    },
+    // Akıllı Zamanlayıcı Ayarları
+    timer: {
+      globalLimitMinutes: {
+        type: Number,
+        default: 0 // 0 = limit yok
+      },
+      gameSpecificLimits: {
+        type: Map,
+        of: Number,
+        default: {}
+      },
+      autoQuit: {
+        type: Boolean,
+        default: false
+      }
+    }
   }
 });
 

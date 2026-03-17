@@ -140,3 +140,8 @@ ipcMain.handle('check-admin-status', async () => {
   if (!gameTracker || !gameTracker.processMonitor) return false;
   return await gameTracker.processMonitor.isAdmin();
 });
+
+ipcMain.handle('set-session-limit', (_, minutes) => {
+  gameTracker?.setSessionLimit(minutes);
+  return { success: true };
+});

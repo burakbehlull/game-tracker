@@ -15,11 +15,19 @@ router.post('/start', auth, async (req, res) => {
       { endTime: new Date() }
     );
 
+    const now = new Date();
+    const startHour = now.getHours();
+    const dayOfWeek = now.getDay();
+    const isNightSession = startHour >= 0 && startHour <= 5;
+
     const session = new GameSession({
       userId: req.userId,
       gameName,
       processName,
-      startTime: new Date()
+      startTime: now,
+      startHour,
+      dayOfWeek,
+      isNightSession
     });
 
     await session.save();
@@ -34,7 +42,6 @@ router.post('/start', auth, async (req, res) => {
 });
 
 // End session
-// End session
 router.post('/end', auth, async (req, res) => {
   try {
     const { sessionId } = req.body;
@@ -48,11 +55,26 @@ router.post('/end', auth, async (req, res) => {
       return res.status(404).json({ error: 'Session not found' });
     }
 
-    // Only update if not already ended (or force update/confirmation)
+    const oldDuration = session.duration || 0;
     session.endTime = new Date();
     session.duration = Math.floor(
       (session.endTime - session.startTime) / 1000
     );
+
+    const extraSeconds = session.duration - oldDuration;
+    if (extraSeconds > 0) {
+      const xpGained = Math.floor(extraSeconds / 60); // 1 dk = 1 XP
+      if (xpGained > 0) {
+        const User = require('../models/User');
+        const user = await User.findById(req.userId);
+        if (user) {
+          user.xp += xpGained;
+          // Basit level atlama: Her 1000 XP bir level
+          user.level = Math.floor(user.xp / 1000) + 1;
+          await user.save();
+        }
+      }
+    }
 
     await session.save();
     res.json(session);
@@ -73,10 +95,25 @@ router.put('/:id/heartbeat', auth, async (req, res) => {
       return res.status(404).json({ error: 'Session not found' });
     }
 
+    const oldDuration = session.duration || 0;
     session.endTime = new Date();
     session.duration = Math.floor(
       (session.endTime - session.startTime) / 1000
     );
+
+    const extraSeconds = session.duration - oldDuration;
+    if (extraSeconds > 0) {
+      const xpGained = Math.floor(extraSeconds / 60);
+      if (xpGained > 0) {
+        const User = require('../models/User');
+        const user = await User.findById(req.userId);
+        if (user) {
+          user.xp += xpGained;
+          user.level = Math.floor(user.xp / 1000) + 1;
+          await user.save();
+        }
+      }
+    }
 
     await session.save();
     res.json({ success: true, duration: session.duration });

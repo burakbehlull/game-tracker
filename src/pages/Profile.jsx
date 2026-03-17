@@ -148,7 +148,7 @@ export default function Profile({ user: currentUser }) {
                 </div>
                 {/* Level Badge */}
                 <div className="absolute -bottom-3 -right-3 w-10 h-10 rounded-full bg-gradient-to-br from-yellow-500 to-amber-600 border-2 border-background shadow-lg flex items-center justify-center font-bold text-white text-sm">
-                  4
+                  {profileUser?.level || 1}
                 </div>
               </div>
 

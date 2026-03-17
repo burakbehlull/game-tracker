@@ -7,25 +7,30 @@ const auth = require('../middleware/auth');
 // Me
 router.get('/me', auth, async (req, res) => {
   const user = await User.findById(req.userId)
-    .select('username email globalName avatar createdAt');
+    .select('username email globalName avatar createdAt level xp settings');
 
   res.json(user);
 });
 
 // Update
 router.put('/me', auth, async (req, res) => {
-  const { username, globalName } = req.body;
+  const { username, globalName, settings } = req.body;
 
   if (username && username.length < 3) {
     return res.status(400).json({ error: 'Kullanıcı adı en az 3 karakter' });
   }
 
   try {
+    const updateData = {};
+    if (username) updateData.username = username;
+    if (globalName) updateData.globalName = globalName;
+    if (settings) updateData.settings = settings;
+
     const user = await User.findByIdAndUpdate(
       req.userId,
-      { $set: { username, globalName } },
+      { $set: updateData },
       { new: true, runValidators: true }
-    ).select('username globalName avatar');
+    ).select('username globalName avatar level xp settings');
 
     res.json(user);
   } catch (e) {

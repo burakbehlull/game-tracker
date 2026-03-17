@@ -7,6 +7,7 @@ import Home from './pages/Home';
 import Discover from './pages/Discover';
 import Dashboard from './pages/Dashboard';
 import Profile from './pages/Profile';
+import Timer from './pages/Timer';
 import Layout from './components/Layout';
 import { api } from './services/api';
 
@@ -116,6 +117,18 @@ function App() {
                   user ? (
                     <Layout user={user} onLogout={handleLogout}>
                       <Profile user={user} />
+                    </Layout>
+                  ) : (
+                    <Navigate to="/login" />
+                  )
+                }
+              />
+              <Route
+                path="/timer"
+                element={
+                  user ? (
+                    <Layout user={user} onLogout={handleLogout}>
+                      <Timer user={user} />
                     </Layout>
                   ) : (
                     <Navigate to="/login" />

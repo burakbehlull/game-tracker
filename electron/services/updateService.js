@@ -9,57 +9,58 @@ autoUpdater.logger.transports.file.level = 'info';
 class UpdateService {
   constructor(mainWindow) {
     this.mainWindow = mainWindow;
+    // Otomatik indirmeyi kapatıyoruz (User chooses to download)
+    autoUpdater.autoDownload = false;
+    autoUpdater.logger = log;
     this.setupListeners();
   }
 
   setupListeners() {
     autoUpdater.on('checking-for-update', () => {
-      console.log('[Update] Güncelleme kontrol ediliyor...');
+      this.sendStatusToWindow('CHECKING_FOR_UPDATE');
     });
 
     autoUpdater.on('update-available', (info) => {
-      console.log('[Update] Yeni güncelleme bulundu:', info.version);
+      this.sendStatusToWindow('UPDATE_AVAILABLE', info);
     });
 
     autoUpdater.on('update-not-available', (info) => {
-      console.log('[Update] Uygulama güncel.');
+      this.sendStatusToWindow('UPDATE_NOT_AVAILABLE');
     });
 
     autoUpdater.on('error', (err) => {
-      console.error('[Update] Güncelleme hatası:', err);
+      this.sendStatusToWindow('UPDATE_ERROR', err.message);
     });
 
     autoUpdater.on('download-progress', (progressObj) => {
-      let log_message = "İndirme hızı: " + progressObj.bytesPerSecond;
-      log_message = log_message + ' - İndirilen: %' + progressObj.percent;
-      log_message = log_message + ' (' + progressObj.transferred + "/" + progressObj.total + ')';
-      console.log('[Update]', log_message);
+      this.sendStatusToWindow('DOWNLOAD_PROGRESS', progressObj);
     });
 
     autoUpdater.on('update-downloaded', (info) => {
-      console.log('[Update] Güncelleme indirildi. Yeniden başlatma onayı isteniyor.');
-      
-      dialog.showMessageBox({
-        type: 'info',
-        title: 'Güncelleme Hazır',
-        message: 'Yeni versiyon (' + info.version + ') başarıyla indirildi. Güncellemeyi uygulamak için uygulama yeniden başlatılsın mı?',
-        buttons: ['Şimdi Yeniden Başlat', 'Sonra']
-      }).then((result) => {
-        if (result.response === 0) {
-          autoUpdater.quitAndInstall();
-        }
-      });
+      this.sendStatusToWindow('UPDATE_DOWNLOADED', info);
     });
   }
 
+  sendStatusToWindow(status, data = null) {
+    if (this.mainWindow && !this.mainWindow.isDestroyed()) {
+      this.mainWindow.webContents.send('update-status', { status, data });
+    }
+  }
+
   checkForUpdates() {
-    // Geliştirme modunda güncellemeleri kontrol etme (hata verebilir)
     if (!app.isPackaged) {
-      console.log('[Update] Geliştirme modunda güncelleme kontrolü atlanıyor.');
+      log.info('[Update] Geliştirme modunda güncelleme kontrolü atlanıyor.');
       return;
     }
-    
-    autoUpdater.checkForUpdatesAndNotify();
+    autoUpdater.checkForUpdates();
+  }
+
+  downloadUpdate() {
+    autoUpdater.downloadUpdate();
+  }
+
+  quitAndInstall() {
+    autoUpdater.quitAndInstall();
   }
 }
 

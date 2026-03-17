@@ -18,6 +18,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Window Controls
   minimizeWindow: () => ipcRenderer.invoke('minimize-window'),
   maximizeWindow: () => ipcRenderer.invoke('maximize-window'),
-  closeWindow: () => ipcRenderer.invoke('close-window')
+  closeWindow: () => ipcRenderer.invoke('close-window'),
+
+  // Updates
+  onUpdateMessage: (callback) => ipcRenderer.on('update-status', (_, data) => callback(data)),
+  startUpdateDownload: () => ipcRenderer.invoke('start-update-download'),
+  installUpdate: () => ipcRenderer.invoke('install-update')
 });
 

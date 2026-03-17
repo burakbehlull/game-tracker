@@ -12,6 +12,7 @@ import Layout from './components/Layout';
 import { api } from './services/api';
 
 import TitleBar from './components/TitleBar';
+import UpdateNotification from './components/UpdateNotification';
 
 function App() {
   const [user, setUser] = useState(null);
@@ -72,6 +73,7 @@ function App() {
     <ThemeProvider>
       <div className="flex flex-col h-screen overflow-hidden bg-background text-foreground">
         <TitleBar />
+        <UpdateNotification />
         <div className="flex-1 overflow-auto">
           <Router>
             <Routes>

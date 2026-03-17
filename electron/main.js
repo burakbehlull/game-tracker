@@ -145,3 +145,13 @@ ipcMain.handle('set-session-limit', (_, minutes) => {
   gameTracker?.setSessionLimit(minutes);
   return { success: true };
 });
+
+ipcMain.handle('start-update-download', () => {
+  updateService?.downloadUpdate();
+  return { success: true };
+});
+
+ipcMain.handle('install-update', () => {
+  updateService?.quitAndInstall();
+  return { success: true };
+});

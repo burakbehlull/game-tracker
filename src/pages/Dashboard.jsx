@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../co
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { Gamepad2, Clock, Calendar, TrendingUp, AlertCircle, Moon, Sun, Coffee, Zap, Brain, ShieldCheck } from 'lucide-react';
 import { api } from '../services/api';
+import { Link } from 'react-router-dom';
 
 // Simplified Chart Component (since we can't install recharts easily)
 const MiniBarChart = ({ data, color = '#3b82f6' }) => {

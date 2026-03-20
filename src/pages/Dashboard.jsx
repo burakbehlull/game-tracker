@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
-import { Gamepad2, Clock, Calendar, TrendingUp, AlertCircle, Moon, Sun, Sunset, Coffee, Zap, Brain, ShieldCheck } from 'lucide-react';
+import { Gamepad2, Clock, Calendar, TrendingUp, AlertCircle, Moon, Sun, Sunset, Coffee, Zap, Brain, ShieldCheck, Target, Trophy, CheckCircle2, Circle, Star } from 'lucide-react';
 import { api } from '../services/api';
 import { Link } from 'react-router-dom';
 
@@ -33,6 +33,7 @@ const MiniBarChart = ({ data, color = '#3b82f6' }) => {
 export default function Dashboard({ user }) {
   const [sessions, setSessions] = useState([]);
   const [stats, setStats] = useState([]);
+  const [challenges, setChallenges] = useState([]);
   const [currentGame, setCurrentGame] = useState(null);
   const [liveDuration, setLiveDuration] = useState(0);
   const [isAdmin, setIsAdmin] = useState(true);
@@ -51,9 +52,9 @@ export default function Dashboard({ user }) {
     loadData();
     checkAdmin();
 
-    // Refresh stats less frequently (every 60s) to save resources
-    const statsInterval = setInterval(loadData, 60000);
-    return () => clearInterval(statsInterval);
+    // Refresh data periodically
+    const dataInterval = setInterval(loadData, 60000);
+    return () => clearInterval(dataInterval);
   }, []);
 
   // Poll for Current Game Status (every 3s)
@@ -115,9 +116,10 @@ export default function Dashboard({ user }) {
 
   const loadData = async () => {
     try {
-      const [sessionsData, statsData] = await Promise.all([
+      const [sessionsData, statsData, challengesData] = await Promise.all([
         api.getSessions(),
-        api.getStats()
+        api.getStats(),
+        api.getChallenges()
       ]);
       
       // Normalize stats by merging same games with different casing
@@ -138,6 +140,7 @@ export default function Dashboard({ user }) {
 
       setSessions(sessionsData);
       setStats(normalizedStats);
+      setChallenges(challengesData || []);
       generateInsights(sessionsData);
       checkHealthIssues(sessionsData);
       setLoading(false);
@@ -395,10 +398,11 @@ export default function Dashboard({ user }) {
           </div>
         )}
 
-        {/* Stats & History Tabs */}
+        {/* Stats & History & Challenges Tabs */}
         <Tabs defaultValue="stats" className="space-y-6">
           <TabsList className="bg-black/20 p-1 rounded-full border border-white/5">
             <TabsTrigger value="stats" className="rounded-full px-6 data-[state=active]:bg-white/10 data-[state=active]:text-white">İstatistikler</TabsTrigger>
+            <TabsTrigger value="challenges" className="rounded-full px-6 data-[state=active]:bg-white/10 data-[state=active]:text-white">Görevler</TabsTrigger>
             <TabsTrigger value="sessions" className="rounded-full px-6 data-[state=active]:bg-white/10 data-[state=active]:text-white">Geçmiş</TabsTrigger>
           </TabsList>
 
@@ -505,6 +509,69 @@ export default function Dashboard({ user }) {
                  </div>
               )}
             </div>
+          </TabsContent>
+
+          <TabsContent value="challenges" className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+             <div className="grid gap-4 md:grid-cols-3">
+                {challenges.map((challenge, idx) => (
+                  <div key={idx} className={`p-6 rounded-[2rem] border transition-all ${
+                    challenge.isCompleted ? 'bg-emerald-500/10 border-emerald-500/20 shadow-lg shadow-emerald-900/10' : 'bg-[#0d1117] border-white/5'
+                  }`}>
+                    <div className="flex justify-between items-start mb-4">
+                       <div className="p-3 rounded-2xl bg-white/5">
+                          <Target className={`w-5 h-5 ${challenge.isCompleted ? 'text-emerald-500' : 'text-blue-400'}`} />
+                       </div>
+                       {challenge.isCompleted ? (
+                         <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-500 text-[10px] font-black uppercase tracking-widest">
+                            <CheckCircle2 className="w-3.5 h-3.5" />
+                            TAMAMLANDI ✅
+                         </div>
+                       ) : (
+                         <div className="text-[10px] font-black text-gray-500 uppercase tracking-widest">AKTİF GÖREV</div>
+                       )}
+                    </div>
+                    
+                    <h3 className={`text-xl font-black mb-2 tracking-tight ${challenge.isCompleted ? 'text-white' : 'text-gray-200'}`}>
+                      {challenge.title}
+                    </h3>
+                    <p className="text-xs text-gray-400 mb-6 font-medium leading-relaxed">
+                      {challenge.description}
+                    </p>
+
+                    <div className="space-y-3">
+                       <div className="flex justify-between items-end">
+                          <div className="text-[10px] font-black text-gray-500 uppercase tracking-widest">İlerleme</div>
+                          <div className="text-xs font-black text-white tabular-nums">
+                            {challenge.type === 'play_time' || challenge.type === 'steady_play' 
+                              ? `${Math.floor(challenge.current)} / ${challenge.goal} DK`
+                              : `${challenge.current} / ${challenge.goal}`
+                            }
+                          </div>
+                       </div>
+                       <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden">
+                          <div 
+                            className={`h-full transition-all duration-1000 ${challenge.isCompleted ? 'bg-emerald-500' : 'bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.5)]'}`}
+                            style={{ width: `${Math.min(100, (challenge.current / challenge.goal) * 100)}%` }}
+                          />
+                       </div>
+                    </div>
+
+                    <div className="mt-6 pt-6 border-t border-white/5 flex items-center justify-between">
+                       <div className="flex items-center gap-2">
+                          <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
+                          <span className="text-xs font-black text-amber-500">{challenge.xpReward} XP</span>
+                       </div>
+                       <Trophy className={`w-4 h-4 ${challenge.isCompleted ? 'text-emerald-500' : 'text-gray-700'}`} />
+                    </div>
+                  </div>
+                ))}
+                {challenges.length === 0 && (
+                   <div className="col-span-full py-20 text-center flex flex-col items-center gap-4">
+                      <Trophy className="w-12 h-12 text-gray-800" />
+                      <div className="text-gray-500 font-bold uppercase tracking-widest">Bugünlük tüm görevler bitti!</div>
+                   </div>
+                )}
+             </div>
           </TabsContent>
 
           <TabsContent value="sessions" className="animate-in fade-in duration-300">

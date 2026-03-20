@@ -63,6 +63,12 @@ export const api = {
     return res.json();
   },
 
+  getChallenges: async () => {
+    const res = await fetch(`${API_URL}/users/challenges`, { headers: getHeaders() });
+    if (!res.ok) throw await res.json();
+    return res.json();
+  },
+
   getUserProfile: async (username) => {
     const res = await fetch(`${API_URL}/users/profile/${username}`, { headers: getHeaders() });
     if (!res.ok) throw await res.json();

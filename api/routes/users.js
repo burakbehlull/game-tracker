@@ -4,12 +4,24 @@ const User = require('../models/User');
 const GameSession = require('../models/GameSession');
 const auth = require('../middleware/auth');
 
+const ChallengeService = require('../services/challengeService');
+
 // Me
 router.get('/me', auth, async (req, res) => {
   const user = await User.findById(req.userId)
-    .select('username email globalName avatar createdAt level xp settings');
+    .select('username email globalName avatar createdAt level xp settings dailyChallenges lastChallengeReset');
 
   res.json(user);
+});
+
+// Challenges
+router.get('/challenges', auth, async (req, res) => {
+  try {
+    const challenges = await ChallengeService.getOrResetChallenges(req.userId);
+    res.json(challenges);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
 // Update

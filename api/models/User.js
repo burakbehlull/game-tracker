@@ -47,6 +47,24 @@ const userSchema = new mongoose.Schema({
     type: Number,
     default: 0
   },
+  // Günlük Görev Sistemi
+  dailyChallenges: [
+    {
+      id: { type: String },
+      type: { type: String }, // 'play_time', 'different_games', 'night_owl', etc.
+      title: { type: String },
+      description: { type: String },
+      goal: { type: Number },
+      current: { type: Number, default: 0 },
+      isCompleted: { type: Boolean, default: false },
+      xpReward: { type: Number },
+      requirements: { type: mongoose.Schema.Types.Mixed } // Ek veriler için
+    }
+  ],
+  lastChallengeReset: {
+    type: Date,
+    default: null
+  },
   // Kişiselleştirme & Ayarlar
   settings: {
     theme: {

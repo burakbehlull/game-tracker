@@ -95,6 +95,22 @@ export default function Profile({ user: currentUser }) {
   };
 
   const formatTotalHours = (seconds) => {
+    if (!seconds && seconds !== 0) return '0 saniye';
+    
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    const s = Math.floor(seconds % 60);
+
+    if (h > 0) {
+      return `${h} saat ${m} dakika`;
+    } else if (m > 0) {
+      return `${m} dakika ${s} saniye`;
+    } else {
+      return `${s} saniye`;
+    }
+  };
+
+   const formatTotalHours2 = (seconds) => {
     const hours = (seconds / 3600).toFixed(1);
     return `${hours} saat`;
   };
@@ -322,7 +338,7 @@ export default function Profile({ user: currentUser }) {
                   <div className="text-[10px] font-bold text-muted-foreground mt-2 uppercase tracking-widest">Oyun</div>
                 </div>
                 <div className="p-6 rounded-2xl bg-black/40 border border-white/5">
-                  <div className="text-4xl font-black text-white">{formatTotalHours(totalTime)}</div>
+                  <div className="text-4xl font-black text-white">{formatTotalHours2(totalTime)}</div>
                   <div className="text-[10px] font-bold text-muted-foreground mt-2 uppercase tracking-widest">Toplam Süre</div>
                 </div>
               </div>

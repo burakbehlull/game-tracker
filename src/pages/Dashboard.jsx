@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
-import { Gamepad2, Clock, Calendar, TrendingUp, AlertCircle, Moon, Sun, Coffee, Zap, Brain, ShieldCheck } from 'lucide-react';
+import { Gamepad2, Clock, Calendar, TrendingUp, AlertCircle, Moon, Sun, Sunset, Coffee, Zap, Brain, ShieldCheck } from 'lucide-react';
 import { api } from '../services/api';
 import { Link } from 'react-router-dom';
 
@@ -190,16 +190,20 @@ export default function Dashboard({ user }) {
   };
 
   const formatDuration = (seconds) => {
-    if (!seconds && seconds !== 0) return '0 sn';
+    if (!seconds && seconds !== 0) return '0 saniye';
     
     const h = Math.floor(seconds / 3600);
     const m = Math.floor((seconds % 3600) / 60);
     const s = Math.floor(seconds % 60);
 
     const parts = [];
-    if (h > 0) parts.push(`${h} sa`);
-    if (m > 0) parts.push(`${m} dk`);
-    if (s > 0 || parts.length === 0) parts.push(`${s} sn`); // Always show seconds
+    if (h > 0) {
+      parts.push(`${h} saat`);
+      if (m > 0) parts.push(`${m} dakika`);
+    } else {
+      if (m > 0) parts.push(`${m} dakika`);
+      if (s > 0 || parts.length === 0) parts.push(`${s} saniye`);
+    }
 
     return parts.join(' ');
   };
@@ -223,8 +227,14 @@ export default function Dashboard({ user }) {
         {/* Header */}
         <div className="flex flex-col md:flex-row justify-between items-end mb-8 gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-white tracking-tight">
-              Hoş Geldiniz, <span className="text-primary">{user?.username}</span>
+            <h1 className="text-3xl font-bold text-white tracking-tight flex items-center gap-2">
+              {(() => {
+                const hour = new Date().getHours();
+                if (hour >= 6 && hour < 12) return <><Sun className="w-8 h-8 text-amber-400" /> Günaydın</>;
+                if (hour >= 12 && hour < 13) return <><Sun className="w-8 h-8 text-yellow-400" /> İyi Günler</>;
+                if (hour >= 13 && hour < 23) return <><Sunset className="w-8 h-8 text-orange-400" /> İyi Akşamlar</>;
+                return <><Moon className="w-8 h-8 text-blue-400" /> İyi Geceler</>;
+              })()}, <span className="text-primary">{user?.username}</span>
             </h1>
             <p className="text-gray-400 mt-1">
               Oyun aktiviteleriniz takip ediliyor.
@@ -398,34 +408,47 @@ export default function Dashboard({ user }) {
                 ]} color="#3b82f6" />
               </div>
 
-               {/* Day/Night Dist Card */}
+               {/* Time Distribution Card */}
                <div className="p-6 rounded-[2rem] border border-white/5 bg-[#0d1117]">
                  <h3 className="text-sm font-bold text-white uppercase tracking-widest flex items-center gap-2 mb-6">
                     <TrendingUp className="w-4 h-4 text-emerald-500" />
                     Zaman Dağılımı
                  </h3>
-                 <div className="space-y-6">
-                    <div>
-                       <div className="flex justify-between text-[10px] font-black uppercase text-gray-500 mb-2"> 
-                         <span className="flex items-center gap-1"><Sun className="w-3 h-3" /> Gündüz</span>
-                         <span>%{Math.round((sessions.filter(s=>!s.isNightSession).length / (sessions.length || 1)) * 100)}</span>
-                       </div>
-                       <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
-                          <div className="h-full bg-emerald-500" style={{ width: `${(sessions.filter(s=>!s.isNightSession).length / (sessions.length || 1)) * 100}%` }} />
-                       </div>
-                    </div>
-                    <div>
-                       <div className="flex justify-between text-[10px] font-black uppercase text-gray-500 mb-2"> 
-                         <span className="flex items-center gap-1"><Moon className="w-3 h-3" /> Gece</span>
-                         <span>%{Math.round((sessions.filter(s=>s.isNightSession).length / (sessions.length || 1)) * 100)}</span>
-                       </div>
-                       <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
-                          <div className="h-full bg-blue-500" style={{ width: `${(sessions.filter(s=>s.isNightSession).length / (sessions.length || 1)) * 100}%` }} />
-                       </div>
-                    </div>
+                 <div className="space-y-4">
+                    {(() => {
+                      const total = sessions.length || 1;
+                      const stats = [
+                        { label: 'Sabah', hMin: 6, hMax: 12, color: 'bg-amber-500', icon: <Sun className="w-3 h-3" /> },
+                        { label: 'Gündüz', hMin: 12, hMax: 13, color: 'bg-yellow-400', icon: <Sun className="w-3 h-3" /> },
+                        { label: 'Akşam', hMin: 13, hMax: 22, color: 'bg-orange-500', icon: <Sunset className="w-3 h-3" /> },
+                        { label: 'Gece', hMin: 22, hMax: 6, color: 'bg-blue-500', icon: <Moon className="w-3 h-3" />, isGece: true }
+                      ];
+
+                      return stats.map((time, idx) => {
+                        const count = sessions.filter(s => {
+                          const h = s.startHour;
+                          if (time.isGece) return h >= 22 || h < 6;
+                          return h >= time.hMin && h < time.hMax;
+                        }).length;
+                        const pct = Math.round((count / total) * 100);
+
+                        return (
+                          <div key={idx}>
+                             <div className="flex justify-between text-[10px] font-black uppercase text-gray-500 mb-1.5"> 
+                               <span className="flex items-center gap-1">{time.icon} {time.label}</span>
+                               <span>%{pct}</span>
+                             </div>
+                             <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
+                                <div className={`h-full ${time.color}`} style={{ width: `${pct}%` }} />
+                             </div>
+                          </div>
+                        );
+                      });
+                    })()}
                  </div>
                </div>
             </div>
+
 
             <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
               {stats.map((stat, index) => (

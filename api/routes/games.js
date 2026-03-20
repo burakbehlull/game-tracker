@@ -18,7 +18,7 @@ router.post('/start', auth, async (req, res) => {
     const now = new Date();
     const startHour = now.getHours();
     const dayOfWeek = now.getDay();
-    const isNightSession = startHour >= 0 && startHour <= 5;
+    const isNightSession = startHour >= 23 || startHour <= 5;
 
     const session = new GameSession({
       userId: req.userId,

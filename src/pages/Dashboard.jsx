@@ -119,8 +119,25 @@ export default function Dashboard({ user }) {
         api.getSessions(),
         api.getStats()
       ]);
+      
+      // Normalize stats by merging same games with different casing
+      const normalizedStats = statsData.reduce((acc, stat) => {
+        const name = stat._id.toLowerCase();
+        const existing = acc.find(s => s._id.toLowerCase() === name);
+        if (existing) {
+          existing.totalTime += stat.totalTime;
+          existing.sessionCount += stat.sessionCount;
+          if (new Date(stat.lastPlayed) > new Date(existing.lastPlayed)) {
+            existing.lastPlayed = stat.lastPlayed;
+          }
+        } else {
+          acc.push({ ...stat });
+        }
+        return acc;
+      }, []);
+
       setSessions(sessionsData);
-      setStats(statsData);
+      setStats(normalizedStats);
       generateInsights(sessionsData);
       checkHealthIssues(sessionsData);
       setLoading(false);
@@ -163,7 +180,7 @@ export default function Dashboard({ user }) {
     const now = new Date();
     
     // Geç saat uyarısı
-    if (now.getHours() >= 0 && now.getHours() <= 4) {
+    if (now.getHours() >= 23 || now.getHours() <= 5) {
       alerts.push({
         type: 'warning',
         title: 'Gece Geç Oldu',
@@ -426,7 +443,7 @@ export default function Dashboard({ user }) {
 
                       return stats.map((time, idx) => {
                         const count = sessions.filter(s => {
-                          const h = s.startHour;
+                          const h = s.startHour !== undefined ? s.startHour : new Date(s.startTime).getHours();
                           if (time.isGece) return h >= 22 || h < 6;
                           return h >= time.hMin && h < time.hMax;
                         }).length;

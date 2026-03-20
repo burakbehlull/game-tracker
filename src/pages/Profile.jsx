@@ -288,13 +288,13 @@ export default function Profile({ user: currentUser }) {
                     <div className="flex items-center gap-6">
                       {/* Game Art Placeholder */}
                       <div className="relative shrink-0 w-36 h-24 rounded-lg bg-black border border-white/5 flex items-center justify-center text-center p-4">
-                        <span className="text-xs font-black text-gray-700 uppercase tracking-tighter lowercase">{stat._id}</span>
+                        <span className="text-xs font-black text-gray-700 uppercase tracking-tighter">{stat._id}</span>
                       </div>
  
                       {/* Info */}
                       <div className="flex-1 flex items-center justify-between">
                         <div>
-                          <h3 className="font-black text-2xl text-white group-hover:text-blue-400 transition-colors mb-4 lowercase">
+                          <h3 className="font-black text-2xl text-white group-hover:text-blue-400 transition-colors mb-4">
                             {stat._id}
                           </h3>
                           <div className="flex items-center gap-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground">

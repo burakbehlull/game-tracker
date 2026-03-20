@@ -29,9 +29,14 @@ app.use('/api/users', userRoutes);
 const PORT = process.env.PORT || 3000;
 
 function startServer() {
-  return app.listen(PORT, () => {
+  return app.listen(PORT, '0.0.0.0', () => {
     console.log(`Backend Server running on port ${PORT}`);
   });
+}
+
+// Render veya doğrudan node server.js ile çalıştırıldığında başlat
+if (require.main === module) {
+  startServer();
 }
 
 module.exports = startServer;

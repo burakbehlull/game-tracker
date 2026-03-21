@@ -15,6 +15,16 @@
     "dist": "electron-builder"
   },
   "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "electron-log": "^5.4.3",
+    "electron-updater": "^6.6.2",
+    "express": "^5.2.1",
+    "jsonwebtoken": "^9.0.3",
+    "mongoose": "^8.0.0"
+  },
+  "devDependencies": {
     "@radix-ui/react-dialog": "^1.0.5",
     "@radix-ui/react-dropdown-menu": "^2.0.6",
     "@radix-ui/react-label": "^2.0.2",
@@ -23,32 +33,22 @@
     "@radix-ui/react-switch": "^1.0.3",
     "@radix-ui/react-tabs": "^1.0.4",
     "@radix-ui/react-toast": "^1.1.5",
-    "bcryptjs": "^2.4.3",
-    "class-variance-authority": "^0.7.0",
-    "clsx": "^2.0.0",
-    "cors": "^2.8.5",
-    "dotenv": "^17.2.3",
-    "electron-log": "^5.4.3",
-    "electron-updater": "^6.6.2",
-    "express": "^5.2.1",
-    "js-cookie": "^3.0.5",
-    "jsonwebtoken": "^9.0.3",
-    "lucide-react": "^0.294.0",
-    "mongoose": "^8.0.0",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "react-router-dom": "^6.20.0",
-    "tailwind-merge": "^2.1.0"
-  },
-  "devDependencies": {
     "@types/react": "^18.2.43",
     "@types/react-dom": "^18.2.17",
     "@vitejs/plugin-react": "^4.2.1",
     "autoprefixer": "^10.4.16",
+    "class-variance-authority": "^0.7.0",
+    "clsx": "^2.0.0",
     "concurrently": "^8.2.2",
     "electron": "^27.0.0",
     "electron-builder": "24.13.3",
+    "js-cookie": "^3.0.5",
+    "lucide-react": "^0.294.0",
     "postcss": "^8.4.32",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^6.20.0",
+    "tailwind-merge": "^2.1.0",
     "tailwindcss": "^3.3.6",
     "vite": "^5.0.8",
     "vite-plugin-electron": "^0.15.5",
@@ -59,7 +59,7 @@
     "productName": "Game Tracker",
     "asar": true,
     "directories": {
-      "output": "dist/build"
+      "output": "release"
     },
     "publish": [
       {
@@ -72,7 +72,9 @@
       "dist/**/*",
       "electron/**/*",
       "api/**/*",
-      "package.json"
+      "package.json",
+      "!dist/build/**/*",
+      "!dist/assets/**/*.map"
     ],
     "extraResources": [
       "./.env"

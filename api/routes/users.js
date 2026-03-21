@@ -73,4 +73,19 @@ router.get('/profile/:username', async (req, res) => {
   res.json({ user, stats });
 });
 
+// Search for users
+router.get('/search', async (req, res) => {
+  const { q } = req.query;
+  try {
+    const filter = q ? { username: { $regex: q, $options: 'i' } } : {};
+    const users = await User.find(filter)
+      .select('username globalName avatar createdAt level xp')
+      .sort({ xp: -1 })
+      .limit(20);
+    res.json(users);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 module.exports = router;

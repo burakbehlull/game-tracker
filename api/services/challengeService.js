@@ -133,6 +133,7 @@ class ChallengeService {
           user.level = Math.floor(user.xp / 1000) + 1;
         }
         updated = true;
+        user.markModified('dailyChallenges');
       }
     }
 

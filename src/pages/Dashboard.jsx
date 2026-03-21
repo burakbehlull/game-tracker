@@ -46,6 +46,12 @@ export default function Dashboard({ user }) {
     icon: <Brain className="w-4 h-4 text-purple-400" />
   });
   const [healthAlerts, setHealthAlerts] = useState([]);
+  const [activeUser, setActiveUser] = useState(user);
+
+  // Sync with prop if it changes
+  useEffect(() => {
+    setActiveUser(user);
+  }, [user]);
 
   // Initial Data Load
   useEffect(() => {
@@ -116,10 +122,11 @@ export default function Dashboard({ user }) {
 
   const loadData = async () => {
     try {
-      const [sessionsData, statsData, challengesData] = await Promise.all([
+      const [sessionsData, statsData, challengesData, userData] = await Promise.all([
         api.getSessions(),
         api.getStats(),
-        api.getChallenges()
+        api.getChallenges(),
+        api.getCurrentUser()
       ]);
       
       // Normalize stats by merging same games with different casing
@@ -141,6 +148,7 @@ export default function Dashboard({ user }) {
       setSessions(sessionsData);
       setStats(normalizedStats);
       setChallenges(challengesData || []);
+      setActiveUser(userData);
       generateInsights(sessionsData);
       checkHealthIssues(sessionsData);
       setLoading(false);
@@ -262,18 +270,18 @@ export default function Dashboard({ user }) {
           </div>
           
           <div className="flex items-center gap-4">
-            {user && (
+            {activeUser && (
               <div className="flex flex-col items-end">
                 <div className="flex items-center gap-2 mb-1">
-                  <span className="text-[10px] font-black text-blue-400 uppercase tracking-widest">Level {user.level || 1}</span>
+                  <span className="text-[10px] font-black text-blue-400 uppercase tracking-widest">Level {activeUser.level || 1}</span>
                   <div className="w-32 h-1.5 bg-white/5 rounded-full overflow-hidden border border-white/5">
                     <div 
                       className="h-full bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.5)] transition-all duration-1000" 
-                      style={{ width: `${(user.xp % 1000) / 10}%` }}
+                      style={{ width: `${(activeUser.xp % 1000) / 10}%` }}
                     />
                   </div>
                 </div>
-                <span className="text-[9px] text-gray-500 font-bold uppercase">{user.xp || 0} XP</span>
+                <span className="text-[9px] text-gray-500 font-bold uppercase">{activeUser.xp || 0} XP</span>
               </div>
             )}
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 text-xs font-medium">

@@ -107,16 +107,34 @@ export default function Discover() {
                       className="w-full h-full rounded-full object-cover"
                     />
                   </div>
-                  <div className="min-w-0">
-                    <h3 className="font-bold text-lg text-white group-hover:text-primary truncate transition-colors">
-                      {user.username}
-                    </h3>
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <span className="flex items-center gap-1">
-                        <Monitor className="w-3 h-3" /> Gamer
-                      </span>
-                      <span>•</span>
-                      <span>Katılım: {new Date(user.createdAt).getFullYear()}</span>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center justify-between gap-2">
+                      <h3 className="font-bold text-lg text-white group-hover:text-primary truncate transition-colors">
+                        {user.username}
+                      </h3>
+                      <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-primary/10 border border-primary/20">
+                        <span className="text-[10px] font-bold text-primary uppercase tracking-wider">Level</span>
+                        <span className="text-sm font-black text-white">{user.level || 1}</span>
+                      </div>
+                    </div>
+                    
+                    <div className="mt-2 space-y-2">
+                      {/* XP Progress Bar */}
+                      <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
+                        <div 
+                          className="h-full bg-primary transition-all duration-1000 shadow-[0_0_10px_rgba(var(--primary-rgb),0.5)]"
+                          style={{ width: `${(user.xp % 1000) / 10}%` }}
+                        />
+                      </div>
+                      
+                      <div className="flex items-center justify-between text-[11px] text-muted-foreground font-medium">
+                        <span className="flex items-center gap-1">
+                          <Monitor className="w-3 h-3 text-primary/70" /> {user.xp || 0} XP
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Gamepad2 className="w-3 h-3 text-primary/70" /> {new Date(user.createdAt).getFullYear()}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </div>

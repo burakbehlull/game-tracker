@@ -13,9 +13,12 @@ if (process.env.NODE_ENV !== 'production') {
   dotenv.config({ path: envPath });
 }
 
+const DiscordService = require('./discordService');
+
 class GameTracker {
   constructor() {
     this.processMonitor = new ProcessMonitor();
+    this.discordService = new DiscordService();
     this.currentSession = null;
     this.authToken = null;
     this.checkInterval = null;
@@ -51,12 +54,17 @@ class GameTracker {
     }
   }
 
-  stop() {
+  async stop() {
     if (this.checkInterval) {
       clearInterval(this.checkInterval);
       this.checkInterval = null;
     }
     this.isTracking = false;
+    
+    if (this.discordService) {
+      await this.discordService.destroy();
+    }
+
     // Attempt to close any open session explicitly
     return this.endSession(); 
   }
@@ -154,6 +162,11 @@ class GameTracker {
         processName: game.processName, // Crucial for taskkill
         startTime: new Date(data.startTime)
       };
+      
+      if (this.discordService) {
+        this.discordService.updateActivity(game.gameName);
+      }
+
       log.info(`[GameTracker] Session started: ${data.sessionId} (Process: ${game.processName})`);
     } catch (err) {
       log.error('Failed to start session:', err);
@@ -178,7 +191,10 @@ class GameTracker {
       if (!res) {
         log.error('Failed to end session: No response');
       }
-      
+      if (this.discordService) {
+        this.discordService.clearActivity();
+      }
+
       this.currentSession = null;
     } catch (err) {
       log.error('Failed to end session:', err);

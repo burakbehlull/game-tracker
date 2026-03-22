@@ -67,6 +67,9 @@ app.whenReady().then(() => {
   
   try {
     gameTracker.start();
+    if (gameTracker.discordService) {
+      gameTracker.discordService.connect();
+    }
     log.info('GameTracker service started.');
   } catch (e) {
     log.error('Error starting GameTracker:', e);

@@ -26,28 +26,40 @@ router.get('/challenges', auth, async (req, res) => {
 
 // Update
 router.put('/me', auth, async (req, res) => {
-  const { username, globalName, settings } = req.body;
-
-  if (username && username.length < 3) {
-    return res.status(400).json({ error: 'Kullanıcı adı en az 3 karakter' });
-  }
+  const { username, globalName, email, password, settings } = req.body;
 
   try {
-    const updateData = {};
-    if (username) updateData.username = username;
-    if (globalName) updateData.globalName = globalName;
-    if (settings) updateData.settings = settings;
+    const user = await User.findById(req.userId);
+    if (!user) return res.status(404).json({ error: 'Kullanıcı bulunamadı' });
 
-    const user = await User.findByIdAndUpdate(
-      req.userId,
-      { $set: updateData },
-      { new: true, runValidators: true }
-    ).select('username globalName avatar level xp settings');
+    if (username) {
+      if (username.length < 3) return res.status(400).json({ error: 'Kullanıcı adı en az 3 karakter olmalı' });
+      user.username = username;
+    }
+    
+    if (globalName !== undefined) user.globalName = globalName;
+    if (email !== undefined) user.email = email;
+    
+    if (password) {
+      if (password.length < 6) return res.status(400).json({ error: 'Şifre en az 6 karakter olmalı' });
+      user.password = password;
+    }
 
-    res.json(user);
+    if (settings && typeof settings === 'object') {
+      Object.keys(settings).forEach(key => {
+        user.set(`settings.${key}`, settings[key]);
+      });
+    }
+
+    await user.save();
+
+    const responseUser = user.toObject();
+    delete responseUser.password;
+    
+    res.json(responseUser);
   } catch (e) {
     if (e.code === 11000) {
-      return res.status(400).json({ error: 'Username kullanılıyor' });
+      return res.status(400).json({ error: 'Bu kullanıcı adı veya e-posta zaten kullanımda' });
     }
     res.status(500).json({ error: e.message });
   }
@@ -89,3 +101,4 @@ router.get('/search', async (req, res) => {
 });
 
 module.exports = router;
+""

@@ -75,6 +75,10 @@ const userSchema = new mongoose.Schema({
       type: String,
       default: 'default'
     },
+    discordRPCEnabled: {
+      type: Boolean,
+      default: true
+    },
     // Akıllı Zamanlayıcı Ayarları
     timer: {
       globalLimitMinutes: {

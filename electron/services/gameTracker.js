@@ -23,6 +23,7 @@ class GameTracker {
     this.authToken = null;
     this.checkInterval = null;
     this.isTracking = false;
+    this.discordRPCEnabled = true; // Default to true as requested
     // Hardcoded fallback because internal server listens on 3000
     this.apiUrl = process.env.VITE_API_URL || 'http://localhost:3000/api'; 
     
@@ -32,6 +33,23 @@ class GameTracker {
   setAuthToken(token) {
     this.authToken = token;
     log.info('Auth token updated in GameTracker');
+  }
+
+  setDiscordRPC(enabled) {
+    this.discordRPCEnabled = enabled;
+    log.info(`[GameTracker] Discord RPC ${enabled ? 'enabled' : 'disabled'}`);
+    
+    if (this.discordService) {
+      if (enabled) {
+        this.discordService.connect().then(() => {
+          if (this.currentSession) {
+             this.discordService.updateActivity(this.currentSession.gameName);
+          }
+        });
+      } else {
+        this.discordService.clearActivity();
+      }
+    }
   }
 
   start() {
@@ -163,7 +181,7 @@ class GameTracker {
         startTime: new Date(data.startTime)
       };
       
-      if (this.discordService) {
+      if (this.discordService && this.discordRPCEnabled) {
         this.discordService.updateActivity(game.gameName);
       }
 

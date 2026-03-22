@@ -135,6 +135,11 @@ ipcMain.handle('logout', () => {
   return { success: true };
 });
 
+ipcMain.handle('set-discord-rpc', (_, enabled) => {
+  gameTracker?.setDiscordRPC(enabled);
+  return { success: true };
+});
+
 ipcMain.handle('get-current-game', async () => {
   return gameTracker?.getCurrentSession() ?? null;
 });

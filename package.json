@@ -58,6 +58,7 @@
   "build": {
     "appId": "com.gametracker.app",
     "productName": "Game Tracker",
+    "icon": "public/icon.ico",
     "asar": true,
     "directories": {
       "output": "release"
@@ -82,6 +83,7 @@
     ],
     "win": {
       "target": "nsis",
+      "icon": "public/icon.ico",
       "signAndEditExecutable": false
     },
     "mac": {

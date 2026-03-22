@@ -63,8 +63,9 @@ class DiscordService {
 
     try {
       const activity = {
-        details: `Playing ${gameName}`,
-        state: 'with Game Tracker',
+        details: `Playing ${gameName.toUpperCase()}`,
+        // state: 'with Game Tracker',
+        // state: 'thegametracker.vercel.app',
         startTimestamp: Date.now(),
         largeImageKey: 'app_icon', // You need to upload this to Discord Developer Portal
         largeImageText: 'Game Tracker',

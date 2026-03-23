@@ -157,8 +157,14 @@ export default function Profile({ user: currentUser }) {
   };
 
   const getGameImage = (gameName) => {
-    // Return null to show the placeholder as in the image
-    return null; 
+    if (!gameName) return null;
+    
+    // Normalize name for filename (lowercase, spaces to underscores)
+    const fileName = gameName.toLowerCase().replace(/\s+/g, '_');
+    
+    // Check for common extensions - in a real app you might have a map, 
+    // but here we'll assume they follow a pattern or just try to load
+    return `./assets/games/${fileName}_banner.jpg`;
   };
 
   if (loading) {
@@ -321,9 +327,28 @@ export default function Profile({ user: currentUser }) {
                     className="group relative overflow-hidden rounded-2xl border border-white/5 bg-[#0d1117] p-5 transition-all duration-300 hover:bg-[#161b22]"
                   >
                     <div className="flex items-center gap-6">
-                      {/* Game Art Placeholder */}
-                      <div className="relative shrink-0 w-36 h-24 rounded-lg bg-black border border-white/5 flex items-center justify-center text-center p-4">
-                        <span className="text-xs font-black text-gray-700 uppercase tracking-tighter">{stat._id}</span>
+                      {/* Game Art */}
+                      <div className="relative shrink-0 w-40 h-24 rounded-xl bg-[#0d1117] overflow-hidden border border-white/5 shadow-2xl transition-all duration-500 group-hover:border-primary/20 group-hover:shadow-primary/5">
+                        {getGameImage(stat._id) ? (
+                            <img 
+                                src={getGameImage(stat._id)} 
+                                alt={stat._id}
+                                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                                onError={(e) => {
+                                    e.target.style.display = 'none';
+                                    e.target.nextSibling.style.display = 'flex';
+                                }}
+                            />
+                        ) : null}
+                        <div className={cn(
+                            "absolute inset-0 flex items-center justify-center p-4 bg-[#0d1117] text-center",
+                            getGameImage(stat._id) ? "hidden" : "flex"
+                        )}>
+                            <span className="text-[10px] font-black text-gray-700 uppercase tracking-tighter leading-tight">{stat._id}</span>
+                        </div>
+                        {getGameImage(stat._id) && (
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                        )}
                       </div>
  
                       {/* Info */}

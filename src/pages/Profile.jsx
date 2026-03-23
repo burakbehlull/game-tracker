@@ -292,9 +292,9 @@ export default function Profile({ user: currentUser }) {
                       </div>
  
                       {/* Info */}
-                      <div className="flex-1 flex items-center justify-between">
-                        <div>
-                          <h3 className="font-black text-2xl text-white group-hover:text-blue-400 transition-colors mb-4">
+                      <div className="flex-1 flex items-center justify-between min-w-0">
+                        <div className="min-w-0">
+                          <h3 className="font-black text-2xl text-white group-hover:text-blue-400 transition-colors mb-4 truncate max-w-full">
                             {stat._id}
                           </h3>
                           <div className="flex items-center gap-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground">
@@ -310,7 +310,7 @@ export default function Profile({ user: currentUser }) {
                         </div>
                         
                         <div className="text-right">
-                          <span className="text-3xl font-black text-white">
+                          <span className="text-2xl font-black text-white">
                             {formatTotalHours(stat.totalTime)}
                           </span>
                         </div>

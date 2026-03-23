@@ -4,6 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs'
 import { Gamepad2, Clock, Calendar, TrendingUp, AlertCircle, Moon, Sun, Sunset, Coffee, Zap, Brain, ShieldCheck, Target, Trophy, CheckCircle2, Circle, Star } from 'lucide-react';
 import { api } from '../services/api';
 import { Link } from 'react-router-dom';
+import { cn } from '../lib/utils';
 
 // Simplified Chart Component (since we can't install recharts easily)
 const MiniBarChart = ({ data, color = '#3b82f6' }) => {
@@ -143,7 +144,11 @@ export default function Dashboard({ user }) {
           acc.push({ ...stat });
         }
         return acc;
-      }, []);
+      }, []).sort((a, b) => {
+        const dateA = a.lastPlayed ? new Date(a.lastPlayed) : new Date(0);
+        const dateB = b.lastPlayed ? new Date(b.lastPlayed) : new Date(0);
+        return dateB - dateA;
+      });
 
       setSessions(sessionsData);
       setStats(normalizedStats);
@@ -367,8 +372,12 @@ export default function Dashboard({ user }) {
               </div>
               
               <div className="flex flex-col md:flex-row gap-12 items-center">
-                 <div className="flex-1 text-center md:text-left">
-                    <div className="text-5xl md:text-8xl font-black text-white mb-4 tracking-tighter uppercase truncate max-w-full drop-shadow-[0_10px_30px_rgba(0,0,0,0.5)]">
+                  <div className="flex-1 text-center md:text-left min-w-0">
+                    <div className={cn(
+                      "font-black text-white mb-4 tracking-tighter uppercase truncate drop-shadow-[0_10px_30px_rgba(0,0,0,0.5)] transition-all duration-300",
+                      currentGame.gameName.length <= 9 ? "text-5xl md:text-8xl" : 
+                      currentGame.gameName.length <= 15 ? "text-4xl md:text-6xl" : "text-3xl md:text-5xl"
+                    )}>
                       {currentGame.gameName}
                     </div>
                     <div className="flex items-center gap-3 justify-center md:justify-start">
@@ -378,7 +387,7 @@ export default function Dashboard({ user }) {
                     </div>
                  </div>
                  
-                  <div className="flex gap-6 items-center">
+                  <div className="flex gap-6 items-center shrink-0">
                     <div className="px-10 py-7 rounded-[2rem] bg-black/40 border border-white/5 min-w-[180px] text-center backdrop-blur-xl group-hover:border-white/10 transition-all shadow-2xl">
                        <div className="text-[10px] text-gray-500 mb-2 font-black uppercase tracking-[0.2em]">Geçen Süre</div>
                        <div className="text-4xl font-black text-white tabular-nums tracking-tighter drop-shadow-md">{formatDuration(liveDuration)}</div>

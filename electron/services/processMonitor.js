@@ -37,7 +37,7 @@ class ProcessMonitor {
       'Red Dead Redemption 1': ['RDR.exe', 'RDR1.exe'],
       'Dark Souls I': ['DarkSouls.exe', 'DarkSoulsRemastered.exe'],
       'Dark Souls II': ['DarkSoulsII.exe'],
-      'Dark Souls III': ['DarkSoulsIII.exe'],      
+      'Dark Souls III': ['DarkSoulsIII.exe'],
       'Alan Wake': ['AlanWake.exe', 'AlanWake2.exe', 'AlanWake-Win64-Shipping.exe'],
       'Outlast': ['Outlast.exe'],
       'Outlast 2': ['Outlast2.exe'],
@@ -45,7 +45,7 @@ class ProcessMonitor {
       'Left 4 Dead 1': ['left4dead.exe'],
       'Left 4 Dead 2': ['left4dead2.exe'],
       'Gta Vice City': ['gta-vc.exe', 'GTAVC.exe'],
-      'Gta San Andreas': ['gta_sa.exe', 'GTASA.exe'],
+      'Gta San Andreas': ['gta_sa.exe', 'GTASA.exe', 'gta-sa.exe'],
       'Gta 3': ['gta3.exe'],
       'Gta 4': ['GTAIV.exe', 'PlayGTAIV.exe'],
       'The forest': ['TheForest.exe'],
@@ -85,10 +85,10 @@ class ProcessMonitor {
     // CMD: Get processes, select Name and Path, output as JSON.
     // We use -Compress to minimize size, and -Depth 1.
     const cmd = `powershell -NoProfile -Command "Get-Process | Select-Object Name, Path | ConvertTo-Json -Depth 1 -Compress"`;
-    
+
     // Increase maxBuffer to 10MB to handle many processes
     const { stdout } = await execAsync(cmd, { maxBuffer: 10 * 1024 * 1024 });
-    
+
     if (!stdout || !stdout.trim()) return new Set();
 
     let processList = [];
@@ -108,7 +108,7 @@ class ProcessMonitor {
       if (p.Name) {
         runningExes.add(this.normalize(p.Name + '.exe'));
       }
-      
+
       // 2. Add full binary name from Path if available
       if (p.Path) {
         const winBasename = path.win32.basename(p.Path);
@@ -138,7 +138,7 @@ class ProcessMonitor {
 
   async getRunningGameProcess() {
     const runningProcesses = await this.getRunningProcesses();
-    
+
     // log.info(`Scanned ${runningProcesses.size} processes`);
 
     for (const [gameName, exeList] of Object.entries(this.gameProcesses)) {

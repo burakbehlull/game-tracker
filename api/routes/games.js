@@ -165,7 +165,7 @@ router.get('/stats', auth, async (req, res) => {
         lastPlayed: { $max: '$endTime' }
       }
     },
-    { $sort: { totalTime: -1 } }
+    { $sort: { lastPlayed: -1 } }
   ]);
 
   res.json(stats);

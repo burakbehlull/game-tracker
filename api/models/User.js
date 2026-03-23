@@ -94,6 +94,17 @@ const userSchema = new mongoose.Schema({
         type: Boolean,
         default: false
       }
+    },
+    // Gizlilik Ayarları
+    privacy: {
+      disabledTrackingGames: {
+        type: [String],
+        default: []
+      },
+      hiddenGames: {
+        type: [String],
+        default: []
+      }
     }
   }
 });

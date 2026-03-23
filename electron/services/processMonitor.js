@@ -26,9 +26,9 @@ class ProcessMonitor {
       'Dota 2': ['dota2.exe'],
       'Rocket League': ['RocketLeague.exe'],
       'Overwatch 2': ['Overwatch.exe'],
-      'the sims 4': ['TS4_x64.exe', 'TS4.exe'],
-      'rust': ['RustClient.exe'],
-      'genshin impact': ['GenshinImpact.exe', 'YuanShen.exe'],
+      'The Sims 4': ['TS4_x64.exe', 'TS4.exe'],
+      'Rust': ['RustClient.exe'],
+      'Genshin Impact': ['GenshinImpact.exe', 'YuanShen.exe'],
       'Cyberpunk 2077': ['Cyberpunk2077.exe'],
       'Baldurs Gate 3': ['bg3.exe', 'bg3_dx11.exe'],
       'Pubg': ['TslGame.exe'],
@@ -46,13 +46,14 @@ class ProcessMonitor {
       'Left 4 Dead 2': ['left4dead2.exe'],
       'Gta Vice City': ['gta-vc.exe', 'GTAVC.exe'],
       'Gta San Andreas': ['gta_sa.exe', 'GTASA.exe', 'gta-sa.exe'],
-      'Gta 3': ['gta3.exe'],
-      'Gta 4': ['GTAIV.exe', 'PlayGTAIV.exe'],
-      'The forest': ['TheForest.exe'],
+      'Gta III': ['gta3.exe'],
+      'Gta IV': ['GTAIV.exe', 'PlayGTAIV.exe'],
+      'The Forest': ['TheForest.exe'],
       'Business Tour': ['BusinessTour.exe'],
       'Half Life 1': ['hl.exe'],
       'Half Life 2': ['hl2.exe'],
-      'Elden Ring': ['eldenring.exe']
+      'Elden Ring': ['eldenring.exe'],
+      'Fivem': ['Fivem.exe']
     };
   }
 

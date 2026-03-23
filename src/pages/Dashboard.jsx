@@ -223,7 +223,7 @@ export default function Dashboard({ user }) {
   };
 
   const formatDuration = (seconds) => {
-    if (!seconds && seconds !== 0) return '0 saniye';
+    if (!seconds && seconds !== 0) return '0s';
     
     const h = Math.floor(seconds / 3600);
     const m = Math.floor((seconds % 3600) / 60);
@@ -231,11 +231,11 @@ export default function Dashboard({ user }) {
 
     const parts = [];
     if (h > 0) {
-      parts.push(`${h} saat`);
-      if (m > 0) parts.push(`${m} dakika`);
+      parts.push(`${h} sa`);
+      if (m > 0) parts.push(`${m} dk`);
     } else {
-      if (m > 0) parts.push(`${m} dakika`);
-      if (s > 0 || parts.length === 0) parts.push(`${s} saniye`);
+      if (m > 0) parts.push(`${m} dk`);
+      if (s > 0 || parts.length === 0) parts.push(`${s} sn`);
     }
 
     return parts.join(' ');

@@ -25,6 +25,7 @@ class GameTracker {
     this.isTracking = false;
     this.discordRPCEnabled = true; // Default to true as requested
     this.healthNotificationsEnabled = true; // Default to true
+    this.disabledTrackingGames = []; // New field
     // Hardcoded fallback because internal server listens on 3000
     this.apiUrl = process.env.VITE_API_URL || 'http://localhost:3000/api'; 
     
@@ -34,6 +35,11 @@ class GameTracker {
   setHealthNotifications(enabled) {
     this.healthNotificationsEnabled = enabled;
     log.info(`[GameTracker] Health Notifications ${enabled ? 'enabled' : 'disabled'}`);
+  }
+
+  setDisabledTrackingGames(games) {
+    this.disabledTrackingGames = Array.isArray(games) ? games : [];
+    log.info(`[GameTracker] Disabled tracking games: ${this.disabledTrackingGames.join(', ')}`);
   }
 
   setAuthToken(token) {
@@ -120,6 +126,10 @@ class GameTracker {
       } else {
         // No active session
         if (runningGame) {
+          if (this.disabledTrackingGames.includes(runningGame.gameName)) {
+            // log.info(`[GameTracker] Skipping ${runningGame.gameName} as it is disabled for tracking.`);
+            return;
+          }
           await this.startSession(runningGame);
         }
       }

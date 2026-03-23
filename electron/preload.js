@@ -16,6 +16,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   setSessionLimit: (minutes) => ipcRenderer.invoke('set-session-limit', minutes),
   setDiscordRPC: (enabled) => ipcRenderer.invoke('set-discord-rpc', enabled),
   setHealthNotifications: (enabled) => ipcRenderer.invoke('set-health-notifications', enabled),
+  setUserSettings: (settings) => ipcRenderer.invoke('set-user-settings', settings),
+  getSupportedGames: () => ipcRenderer.invoke('get-supported-games'),
 
   // Window Controls
   minimizeWindow: () => ipcRenderer.invoke('minimize-window'),

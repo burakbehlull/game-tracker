@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { User, Monitor, Bell, Check, X, AlertCircle, Shield, Lock, CreditCard, ChevronRight } from 'lucide-react';
+import { User, Monitor, Bell, Check, X, AlertCircle, Shield, Lock, CreditCard, ChevronRight, Eye, EyeOff, ShieldAlert, Fingerprint, Search } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Switch } from '../components/ui/switch';
 import { Input } from '../components/ui/input';
@@ -111,7 +111,58 @@ export default function SettingsPage({ user: currentUser }) {
   const menuItems = [
     { id: 'profile', icon: User, label: 'Kullanıcı Ayarları', sublabel: 'Profil ve Güvenlik' },
     { id: 'app', icon: Monitor, label: 'Uygulama Ayarları', sublabel: 'Discord ve Bildirimler' },
+    { id: 'privacy', icon: ShieldAlert, label: 'Gizlilik ve Veri', sublabel: 'Uygulama İzlemeyi Yönet' },
   ];
+
+  const [supportedGames, setSupportedGames] = useState([]);
+  const [searchTerm, setSearchTerm] = useState('');
+
+  useEffect(() => {
+    if (activeTab === 'privacy' && window.electronAPI) {
+       window.electronAPI.getSupportedGames().then(setSupportedGames);
+    }
+  }, [activeTab]);
+
+  const handleToggleTracking = async (gameName) => {
+    const isCurrentlyDisabled = user?.settings?.privacy?.disabledTrackingGames?.includes(gameName);
+    const updatedDisabledList = isCurrentlyDisabled 
+       ? user?.settings?.privacy?.disabledTrackingGames?.filter(g => g !== gameName)
+       : [...(user?.settings?.privacy?.disabledTrackingGames || []), gameName];
+    
+    // Optimistic Update
+    const previousUser = { ...user };
+    setUser(prev => ({
+       ...prev,
+       settings: { 
+         ...prev.settings, 
+         privacy: { 
+           ...(prev.settings?.privacy || {}), 
+           disabledTrackingGames: updatedDisabledList 
+         } 
+       }
+    }));
+
+    try {
+       const updatedUser = await api.updateProfile({ 
+          settings: { 
+             privacy: { 
+                ...(user.settings?.privacy || {}), 
+                disabledTrackingGames: updatedDisabledList 
+             } 
+          } 
+       });
+       setUser(updatedUser);
+       if (window.electronAPI) {
+          window.electronAPI.setUserSettings(updatedUser.settings);
+       }
+    } catch (err) {
+       console.error('İzleme ayarı güncellenemedi:', err);
+       setError('Ayar güncellenirken hata oluştu');
+       setUser(previousUser);
+    }
+  };
+
+  const filteredGames = supportedGames.filter(g => g.toLowerCase().includes(searchTerm.toLowerCase()));
 
   return (
     <div className="max-w-6xl mx-auto">
@@ -346,6 +397,95 @@ export default function SettingsPage({ user: currentUser }) {
                    </div>
                 </div>
               </div>
+            </div>
+          )}
+
+          {activeTab === 'privacy' && (
+            <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
+               <div className="rounded-[2rem] border border-white/5 bg-[#0d1117] p-8">
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
+                      <div className="flex items-center gap-3">
+                          <div className="p-2 rounded-xl bg-purple-500/10 text-purple-400">
+                              <ShieldAlert className="w-5 h-5" />
+                          </div>
+                          <h1 className="text-lg font-black text-white uppercase tracking-tight">Gizlilik Dashboard</h1>
+                      </div>
+                      <div className="relative">
+                          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+                          <Input 
+                             placeholder="Oyun ara..." 
+                             className="pl-10 h-10 w-full md:w-64 bg-black/40 border-white/10 rounded-xl text-sm focus-visible:ring-purple-500"
+                             value={searchTerm}
+                             onChange={(e) => setSearchTerm(e.target.value)}
+                          />
+                      </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+                      {filteredGames.length > 0 ? (
+                        filteredGames.map((game) => {
+                          const isDisabled = user?.settings?.privacy?.disabledTrackingGames?.includes(game);
+                          return (
+                            <div key={game} className="flex items-center justify-between p-4 bg-white/[0.02] border border-white/5 rounded-2xl hover:border-white/10 transition-colors group">
+                                <div className="flex items-center gap-4">
+                                   <div className={cn("p-2 rounded-xl transition-colors", isDisabled ? "bg-red-500/10 text-red-500" : "bg-emerald-500/10 text-emerald-500")}>
+                                      {isDisabled ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                   </div>
+                                   <div>
+                                      <div className="text-sm font-bold text-gray-200">{game}</div>
+                                      <div className="text-[10px] text-gray-500 font-medium uppercase tracking-widest">{isDisabled ? 'İzleme Kapalı' : 'İzleniyor'}</div>
+                                   </div>
+                                </div>
+                                <Button 
+                                  size="sm" 
+                                  variant="ghost" 
+                                  onClick={() => handleToggleTracking(game)}
+                                  className={cn("text-[10px] font-black uppercase tracking-widest px-3", isDisabled ? "text-emerald-500 hover:text-emerald-400 hover:bg-emerald-500/10" : "text-red-500 hover:text-red-400 hover:bg-red-500/10")}
+                                >
+                                   {isDisabled ? 'İzlemeyi Aç' : 'İzlemeyi Kapat'}
+                                </Button>
+                            </div>
+                          );
+                        })
+                      ) : (
+                        <div className="col-span-full py-12 text-center text-gray-500 font-bold uppercase tracking-widest text-xs">Oyun bulunamadı</div>
+                      )}
+                  </div>
+               </div>
+
+               <div className="rounded-[2rem] border border-white/5 bg-[#0d1117] overflow-hidden">
+                  <div className="p-8 border-b border-white/5 bg-gradient-to-r from-purple-500/5 to-blue-500/5">
+                      <div className="flex items-center gap-3 mb-2">
+                         <Fingerprint className="w-5 h-5 text-primary" />
+                         <h3 className="text-sm font-black text-white uppercase tracking-widest">Gizlilik Taahhüdü</h3>
+                      </div>
+                      <p className="text-xs text-gray-400 leading-relaxed font-medium">Bu uygulama sadece yukarıda listelenen oyunların yürütülebilir dosyalarını (.exe) işlem listesinden kontrol eder. Tarayıcı geçmişinize, şahsi dosyalarınıza veya parolanıza kesinlikle erişmez. Tüm veri toplama işlemleri sizin kontrolünüzdedir.</p>
+                  </div>
+                  <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-8">
+                      <div>
+                          <div className="text-[10px] font-black text-emerald-500 uppercase tracking-[0.2em] mb-3">Neler İzleniyor?</div>
+                          <ul className="space-y-3">
+                              {['Çalışan Oyunun Adı', 'Oyun Süresi', 'Başlatılma Saati'].map(item => (
+                                <li key={item} className="flex items-center gap-3 text-xs text-gray-400 font-bold tracking-tight">
+                                   <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                                   {item}
+                                </li>
+                              ))}
+                          </ul>
+                      </div>
+                      <div>
+                          <div className="text-[10px] font-black text-red-500 uppercase tracking-[0.2em] mb-3">Neler İzlenmiyor?</div>
+                          <ul className="space-y-3">
+                              {['Gözatma Geçmişi', 'Şahsi Belgeler', 'Ekran Görüntüsü'].map(item => (
+                                <li key={item} className="flex items-center gap-3 text-xs text-gray-400 font-bold tracking-tight">
+                                   <div className="w-1.5 h-1.5 rounded-full bg-red-500" />
+                                   {item}
+                                </li>
+                              ))}
+                          </ul>
+                      </div>
+                  </div>
+               </div>
             </div>
           )}
         </div>

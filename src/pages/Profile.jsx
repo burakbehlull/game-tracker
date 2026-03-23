@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { Settings, MessageSquare, Award, Monitor, Clock, Trophy, Zap, Star } from 'lucide-react';
+import { Settings, MessageSquare, Award, Monitor, Clock, Trophy, Zap, Star, Eye, EyeOff } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { Button } from '../components/ui/button';
 import { api } from '../services/api';
@@ -92,6 +92,41 @@ export default function Profile({ user: currentUser }) {
     setStats(statsData);
     const total = statsData.reduce((sum, stat) => sum + stat.totalTime, 0);
     setTotalTime(total);
+  };
+
+  const handleToggleHideGame = async (gameName) => {
+    if (!isOwnProfile) return;
+    
+    const isCurrentlyHidden = profileUser?.settings?.privacy?.hiddenGames?.includes(gameName);
+    const updatedHiddenList = isCurrentlyHidden 
+       ? profileUser?.settings?.privacy?.hiddenGames?.filter(g => g !== gameName)
+       : [...(profileUser?.settings?.privacy?.hiddenGames || []), gameName];
+    
+    // Simple state update - better for single page
+    setProfileUser(prev => ({
+       ...prev,
+       settings: { 
+         ...prev.settings, 
+         privacy: { 
+           ...(prev.settings?.[ 'privacy' ] || {}), 
+           hiddenGames: updatedHiddenList 
+         } 
+       }
+    }));
+
+    try {
+       await api.updateProfile({ 
+          settings: { 
+             privacy: { 
+                ...(profileUser.settings?.[ 'privacy' ] || {}), 
+                hiddenGames: updatedHiddenList 
+             } 
+          } 
+       });
+       // we don't reload to preserve UX, state is already updated
+    } catch (err) {
+       console.error('Gizlilik ayarı güncellenemedi:', err);
+    }
   };
 
   const formatTotalHours = (seconds) => {
@@ -292,29 +327,56 @@ export default function Profile({ user: currentUser }) {
                       </div>
  
                       {/* Info */}
-                      <div className="flex-1 flex items-center justify-between min-w-0">
-                        <div className="min-w-0">
-                          <h3 className="font-black text-2xl text-white group-hover:text-blue-400 transition-colors mb-4 truncate max-w-full">
-                            {stat._id}
-                          </h3>
-                          <div className="flex items-center gap-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground">
-                            <span className="flex items-center gap-1.5 bg-yellow-500/10 text-yellow-500 px-2 py-1 rounded-md border border-yellow-500/10">
-                              <Trophy className="w-3 h-3" /> 
-                              1/1 Başarım
+                        <div className="flex-1 flex items-center justify-between min-w-0">
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-3 mb-4">
+                               <h3 className="font-black text-2xl text-white group-hover:text-blue-400 transition-colors truncate max-w-full">
+                                 {stat._id}
+                               </h3>
+                               {profileUser?.settings?.privacy?.hiddenGames?.includes(stat._id) && (
+                                  <span className="flex items-center gap-1.5 bg-red-500/10 text-red-500 px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest border border-red-500/10">
+                                     <EyeOff className="w-2 h-2" /> Gizli
+                                  </span>
+                               )}
+                            </div>
+                            <div className="flex items-center gap-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+                              <span className="flex items-center gap-1.5 bg-yellow-500/10 text-yellow-500 px-2 py-1 rounded-md border border-yellow-500/10">
+                                <Trophy className="w-3 h-3" /> 
+                                1/1 Başarım
+                              </span>
+                              <span className="flex items-center gap-1.5 ">
+                                <Clock className="w-3 h-3" />
+                                Son: {formatLastPlayed(stat.lastPlayed)}
+                              </span>
+                            </div>
+                          </div>
+                          
+                          <div className="flex flex-col items-end gap-3">
+                            <span className="text-2xl font-black text-white">
+                              {formatTotalHours(stat.totalTime)}
                             </span>
-                            <span className="flex items-center gap-1.5 ">
-                              <Clock className="w-3 h-3" />
-                              Son: {formatLastPlayed(stat.lastPlayed)}
-                            </span>
+                            {isOwnProfile && (
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                onClick={() => handleToggleHideGame(stat._id)}
+                                title={profileUser?.settings?.privacy?.hiddenGames?.includes(stat._id) ? 'Oyunu Görünür Yap' : 'Oyunu Gizli Yap'}
+                                className={cn(
+                                  "h-8 px-4 rounded-lg font-black text-[9px] uppercase tracking-widest border border-white/5",
+                                  profileUser?.settings?.privacy?.hiddenGames?.includes(stat._id) 
+                                    ? "text-emerald-500 hover:text-emerald-400" 
+                                    : "text-gray-500 hover:text-white"
+                                )}
+                              >
+                                {profileUser?.settings?.privacy?.hiddenGames?.includes(stat._id) ? (
+                                  <><Eye className="w-3.5 h-3.5 mr-2" /> Görünür Yap</>
+                                ) : (
+                                  <><EyeOff className="w-3.5 h-3.5 mr-2" /> Gizli Yap</>
+                                )}
+                              </Button>
+                            )}
                           </div>
                         </div>
-                        
-                        <div className="text-right">
-                          <span className="text-2xl font-black text-white">
-                            {formatTotalHours(stat.totalTime)}
-                          </span>
-                        </div>
-                      </div>
                     </div>
                   </div>
                 ))

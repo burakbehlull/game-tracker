@@ -68,16 +68,24 @@ router.put('/me', auth, async (req, res) => {
 // Public profile
 router.get('/profile/:username', async (req, res) => {
   const user = await User.findOne({ username: req.params.username })
-    .select('username globalName avatar createdAt');
+    .select('username globalName avatar createdAt settings.privacy.hiddenGames');
 
   if (!user) return res.status(404).json({ error: 'User not found' });
 
+  const hiddenGames = user.settings?.privacy?.hiddenGames || [];
+
   const stats = await GameSession.aggregate([
-    { $match: { userId: user._id } },
+    { 
+      $match: { 
+        userId: user._id,
+        gameName: { $nin: hiddenGames }
+      } 
+    },
     {
       $group: {
         _id: '$gameName',
-        totalTime: { $sum: '$duration' }
+        totalTime: { $sum: '$duration' },
+        lastPlayed: { $max: '$endTime' }
       }
     }
   ]);

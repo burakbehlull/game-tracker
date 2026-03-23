@@ -37,6 +37,9 @@ function App() {
         // 2. Then validate with backend
         const currentUser = await api.getCurrentUser();
         setUser(currentUser);
+        if (window.electronAPI && currentUser?.settings) {
+          window.electronAPI.setUserSettings(currentUser.settings).catch(err => console.error('Failed to sync settings:', err));
+        }
       }
     } catch (error) {
       console.error('Auth verification failed:', error);

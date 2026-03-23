@@ -140,6 +140,19 @@ ipcMain.handle('set-discord-rpc', (_, enabled) => {
   return { success: true };
 });
 
+ipcMain.handle('set-user-settings', (_, settings) => {
+  gameTracker?.setDisabledTrackingGames(settings?.privacy?.disabledTrackingGames);
+  return { success: true };
+});
+
+ipcMain.handle('get-user-settings', async () => {
+  return gameTracker?.getUserSettings() ?? null;
+});
+
+ipcMain.handle('get-supported-games', async () => {
+  return Object.keys(gameTracker?.processMonitor?.gameProcesses || {});
+});
+
 ipcMain.handle('get-current-game', async () => {
   return gameTracker?.getCurrentSession() ?? null;
 });

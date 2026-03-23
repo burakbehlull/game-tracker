@@ -24,10 +24,16 @@ class GameTracker {
     this.checkInterval = null;
     this.isTracking = false;
     this.discordRPCEnabled = true; // Default to true as requested
+    this.healthNotificationsEnabled = true; // Default to true
     // Hardcoded fallback because internal server listens on 3000
     this.apiUrl = process.env.VITE_API_URL || 'http://localhost:3000/api'; 
     
     log.info(`[GameTracker] Initialized. API URL: ${this.apiUrl}`);
+  }
+
+  setHealthNotifications(enabled) {
+    this.healthNotificationsEnabled = enabled;
+    log.info(`[GameTracker] Health Notifications ${enabled ? 'enabled' : 'disabled'}`);
   }
 
   setAuthToken(token) {
@@ -134,6 +140,9 @@ class GameTracker {
     }
 
     if (!this.currentSession || !this.authToken) return;
+
+    // Check health notifications once a minute along with heartbeat
+    this.checkHealthNotifications();
 
     try {
       const res = await fetch(`${this.apiUrl}/games/${this.currentSession.id}/heartbeat`, {
@@ -249,7 +258,51 @@ class GameTracker {
   sendWarning(title, body) {
     log.info(`[GameTracker Notification] ${title}: ${body}`);
     if (Notification.isSupported()) {
-      new Notification({ title, body }).show();
+      new Notification({ 
+        title, 
+        body,
+        icon: path.join(__dirname, '../../public/icon.png')
+      }).show();
+    }
+  }
+
+  async checkHealthNotifications() {
+    if (!this.healthNotificationsEnabled || !this.currentSession) return;
+
+    const now = new Date();
+    const elapsedMs = now.getTime() - this.currentSession.startTime.getTime();
+    const elapsedMinutes = Math.floor(elapsedMs / 60000);
+
+    // 1. "2 saattir ara vermedin" (120 minutes)
+    if (elapsedMinutes >= 120 && !this.currentSession.healthWarned2h) {
+      this.sendWarning('Sağlık Sistemi', '2 saattir ara vermedin');
+      this.currentSession.healthWarned2h = true;
+    }
+
+    // 2. "Bugün 6 saat oynadın, mola önerilir" (360 minutes)
+    if (!this.currentSession.healthWarned6hTotal) {
+      try {
+        const res = await fetch(`${this.apiUrl}/games/today`, {
+          headers: { 'Authorization': `Bearer ${this.authToken}` }
+        });
+        if (res.ok) {
+          const { totalTime } = await res.json(); // totalTime is in seconds
+          const totalMinutes = Math.floor(totalTime / 60);
+          if (totalMinutes >= 360) {
+            this.sendWarning('Sağlık Sistemi', 'Bugün 6 saat oynadın, mola önerilir');
+            this.currentSession.healthWarned6hTotal = true;
+          }
+        }
+      } catch (err) {
+        log.error('Failed to check today total playtime:', err);
+      }
+    }
+
+    // 3. "Gece 03:00 – uyku zamanı"
+    const currentHour = now.getHours();
+    if (currentHour === 3 && !this.currentSession.healthWarnedSleep) {
+      this.sendWarning('Sağlık Sistemi', 'Gece 03:00 – uyku zamanı');
+      this.currentSession.healthWarnedSleep = true;
     }
   }
 

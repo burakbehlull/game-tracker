@@ -171,4 +171,31 @@ router.get('/stats', auth, async (req, res) => {
   res.json(stats);
 });
 
+// Today's total playtime
+router.get('/today', auth, async (req, res) => {
+  try {
+    const startOfDay = new Date();
+    startOfDay.setHours(0, 0, 0, 0);
+
+    const stats = await GameSession.aggregate([
+      { 
+        $match: { 
+          userId: new mongoose.Types.ObjectId(req.userId),
+          startTime: { $gte: startOfDay }
+        } 
+      },
+      {
+        $group: {
+          _id: null,
+          totalTime: { $sum: '$duration' }
+        }
+      }
+    ]);
+
+    res.json({ totalTime: stats.length > 0 ? stats[0].totalTime : 0 });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 module.exports = router;

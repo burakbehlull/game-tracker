@@ -144,6 +144,11 @@ ipcMain.handle('get-current-game', async () => {
   return gameTracker?.getCurrentSession() ?? null;
 });
 
+ipcMain.handle('set-health-notifications', (_, enabled) => {
+  gameTracker?.setHealthNotifications(enabled);
+  return { success: true };
+});
+
 ipcMain.handle('check-admin-status', async () => {
   if (!gameTracker || !gameTracker.processMonitor) return false;
   return await gameTracker.processMonitor.isAdmin();

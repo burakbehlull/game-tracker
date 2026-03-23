@@ -15,6 +15,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   checkAdminStatus: () => ipcRenderer.invoke('check-admin-status'),
   setSessionLimit: (minutes) => ipcRenderer.invoke('set-session-limit', minutes),
   setDiscordRPC: (enabled) => ipcRenderer.invoke('set-discord-rpc', enabled),
+  setHealthNotifications: (enabled) => ipcRenderer.invoke('set-health-notifications', enabled),
 
   // Window Controls
   minimizeWindow: () => ipcRenderer.invoke('minimize-window'),

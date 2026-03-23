@@ -82,6 +82,32 @@ export default function SettingsPage({ user: currentUser }) {
     }
   };
 
+  const handleToggleHealth = async (enabled) => {
+    // Optimistic Update
+    const previousUser = { ...user };
+    setUser(prev => ({
+      ...prev,
+      settings: { ...prev.settings, healthNotificationsEnabled: enabled }
+    }));
+
+    try {
+      const updatedUser = await api.updateProfile({ 
+        settings: { healthNotificationsEnabled: enabled } 
+      });
+      
+      setUser(updatedUser);
+      
+      if (window.electronAPI) {
+        window.electronAPI.setHealthNotifications(enabled);
+      }
+    } catch (err) {
+      console.error('Sağlık bildirimi ayarı güncellenemedi:', err);
+      setError('Ayar güncellenirken hata oluştu');
+      // Rollback
+      setUser(previousUser);
+    }
+  };
+
   const menuItems = [
     { id: 'profile', icon: User, label: 'Kullanıcı Ayarları', sublabel: 'Profil ve Güvenlik' },
     { id: 'app', icon: Monitor, label: 'Uygulama Ayarları', sublabel: 'Discord ve Bildirimler' },
@@ -275,6 +301,24 @@ export default function SettingsPage({ user: currentUser }) {
                       checked={user?.settings?.discordRPCEnabled !== false} 
                       onCheckedChange={(checked) => handleToggleDiscord(checked)}
                       className="data-[state=checked]:bg-blue-500"
+                    />
+                  </div>
+                  
+                  <div className="flex items-center justify-between p-6 bg-white/[0.02] border border-white/5 rounded-[2rem] hover:border-white/10 transition-colors">
+                    <div className="flex gap-4 items-center">
+                        <div className="p-3 rounded-2xl bg-emerald-500/10 text-emerald-500">
+                             <Shield className="w-6 h-6" />
+                        </div>
+                        <div>
+                          <div className="text-base font-black text-white tracking-tight">Sağlık Sistemi Bildirimleri</div>
+                          <p className="text-xs text-gray-500 font-medium">Uzun süreli oyun seansları için sağlık uyarıları al.</p>
+                        </div>
+                    </div>
+                    <Switch 
+                      id="health-notifications"
+                      checked={user?.settings?.healthNotificationsEnabled !== false} 
+                      onCheckedChange={(checked) => handleToggleHealth(checked)}
+                      className="data-[state=checked]:bg-emerald-500"
                     />
                   </div>
                   

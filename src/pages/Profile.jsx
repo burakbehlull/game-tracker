@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { Settings, MessageSquare, Award, Monitor, Clock, Trophy, Zap, Star, Eye, EyeOff } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { Button } from '../components/ui/button';
@@ -164,7 +164,7 @@ export default function Profile({ user: currentUser }) {
     
     // Check for common extensions - in a real app you might have a map, 
     // but here we'll assume they follow a pattern or just try to load
-    return `./assets/games/${fileName}_banner.jpg`;
+    return `/assets/games/${fileName}_banner.jpg`;
   };
 
   if (loading) {
@@ -355,9 +355,11 @@ export default function Profile({ user: currentUser }) {
                         <div className="flex-1 flex items-center justify-between min-w-0">
                           <div className="min-w-0">
                             <div className="flex items-center gap-3 mb-4">
-                               <h3 className="font-black text-2xl text-white group-hover:text-blue-400 transition-colors truncate max-w-full">
-                                 {stat._id}
-                               </h3>
+                               <Link to={`/games/${stat._id}`} className="hover:opacity-80 transition-opacity">
+                                 <h3 className="font-black text-2xl text-white group-hover:text-blue-400 transition-colors truncate max-w-full">
+                                   {stat._id}
+                                 </h3>
+                               </Link>
                                {profileUser?.settings?.privacy?.hiddenGames?.includes(stat._id) && (
                                   <span className="flex items-center gap-1.5 bg-red-500/10 text-red-500 px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest border border-red-500/10">
                                      <EyeOff className="w-2 h-2" /> Gizli

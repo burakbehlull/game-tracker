@@ -73,5 +73,11 @@ export const api = {
     const res = await fetch(`${API_URL}/users/profile/${username}`, { headers: getHeaders() });
     if (!res.ok) throw await res.json();
     return res.json();
+  },
+  
+  getGameDetails: async (gameName) => {
+    const res = await fetch(`${API_URL}/games/details/${encodeURIComponent(gameName)}`, { headers: getHeaders() });
+    if (!res.ok) throw await res.json();
+    return res.json();
   }
 };

@@ -492,7 +492,9 @@ export default function Dashboard({ user }) {
               {stats.map((stat, index) => (
                 <div key={index} className="group rounded-[2rem] border border-white/5 bg-[#0d1117] p-8 hover:border-primary/30 transition-all duration-300 hover:translate-y-[-4px]">
                   <div className="flex justify-between items-start mb-6">
-                     <h3 className="text-2xl font-black text-white capitalize truncate pr-4 drop-shadow-lg">{stat._id}</h3>
+                     <Link to={`/games/${stat._id}`} className="hover:opacity-80 transition-opacity min-w-0 flex-1">
+                        <h3 className="text-2xl font-black text-white capitalize truncate pr-4 drop-shadow-lg transition-colors group-hover:text-primary">{stat._id}</h3>
+                     </Link>
                      <div className="p-2 rounded-xl bg-white/5 text-gray-400 group-hover:text-primary transition-colors">
                         <TrendingUp className="w-5 h-5" />
                      </div>

@@ -198,4 +198,49 @@ router.get('/today', auth, async (req, res) => {
   }
 });
 
+// Game Details & Top Players
+router.get('/details/:gameName', async (req, res) => {
+  try {
+    const { gameName } = req.params;
+
+    // Get top 10 players for this game
+    const stats = await GameSession.aggregate([
+      { $match: { gameName: gameName } },
+      {
+        $group: {
+          _id: '$userId',
+          totalTime: { $sum: '$duration' },
+          lastPlayed: { $max: '$endTime' }
+        }
+      },
+      {
+        $lookup: {
+          from: 'users',
+          localField: '_id',
+          foreignField: '_id',
+          as: 'user'
+        }
+      },
+      { $unwind: '$user' },
+      {
+        $project: {
+          _id: 1,
+          totalTime: 1,
+          lastPlayed: 1,
+          'user.username': 1,
+          'user.globalName': 1,
+          'user.avatar': 1,
+          'user.level': 1
+        }
+      },
+      { $sort: { totalTime: -1 } },
+      { $limit: 10 }
+    ]);
+
+    res.json(stats);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 module.exports = router;

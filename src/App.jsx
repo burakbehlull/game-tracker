@@ -9,6 +9,7 @@ import Dashboard from './pages/Dashboard';
 import Profile from './pages/Profile';
 import Timer from './pages/Timer';
 import Settings from './pages/Settings';
+import GameDetails from './pages/GameDetails';
 import Layout from './components/Layout';
 import { api } from './services/api';
 
@@ -153,6 +154,15 @@ function App() {
                   )
                 }
               />
+              <Route 
+                path="/games/:gameName" 
+                element={
+                  <Layout user={user} onLogout={handleLogout}>
+                    <GameDetails />
+                  </Layout>
+                } 
+              />
+              <Route path="*" element={<Navigate to="/" />} />
             </Routes>
           </Router>
         </div>

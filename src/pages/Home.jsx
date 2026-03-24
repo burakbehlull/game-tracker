@@ -2,18 +2,18 @@ import { Button } from '../components/ui/button';
 import { Card, CardContent } from '../components/ui/card';
 import { Zap, Target, Users, Search, ChevronRight, BarChart3, Shield, Download } from 'lucide-react';
 import { Link } from 'react-router-dom';
-
-
+import { getAssetUrl } from '../lib/assetHelper';
 
 
 export default function Home({ user }) {
   const isWeb = !window.electronAPI;
   const images = {
-    hero: "/assets/hero_banner.png",
-    card1: "/assets/card1.png",
-    card2: "/assets/card2.png",
-    card3: "/assets/card3.png"
+    hero: getAssetUrl('assets/hero_banner.png'),
+    card1: getAssetUrl('assets/card1.png'),
+    card2: getAssetUrl('assets/card2.png'),
+    card3: getAssetUrl('assets/card3.png')
   };
+
 
   return (
     <div className="flex flex-col gap-16 pb-20">

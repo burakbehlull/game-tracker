@@ -4,6 +4,8 @@ import { Settings, MessageSquare, Award, Monitor, Clock, Trophy, Zap, Star, Eye,
 import { cn } from '../lib/utils';
 import { Button } from '../components/ui/button';
 import { api } from '../services/api';
+import { getAssetUrl } from '../lib/assetHelper';
+
 
 export default function Profile({ user: currentUser }) {
   const { username } = useParams();
@@ -164,8 +166,9 @@ export default function Profile({ user: currentUser }) {
     
     // Check for common extensions - in a real app you might have a map, 
     // but here we'll assume they follow a pattern or just try to load
-    return `/assets/games/${fileName}_banner.jpg`;
+    return getAssetUrl(`assets/games/${fileName}_banner.jpg`);
   };
+
 
   if (loading) {
     return (<></>);

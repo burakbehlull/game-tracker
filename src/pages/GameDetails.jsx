@@ -3,6 +3,8 @@ import { useParams, Link } from 'react-router-dom';
 import { Trophy, Clock, Zap, Users, Monitor, ChevronRight } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { api } from '../services/api';
+import { getAssetUrl } from '../lib/assetHelper';
+
 
 export default function GameDetails() {
   const { gameName } = useParams();
@@ -28,8 +30,9 @@ export default function GameDetails() {
   const getGameImage = (name) => {
     if (!name) return null;
     const fileName = name.toLowerCase().replace(/\s+/g, '_');
-    return `/assets/games/${fileName}_banner.jpg`;
+    return getAssetUrl(`assets/games/${fileName}_banner.jpg`);
   };
+
 
   const formatTotalTime = (seconds) => {
     const h = Math.floor(seconds / 3600);

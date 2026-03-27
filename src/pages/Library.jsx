@@ -2,8 +2,9 @@ import { useState, useEffect } from 'react';
 import { Button } from '../components/ui/button';
 import { Card } from '../components/ui/card';
 import { Input } from '../components/ui/input';
-import { Gamepad2, Play, Plus, X, FolderOpen, Loader2, Search } from 'lucide-react';
+import { Gamepad2, Play, Plus, X, FolderOpen, Loader2, Search, Settings } from 'lucide-react';
 import { api } from '../services/api';
+import { getAssetUrl } from '../lib/assetHelper';
 
 export default function Library({ user }) {
   const [library, setLibrary] = useState(user?.library || []);
@@ -18,6 +19,12 @@ export default function Library({ user }) {
     const interval = setInterval(checkCurrentGame, 3000);
     return () => clearInterval(interval);
   }, []);
+
+  const getGameImage = (gameName) => {
+    if (!gameName) return null;
+    const fileName = gameName.toLowerCase().replace(/\s+/g, '_');
+    return getAssetUrl(`assets/games/${fileName}_banner.jpg`);
+  };
 
   const loadSupportedGames = async () => {
     if (window.electronAPI) {
@@ -117,11 +124,24 @@ export default function Library({ user }) {
         ) : (
           library.map((game) => {
             const isPlaying = currentGame?.gameName === game.gameName;
+            const gameImage = getGameImage(game.gameName);
+            
             return (
               <Card key={game.gameName} className="group relative bg-[#0d1117] border border-white/5 rounded-[2rem] overflow-hidden hover:border-primary/50 transition-all duration-300 hover:shadow-2xl hover:shadow-primary/10">
-                <div className="relative aspect-[16/9] bg-secondary/30">
-                  {/* Bu kısımda backendden resim yolu geliyorsa eklenebilir. Şu an placeholder. */}
-                  <div className="absolute inset-0 flex items-center justify-center opacity-20 group-hover:scale-110 transition-transform duration-500">
+                <div className="relative aspect-[16/9] bg-secondary/30 overflow-hidden">
+                  {gameImage && (
+                    <img 
+                      src={gameImage} 
+                      alt={game.gameName}
+                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                      onError={(e) => {
+                        e.target.style.display = 'none';
+                        e.target.nextSibling.style.display = 'flex';
+                      }}
+                    />
+                  )}
+                  
+                  <div className={`absolute inset-0 flex items-center justify-center opacity-20 group-hover:scale-110 transition-transform duration-500 ${gameImage ? 'hidden' : 'flex'}`}>
                     <Gamepad2 className="w-16 h-16" />
                   </div>
                   

@@ -3,7 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { useTheme } from '../contexts/ThemeContext';
 import { Button } from './ui/button';
 import { Switch } from './ui/switch';
-import { Moon, Sun, User, LogOut, Gamepad2, Globe, BarChart3, Download, Clock, Settings, ChevronDown } from 'lucide-react';
+import { Moon, Sun, User, LogOut, Gamepad2, Globe, BarChart3, Download, Clock, Settings, ChevronDown, Library } from 'lucide-react';
 
 const DownloadURL = import.meta.env.VITE_DOWNLOAD_URL;
 
@@ -74,7 +74,7 @@ export default function Layout({ children, user, onLogout }) {
                         variant={location.pathname === '/library' ? 'default' : 'ghost'}
                         className="flex items-center gap-2 h-9 px-3"
                       >
-                        <Download className="h-4 w-4" />
+                        <Library className="h-4 w-4" />
                         <span className="hidden md:inline">Kütüphane</span>
                       </Button>
                     </Link>

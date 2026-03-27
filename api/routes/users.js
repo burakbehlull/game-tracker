@@ -20,7 +20,11 @@ router.get('/challenges', auth, async (req, res) => {
     const challenges = await ChallengeService.getOrResetChallenges(req.userId);
     res.json(challenges);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('[Users API Error]', error);
+    res.status(500).json({ 
+      error: 'İşlem başarısız.', 
+      message: process.env.NODE_ENV === 'development' ? error.message : undefined 
+    });
   }
 });
 
@@ -61,7 +65,10 @@ router.put('/me', auth, async (req, res) => {
     if (e.code === 11000) {
       return res.status(400).json({ error: 'Bu kullanıcı adı veya e-posta zaten kullanımda' });
     }
-    res.status(500).json({ error: e.message });
+    res.status(500).json({ 
+      error: 'İşlem başarısız.', 
+      message: process.env.NODE_ENV === 'development' ? e.message : undefined 
+    });
   }
 });
 
@@ -104,7 +111,11 @@ router.get('/search', async (req, res) => {
       .limit(20);
     res.json(users);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('[Users API Error]', error);
+    res.status(500).json({ 
+      error: 'İşlem başarısız.', 
+      message: process.env.NODE_ENV === 'development' ? error.message : undefined 
+    });
   }
 });
 

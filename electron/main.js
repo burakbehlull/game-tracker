@@ -4,6 +4,7 @@ const log = require('electron-log');
 
 // Setup environment variables
 const isDev = !app.isPackaged;
+process.env.NODE_ENV = isDev ? 'development' : 'production';
 const envPath = isDev 
   ? path.join(__dirname, '../.env') 
   : path.join(process.resourcesPath, '.env');

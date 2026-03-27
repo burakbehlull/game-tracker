@@ -6,16 +6,24 @@ const cors = require('cors');
 const app = express();
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: process.env.NODE_ENV === 'production' ? false : 'http://localhost:5173', // Restrict CORS in dev
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
 app.use(express.json());
 
 // Connect to MongoDB
-mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/gametracker', {
+const mongoUri = process.env.MONGO_URI || 'mongodb://localhost:27017/gametracker';
+mongoose.connect(mongoUri, {
   useNewUrlParser: true,
   useUnifiedTopology: true
 })
 .then(() => console.log('MongoDB connected'))
-.catch(err => console.error('MongoDB connection error:', err));
+.catch(err => {
+  console.error('MongoDB connection error:', err.message);
+  // Fail gracefully if DB is missing
+});
 
 // Routes
 const authRoutes = require('./routes/auth');
@@ -25,6 +33,15 @@ const userRoutes = require('./routes/users');
 app.use('/api/auth', authRoutes);
 app.use('/api/games', gameRoutes);
 app.use('/api/users', userRoutes);
+
+// Global Error Handler
+app.use((err, req, res, next) => {
+  console.error('[API Error]', err.stack);
+  res.status(500).json({ 
+    error: 'İşlem sırasında bir hata oluştu.', 
+    message: process.env.NODE_ENV === 'development' ? err.message : undefined 
+  });
+});
 
 const PORT = process.env.PORT || 3000;
 

@@ -225,16 +225,18 @@ class GameTracker {
         body: JSON.stringify({ sessionId: this.currentSession.id })
       });
 
-      if (!res) {
-        log.error('Failed to end session: No response');
+      if (res && !res.ok) {
+        const text = await res.text();
+        log.error(`[GameTracker] Failed to end session: ${res.status} ${text}`);
       }
+      
       if (this.discordService) {
         this.discordService.clearActivity();
       }
 
       this.currentSession = null;
     } catch (err) {
-      log.error('Failed to end session:', err);
+      log.error('[GameTracker] Error ending session:', err);
     }
   }
 
@@ -327,9 +329,15 @@ class GameTracker {
 
     log.info(`[GameTracker] LIMIT REACHED for ${gameName} (${processName}). Terminating...`);
 
+    // Basic sanitization: only allow alphanumeric, dots, hyphens and underscores
+    if (!/^[a-zA-Z0-9.\-_ ]+$/.test(processName)) {
+      log.error(`[GameTracker] Malicious process name detected: ${processName}`);
+      return;
+    }
+
     exec(`taskkill /F /IM "${processName}"`, (err) => {
       if (err) {
-        log.error(`Failed to kill process ${processName}:`, err);
+        log.error(`[GameTracker] Failed to kill process ${processName}:`, err);
       } else {
         this.sendWarning('Süre Doldu', `${gameName} tanımlanan süre dolduğu için kapatıldı.`);
       }

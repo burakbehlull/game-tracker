@@ -46,7 +46,11 @@ router.post('/start', auth, async (req, res) => {
       startTime: session.startTime
     });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('[Games API Error]', error);
+    res.status(500).json({ 
+      error: 'İşlem başarısız.', 
+      message: process.env.NODE_ENV === 'development' ? error.message : undefined 
+    });
   }
 });
 
@@ -94,7 +98,11 @@ router.post('/end', auth, async (req, res) => {
     await session.save();
     res.json(session);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('[Games API Error]', error);
+    res.status(500).json({ 
+      error: 'İşlem başarısız.', 
+      message: process.env.NODE_ENV === 'development' ? error.message : undefined 
+    });
   }
 });
 
@@ -140,7 +148,11 @@ router.put('/:id/heartbeat', auth, async (req, res) => {
     await session.save();
     res.json({ success: true, duration: session.duration });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('[Games API Error]', error);
+    res.status(500).json({ 
+      error: 'İşlem başarısız.', 
+      message: process.env.NODE_ENV === 'development' ? error.message : undefined 
+    });
   }
 });
 
@@ -194,7 +206,11 @@ router.get('/today', auth, async (req, res) => {
 
     res.json({ totalTime: stats.length > 0 ? stats[0].totalTime : 0 });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('[Games API Error]', error);
+    res.status(500).json({ 
+      error: 'İşlem başarısız.', 
+      message: process.env.NODE_ENV === 'development' ? error.message : undefined 
+    });
   }
 });
 
@@ -239,7 +255,11 @@ router.get('/details/:gameName', async (req, res) => {
 
     res.json(stats);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('[Games API Error]', error);
+    res.status(500).json({ 
+      error: 'İşlem başarısız.', 
+      message: process.env.NODE_ENV === 'development' ? error.message : undefined 
+    });
   }
 });
 

@@ -27,3 +27,13 @@ Game timer helps you enter time while playing a game and turn off your game when
 
 
 <img src="assets/images/timer_page.png" alt="Timer Page" width="600"/>
+
+## Library Page
+The game library detects the game, or you can add and launch it from a single location. It also offers the opportunity to customize games.
+
+<img src="assets/images/library_page.png" alt="Library Page" width="600"/>
+
+## Game Detail Page
+It provides a detailed page for the games, listing who plays them the most and which games are being played.
+
+<img src="assets/images/game_detail_page.png" alt="Library Page" width="600"/>

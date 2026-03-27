@@ -70,7 +70,7 @@ export default function Library({ user }) {
     if (!window.electronAPI) return;
     const res = await window.electronAPI.launchGame(exePath);
     if (!res.success) {
-      alert(res.error);
+      alert(`⚠️ Başlatma Hatası!\n\n${res.error}\n\nİpucu: Eğer oyun korumalıysa (Valorant vb.), lütfen uygulamayı "Yönetici Olarak Çalıştır" diyerek tekrar açın.`);
     }
   };
 

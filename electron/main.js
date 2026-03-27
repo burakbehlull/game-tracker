@@ -199,26 +199,28 @@ ipcMain.handle('select-game-exe', async () => {
 ipcMain.handle('launch-game', async (_, exePath) => {
   if (!exePath) return { success: false, error: 'Dosya yolu bulunamadı.' };
   
-  const { exec } = require('child_process');
+  const { shell } = require('electron');
   const path = require('path');
   
-  // Basic validation
-  if (!exePath.toLowerCase().endsWith('.exe')) {
-    return { success: false, error: 'Geçersiz dosya formatı!' };
-  }
-
-  const dir = path.dirname(exePath);
-  
-  log.info(`Launching game: ${exePath} in ${dir}`);
-  
-  // Use start command on Windows to keep it detached and handle paths with spaces
-  const command = `start "" /D "${dir}" "${exePath}"`;
-  
-  exec(command, (err) => {
-    if (err) {
-      log.error(`Launch error: ${err.message}`);
+  try {
+    log.info(`Attempting Native Open: ${exePath}`);
+    
+    // shell.openPath is the primary recommendation for files
+    let result = await shell.openPath(exePath);
+    
+    // If openPath returns an error string (failure), try openExternal which is even more abstract
+    if (result) {
+      log.warn(`openPath failed (${result}), trying openExternal fallback...`);
+      // Converting path to file URL (handles spaces and special chars)
+      const fileUrl = Buffer.from(path.resolve(exePath)).toString(); // Basic safety
+      await shell.openExternal(`file:///${exePath.replace(/\\/g, '/')}`);
+      result = ''; // Assume success if external didn't throw
     }
-  });
-
-  return { success: true };
+    
+    return { success: !result, error: result };
+  } catch (err) {
+    log.error(`Launch exception: ${err.message}`);
+    // If we're here, it's a structural error
+    return { success: false, error: err.message };
+  }
 });

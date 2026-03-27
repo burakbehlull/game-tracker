@@ -27,6 +27,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Updates
   onUpdateMessage: (callback) => ipcRenderer.on('update-status', (_, data) => callback(data)),
   startUpdateDownload: () => ipcRenderer.invoke('start-update-download'),
-  installUpdate: () => ipcRenderer.invoke('install-update')
+  installUpdate: () => ipcRenderer.invoke('install-update'),
+  
+  // Library Actions
+  selectGameExe: () => ipcRenderer.invoke('select-game-exe'),
+  launchGame: (exePath) => ipcRenderer.invoke('launch-game', exePath)
 });
 

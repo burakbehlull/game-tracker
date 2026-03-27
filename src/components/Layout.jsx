@@ -69,6 +69,15 @@ export default function Layout({ children, user, onLogout }) {
                         <span className="hidden md:inline">Zamanlayıcı</span>
                       </Button>
                     </Link>
+                    <Link to="/library">
+                      <Button 
+                        variant={location.pathname === '/library' ? 'default' : 'ghost'}
+                        className="flex items-center gap-2 h-9 px-3"
+                      >
+                        <Download className="h-4 w-4" />
+                        <span className="hidden md:inline">Kütüphane</span>
+                      </Button>
+                    </Link>
                   </>
                 )}
               </div>

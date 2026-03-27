@@ -182,3 +182,43 @@ ipcMain.handle('install-update', () => {
   updateService?.quitAndInstall();
   return { success: true };
 });
+
+ipcMain.handle('select-game-exe', async () => {
+  const { dialog } = require('electron');
+  const result = await dialog.showOpenDialog(mainWindow, {
+    properties: ['openFile'],
+    filters: [
+      { name: 'Oyun Dosyası', extensions: ['exe'] }
+    ]
+  });
+  
+  if (result.canceled) return null;
+  return result.filePaths[0];
+});
+
+ipcMain.handle('launch-game', async (_, exePath) => {
+  if (!exePath) return { success: false, error: 'Dosya yolu bulunamadı.' };
+  
+  const { exec } = require('child_process');
+  const path = require('path');
+  
+  // Basic validation
+  if (!exePath.toLowerCase().endsWith('.exe')) {
+    return { success: false, error: 'Geçersiz dosya formatı!' };
+  }
+
+  const dir = path.dirname(exePath);
+  
+  log.info(`Launching game: ${exePath} in ${dir}`);
+  
+  // Use start command on Windows to keep it detached and handle paths with spaces
+  const command = `start "" /D "${dir}" "${exePath}"`;
+  
+  exec(command, (err) => {
+    if (err) {
+      log.error(`Launch error: ${err.message}`);
+    }
+  });
+
+  return { success: true };
+});

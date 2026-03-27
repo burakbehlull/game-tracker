@@ -106,7 +106,15 @@ const userSchema = new mongoose.Schema({
         default: []
       }
     }
-  }
+  },
+  // Oyun Kütüphanesi
+  library: [
+    {
+      gameName: { type: String, required: true },
+      exePath: { type: String, default: '' },
+      addedAt: { type: Date, default: Date.now }
+    }
+  ]
 });
 
 // Şifre hashleme

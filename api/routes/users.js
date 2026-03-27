@@ -9,7 +9,7 @@ const ChallengeService = require('../services/challengeService');
 // Me
 router.get('/me', auth, async (req, res) => {
   const user = await User.findById(req.userId)
-    .select('username email globalName avatar createdAt level xp settings dailyChallenges lastChallengeReset');
+    .select('username email globalName avatar createdAt level xp settings dailyChallenges lastChallengeReset library');
 
   res.json(user);
 });
@@ -116,6 +116,58 @@ router.get('/search', async (req, res) => {
       error: 'İşlem başarısız.', 
       message: process.env.NODE_ENV === 'development' ? error.message : undefined 
     });
+  }
+});
+
+// Game Library Methods
+router.post('/library/add', auth, async (req, res) => {
+  const { gameName, exePath } = req.body;
+  try {
+    const user = await User.findById(req.userId);
+    if (!user) return res.status(404).json({ error: 'Kullanıcı bulunamadı' });
+
+    // Check if already in library
+    const exists = user.library.find(g => g.gameName === gameName);
+    if (exists) return res.status(400).json({ error: 'Bu oyun zaten kütüphanende!' });
+
+    user.library.push({ gameName, exePath });
+    await user.save();
+    res.json(user.library);
+  } catch (error) {
+    console.error('[Library API Error]', error);
+    res.status(500).json({ error: 'Oyun eklenemedi.' });
+  }
+});
+
+router.put('/library/update', auth, async (req, res) => {
+  const { gameName, exePath } = req.body;
+  try {
+    const user = await User.findById(req.userId);
+    if (!user) return res.status(404).json({ error: 'Kullanıcı bulunamadı' });
+
+    const game = user.library.find(g => g.gameName === gameName);
+    if (!game) return res.status(404).json({ error: 'Oyun bulunamadı' });
+
+    game.exePath = exePath;
+    await user.save();
+    res.json(user.library);
+  } catch (error) {
+    console.error('[Library API Error]', error);
+    res.status(500).json({ error: 'Güncellenemedi.' });
+  }
+});
+
+router.delete('/library/:gameName', auth, async (req, res) => {
+  try {
+    const user = await User.findById(req.userId);
+    if (!user) return res.status(404).json({ error: 'Kullanıcı bulunamadı' });
+
+    user.library = user.library.filter(g => g.gameName !== req.params.gameName);
+    await user.save();
+    res.json(user.library);
+  } catch (error) {
+    console.error('[Library API Error]', error);
+    res.status(500).json({ error: 'Silinemedi.' });
   }
 });
 

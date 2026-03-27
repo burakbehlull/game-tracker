@@ -79,5 +79,35 @@ export const api = {
     const res = await fetch(`${API_URL}/games/details/${encodeURIComponent(gameName)}`, { headers: getHeaders() });
     if (!res.ok) throw await res.json();
     return res.json();
+  },
+
+  // Library
+  addToLibrary: async (gameName, exePath = '') => {
+    const res = await fetch(`${API_URL}/users/library/add`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify({ gameName, exePath })
+    });
+    if (!res.ok) throw await res.json();
+    return res.json();
+  },
+
+  updateLibraryExe: async (gameName, exePath) => {
+    const res = await fetch(`${API_URL}/users/library/update`, {
+      method: 'PUT',
+      headers: getHeaders(),
+      body: JSON.stringify({ gameName, exePath })
+    });
+    if (!res.ok) throw await res.json();
+    return res.json();
+  },
+
+  removeFromLibrary: async (gameName) => {
+    const res = await fetch(`${API_URL}/users/library/${encodeURIComponent(gameName)}`, {
+      method: 'DELETE',
+      headers: getHeaders()
+    });
+    if (!res.ok) throw await res.json();
+    return res.json();
   }
 };

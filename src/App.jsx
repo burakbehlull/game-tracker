@@ -70,8 +70,37 @@ function App() {
     }
   };
 
+  const isElectron = !!window.electronAPI;
+
   if (loading) {
-    return (<></>);
+    if (!isElectron) return null;
+
+    return (
+      <div className="fixed inset-0 bg-background flex flex-col items-center justify-center z-[9999]">
+        <div className="flex flex-col items-center gap-6 animate-in fade-in zoom-in duration-500">
+          <div className="p-5 rounded-[2rem] bg-primary/10 border border-primary/20 shadow-2xl shadow-primary/20">
+            <svg 
+              xmlns="http://www.w3.org/2000/svg" 
+              width="64" 
+              height="64" 
+              viewBox="0 0 24 24" 
+              fill="none" 
+              stroke="currentColor" 
+              strokeWidth="1.5" 
+              strokeLinecap="round" 
+              strokeLinejoin="round" 
+              className="text-primary animate-pulse"
+            >
+              <line x1="6" x2="10" y1="12" y2="12"/><line x1="8" x2="8" y1="10" y2="14"/><line x1="15" x2="15.01" y1="13" y2="13"/><line x1="18" x2="18.01" y1="11" y2="11"/><rect width="20" height="12" x="2" y="6" rx="2"/>
+            </svg>
+          </div>
+          <div className="flex flex-col items-center gap-2">
+            <h1 className="text-2xl font-black tracking-tighter text-white">GAME TRACKER</h1>
+            <p className="text-sm font-bold text-muted-foreground uppercase tracking-[0.3em] animate-pulse">Uygulama Açılıyor</p>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (

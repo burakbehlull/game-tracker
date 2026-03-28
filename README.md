@@ -10,7 +10,8 @@ The application is not for downloading games; it allows you to take screenshots 
 ## Dashoard Page
 The Dashboard Page allows you to access statistics for the games you've played. The "_Playing_" section is also displayed on this page.
 
-<img src="assets/images/dashboard_page_v1.0.3.png" alt="Dashoard Page" width="600"/>
+<img src="assets/images/dashboard_page_1.png" alt="Dashoard Page" width="600"/>
+<img src="assets/images/dashboard_page_2.png" alt="Dashoard Page" width="600"/>
 
 ## Discover Page
 You can explore and search other players' profiles.

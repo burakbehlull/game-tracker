@@ -82,7 +82,7 @@ const BADGE_DEFINITIONS = {
   'early_adopter': {
     id: 'early_adopter',
     title: 'İlk Kullanıcı',
-    description: 'Şubat 2026\'dan önce katılan efsanevi üye.',
+    description: 'Haziran 2026\'dan önce katılan efsanevi üye.',
     icon: 'Rocket',
     color: 'from-indigo-500 via-purple-500 to-pink-500'
   }
@@ -158,16 +158,18 @@ class BadgeService {
       newBadges.push('iron_will');
     }
 
-    // 12. İlk Kullanıcı (Şubat 2026 öncesi kayıt)
+    // 12. İlk Kullanıcı (Haziran 2026 öncesi kayıt)
     if (!currentBadges.includes('early_adopter')) {
-      const cutOffDate = new Date('2026-02-01');
-      if (user.createdAt < cutOffDate) {
+      const cutOffDate = new Date('2026-06-01');
+      // createdAt yoksa (çok eski hesap) veya belirtilen tarihten önceyse ver
+      if (!user.createdAt || user.createdAt < cutOffDate) {
         newBadges.push('early_adopter');
       }
     }
 
     if (newBadges.length > 0) {
       user.badges = [...currentBadges, ...newBadges];
+      user.markModified('badges'); // Mongoose'a dizinin değiştiğini açıkça söyle
       await user.save();
     }
 

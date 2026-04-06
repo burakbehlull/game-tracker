@@ -14,10 +14,19 @@ router.get('/badges/all', async (req, res) => {
 
 // Me
 router.get('/me', auth, async (req, res) => {
-  const user = await User.findById(req.userId)
-    .select('username email globalName avatar createdAt level xp settings dailyChallenges lastChallengeReset library badges stats');
+  try {
+    // Rozetleri kontrol et
+    const BadgeService = require('../services/badgeService');
+    await BadgeService.checkBadges(req.userId);
 
-  res.json(user);
+    const user = await User.findById(req.userId)
+      .select('username email globalName avatar createdAt level xp settings dailyChallenges lastChallengeReset library badges stats');
+
+    res.json(user);
+  } catch (err) {
+    console.error('[Me API Error]', err);
+    res.status(500).json({ error: 'Kullanıcı bilgileri alınamadı' });
+  }
 });
 
 // Challenges
@@ -80,30 +89,43 @@ router.put('/me', auth, async (req, res) => {
 
 // Public profile
 router.get('/profile/:username', async (req, res) => {
-  const user = await User.findOne({ username: req.params.username })
-    .select('username globalName avatar createdAt level xp badges settings.privacy.hiddenGames');
+  try {
+    const user = await User.findOne({ username: req.params.username })
+      .select('username globalName avatar createdAt level xp badges settings.privacy.hiddenGames');
 
-  if (!user) return res.status(404).json({ error: 'User not found' });
+    if (!user) return res.status(404).json({ error: 'User not found' });
 
-  const hiddenGames = user.settings?.privacy?.hiddenGames || [];
+    // Rozetleri kontrol et (her profil görüntülemede güncel kalsın)
+    const BadgeService = require('../services/badgeService');
+    await BadgeService.checkBadges(user._id);
+    
+    // Güncellenmiş kullanıcıyı tekrar çek
+    const updatedUser = await User.findById(user._id)
+      .select('username globalName avatar createdAt level xp badges settings.privacy.hiddenGames');
 
-  const stats = await GameSession.aggregate([
-    { 
-      $match: { 
-        userId: user._id,
-        gameName: { $nin: hiddenGames }
-      } 
-    },
-    {
-      $group: {
-        _id: '$gameName',
-        totalTime: { $sum: '$duration' },
-        lastPlayed: { $max: '$endTime' }
+    const hiddenGames = updatedUser.settings?.privacy?.hiddenGames || [];
+
+    const stats = await GameSession.aggregate([
+      { 
+        $match: { 
+          userId: updatedUser._id,
+          gameName: { $nin: hiddenGames }
+        } 
+      },
+      {
+        $group: {
+          _id: '$gameName',
+          totalTime: { $sum: '$duration' },
+          lastPlayed: { $max: '$endTime' }
+        }
       }
-    }
-  ]);
+    ]);
 
-  res.json({ user, stats });
+    res.json({ user: updatedUser, stats });
+  } catch (err) {
+    console.error('[Profile API Error]', err);
+    res.status(500).json({ error: 'Profil bilgileri alınamadı' });
+  }
 });
 
 // Search for users

@@ -63,18 +63,19 @@ export default function Profile({ user: currentUser }) {
       if (!targetUsername) return;
       
       const userRes = await api.getUserProfile(targetUsername);
-      setProfileUser(userRes.user || userRes);
+      const userData = userRes.user || userRes;
+      const userStats = userRes.stats || [];
       
-      const statsRes = await api.getUserStats(targetUsername);
-      setStats(statsRes);
+      setProfileUser(userData);
+      setStats(userStats);
       
-      const total = statsRes.reduce((acc, curr) => acc + curr.totalTime, 0);
+      const total = userStats.reduce((acc, curr) => acc + curr.totalTime, 0);
       setTotalTime(total);
 
       const badgesRes = await api.getAllBadges();
-      setAllBadges(badgesRes);
+      setAllBadges(badgesRes || []);
     } catch (err) {
-      console.error(err);
+      console.error('Profil yükleme hatası:', err);
     } finally {
       setLoading(false);
     }
@@ -162,8 +163,26 @@ export default function Profile({ user: currentUser }) {
   };
 
 
-  if (loading) {
-    return (<></>);
+  if (loading && !profileUser) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
+          <p className="text-sm font-black text-muted-foreground uppercase tracking-widest animate-pulse">Profil Yükleniyor</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!profileUser && !loading) {
+     return (
+        <div className="min-h-screen flex items-center justify-center">
+           <div className="text-center">
+              <h2 className="text-2xl font-bold mb-2">Kullanıcı bulunamadı</h2>
+              <Link to="/" className="text-blue-500 hover:underline">Ana sayfaya dön</Link>
+           </div>
+        </div>
+     )
   }
 
   return (
@@ -439,8 +458,7 @@ export default function Profile({ user: currentUser }) {
               </div>
               
               <div className="grid grid-cols-4 gap-4">
-                {allBadges.map((badge) => {
-                  const isEarned = profileUser?.badges?.includes(badge.id);
+                {allBadges.filter(badge => profileUser?.badges?.includes(badge.id)).map((badge) => {
                   const Icon = badgeIcons[badge.icon] || Trophy;
                   
                   return (
@@ -449,25 +467,24 @@ export default function Profile({ user: currentUser }) {
                       title={`${badge.title}: ${badge.description}`}
                       className={cn(
                         "group relative aspect-square rounded-2xl flex items-center justify-center transition-all duration-300",
-                        isEarned 
-                          ? `bg-gradient-to-br ${badge.color} shadow-lg cursor-pointer hover:scale-110 active:scale-95` 
-                          : "bg-white/5 grayscale opacity-40 hover:opacity-60"
+                        `bg-gradient-to-br ${badge.color} shadow-lg cursor-pointer hover:scale-110 active:scale-95`
                       )}
                     >
-                      <Icon className={cn(
-                        "w-7 h-7",
-                        isEarned ? "text-white drop-shadow-md" : "text-gray-500"
-                      )} />
+                      <Icon className="w-7 h-7 text-white drop-shadow-md" />
                       
                       {/* Tooltip on hover */}
                       <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-black/90 border border-white/10 rounded-xl text-[10px] w-32 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity z-50">
                         <div className="font-black text-white mb-1 uppercase tracking-widest">{badge.title}</div>
                         <div className="text-gray-400 font-medium leading-tight">{badge.description}</div>
-                        {!isEarned && <div className="mt-2 text-blue-400 font-black uppercase tracking-tighter">Henüz Kazanılmadı</div>}
                       </div>
                     </div>
                   );
                 })}
+                {(profileUser?.badges?.length || 0) === 0 && (
+                  <div className="col-span-4 py-4 text-center">
+                    <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Henüz rozet kazanılmadı</p>
+                  </div>
+                )}
               </div>
             </div>
 

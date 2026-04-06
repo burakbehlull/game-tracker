@@ -2,9 +2,10 @@ import { useEffect, useMemo, useState, useRef, useCallback, memo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Card } from '../components/ui/card';
 import { Button } from '../components/ui/button';
+import { Input } from '../components/ui/input';
 import { api } from '../services/api';
 import { useWebSocket } from '../contexts/WebSocketContext';
-import { Send, PlusCircle, MessageSquare, AtSign } from 'lucide-react';
+import { Send, PlusCircle, MessageSquare, AtSign, X, Check, Users } from 'lucide-react';
 import { cn } from '../lib/utils';
 
 // --- YARDIMCI FONKSİYONLAR ---
@@ -15,16 +16,104 @@ function getConversationName(conversation, currentUsername) {
   return other?.username || 'DM';
 }
 
+function getAvatarColor(username = '') {
+  const colors = ['bg-red-500', 'bg-blue-500', 'bg-green-500', 'bg-yellow-500', 'bg-purple-500', 'bg-pink-500', 'bg-indigo-500', 'bg-cyan-500'];
+  let hash = 0;
+  for (let i = 0; i < (username || '').length; i++) hash = username.charCodeAt(i) + ((hash << 5) - hash);
+  return colors[Math.abs(hash) % colors.length];
+}
+
+// --- MODAL BİLEŞENİ ---
+const CreateGroupModal = memo(({ isOpen, onClose, friends, onCreate }) => {
+  const [title, setTitle] = useState('');
+  const [selected, setSelected] = useState([]);
+
+  if (!isOpen) return null;
+
+  const toggleSelect = (id) => {
+    setSelected(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (selected.length < 2 || !title.trim()) return;
+    onCreate(title.trim(), selected);
+    setTitle('');
+    setSelected([]);
+    onClose();
+  };
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+      <Card className="w-full max-w-md bg-[#1a1d23] border-white/5 shadow-2xl rounded-[2.5rem] overflow-hidden">
+        <div className="p-6 border-b border-white/5 flex items-center justify-between bg-primary/5">
+          <h2 className="text-xl font-black text-white italic flex items-center gap-3">
+            <Users className="w-6 h-6 text-primary" />
+            GRUP OLUŞTUR
+          </h2>
+          <Button variant="ghost" size="icon" onClick={onClose} className="rounded-xl hover:bg-white/5">
+            <X className="w-5 h-5" />
+          </Button>
+        </div>
+        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+          <div className="space-y-2">
+            <label className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] ml-2">Grup Başlığı</label>
+            <Input 
+              value={title} 
+              onChange={e => setTitle(e.target.value)} 
+              placeholder="Grup ismini yaz..." 
+              className="bg-secondary/20 border-white/5 rounded-2xl h-12 italic"
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] ml-2">Üyeleri Seç (Min. 2)</label>
+            <div className="max-h-48 overflow-y-auto space-y-2 scrollbar-none pr-1">
+              {friends.map(f => (
+                <div 
+                  key={f._id} 
+                  onClick={() => toggleSelect(f._id)}
+                  className={cn(
+                    "flex items-center justify-between p-3 rounded-2xl cursor-pointer transition-all border",
+                    selected.includes(f._id) ? "bg-primary/10 border-primary/20" : "bg-white/5 border-transparent hover:bg-white/10"
+                  )}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className={cn("w-8 h-8 rounded-xl flex items-center justify-center font-bold text-white text-xs", getAvatarColor(f.username))}>
+                      {f.username[0].toUpperCase()}
+                    </div>
+                    <span className="font-bold text-white text-sm">{f.username}</span>
+                  </div>
+                  {selected.includes(f._id) && <Check className="w-4 h-4 text-primary" />}
+                </div>
+              ))}
+            </div>
+          </div>
+          <Button 
+            type="submit" 
+            disabled={selected.length < 2 || !title.trim()} 
+            className="w-full h-14 rounded-2xl bg-primary hover:bg-primary/80 text-white font-black italic tracking-tighter shadow-xl shadow-primary/20"
+          >
+            OLUŞTUR
+          </Button>
+        </form>
+      </Card>
+    </div>
+  );
+});
+
 // --- OPTİMİZE EDİLMİŞ ALT BİLEŞENLER ---
 
-const ConversationsSidebar = memo(({ conversations, activeId, onSelect, currentUsername, friends, onCreateDm }) => (
+const ConversationsSidebar = memo(({ conversations, activeId, onSelect, currentUsername, friends, onCreateDm, onOpenGroupModal }) => (
   <div className="w-80 flex flex-col gap-4 shrink-0">
     <Card className="flex-1 flex flex-col overflow-hidden bg-card border-white/5 rounded-[2rem]">
-      <div className="p-6 border-b border-white/5 bg-primary/5 shrink-0">
+      <div className="p-6 border-b border-white/5 bg-primary/5 shrink-0 flex items-center justify-between">
         <h2 className="text-xl font-black text-white flex items-center gap-3 italic">
           <MessageSquare className="w-6 h-6 text-primary" />
           MESAJLAR
         </h2>
+        <Button variant="ghost" size="icon" onClick={onOpenGroupModal} className="rounded-xl hover:bg-primary/10 text-primary">
+          <PlusCircle className="w-5 h-5" />
+        </Button>
       </div>
       <div className="flex-1 overflow-y-auto p-4 space-y-6 scrollbar-none">
         <div className="space-y-3">
@@ -32,7 +121,7 @@ const ConversationsSidebar = memo(({ conversations, activeId, onSelect, currentU
           <div className="grid grid-cols-4 gap-2">
             {friends.slice(0, 4).map((f) => (
               <button key={f._id} onClick={() => onCreateDm(f._id)} className="aspect-square rounded-2xl bg-secondary/20 hover:bg-primary/20 border border-white/5 flex items-center justify-center transition-colors group">
-                <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center font-bold text-primary group-hover:scale-110 transition-transform">
+                <div className={cn("w-8 h-8 rounded-full flex items-center justify-center font-bold text-white transition-transform group-hover:scale-110", getAvatarColor(f.username))}>
                   {f.username[0].toUpperCase()}
                 </div>
               </button>
@@ -45,7 +134,7 @@ const ConversationsSidebar = memo(({ conversations, activeId, onSelect, currentU
             const isActive = String(conv._id) === String(activeId);
             const name = getConversationName(conv, currentUsername);
             return (
-              <button key={conv._id} onClick={() => onSelect(conv._id)} className={cn("w-full flex items-center gap-4 px-4 py-4 rounded-[1.5rem] transition-colors group", isActive ? "bg-primary text-white" : "bg-secondary/10 text-muted-foreground hover:bg-secondary/20 hover:text-white border border-white/5")}>
+              <button key={conv._id} onClick={() => onSelect(conv._id)} className={cn("w-full flex items-center gap-4 px-4 py-4 rounded-[1.5rem] transition-all group", isActive ? "bg-primary text-white" : "bg-secondary/10 text-muted-foreground hover:bg-secondary/20 hover:text-white border border-white/5")}>
                 <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center font-black text-lg", isActive ? "bg-white/20" : "bg-primary/10 text-primary")}>
                   {name[0].toUpperCase()}
                 </div>
@@ -88,7 +177,7 @@ const MessageItem = memo(({ message, senderName, isMe, showHeader }) => (
   <div className={cn("flex flex-col", isMe ? "items-end" : "items-start", !showHeader && "-mt-6")}>
     {showHeader && (
       <div className={cn("flex items-center gap-3 mb-2 px-1", isMe ? "flex-row-reverse" : "flex-row")}>
-        <div className="w-8 h-8 rounded-xl bg-primary/20 flex items-center justify-center font-bold text-primary text-xs border border-primary/20">{senderName[0].toUpperCase()}</div>
+        <div className={cn("w-8 h-8 rounded-xl bg-primary/20 flex items-center justify-center font-bold text-primary text-xs border border-primary/20", getAvatarColor(senderName))}>{senderName[0].toUpperCase()}</div>
         <span className="font-black text-white text-[11px] uppercase tracking-widest">{senderName}</span>
         <span className="text-[9px] font-bold text-muted-foreground opacity-60">{new Date(message.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
       </div>
@@ -128,8 +217,20 @@ export default function Chat({ user }) {
   const [friends, setFriends] = useState([]);
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [presence, setPresence] = useState({});
+  const [isGroupModalOpen, setIsGroupModalOpen] = useState(false);
 
   const activeConversation = useMemo(() => conversations.find((c) => String(c._id) === String(conversationId)) || null, [conversations, conversationId]);
+
+  const otherParticipant = useMemo(() => {
+    if (!activeConversation || activeConversation.type === 'group') return null;
+    return activeConversation.participants?.find(p => String(p._id || p) !== String(user?.id || user?._id));
+  }, [activeConversation, user]);
+
+  const activePresence = useMemo(() => {
+    if (!otherParticipant) return null;
+    return presence[String(otherParticipant._id || otherParticipant)];
+  }, [otherParticipant, presence]);
 
   const loadConversations = useCallback(async (shouldSelectDefault = false) => {
     const data = await api.getConversations();
@@ -147,9 +248,19 @@ export default function Chat({ user }) {
     } finally { setLoading(false); }
   }, []);
 
-  useEffect(() => { loadConversations(true); api.getFriends().then(setFriends); }, []);
+  const loadPresence = useCallback(async () => {
+    try {
+      const data = await api.getFriendsPresence();
+      const map = {};
+      (data || []).forEach(p => map[String(p.userId)] = p);
+      setPresence(map);
+    } catch (err) { console.error(err); }
+  }, []);
+
+  useEffect(() => { loadConversations(true); api.getFriends().then(setFriends); loadPresence(); }, []);
   useEffect(() => { loadMessages(conversationId); }, [conversationId, loadMessages]);
   useEffect(() => { if (events.conversationUpdated) loadConversations(); }, [events.conversationUpdated, loadConversations]);
+  useEffect(() => { if (events.presence?.userId) setPresence(prev => ({ ...prev, [String(events.presence.userId)]: events.presence })); }, [events.presence]);
   useEffect(() => { if (events.messageNew && String(events.messageNew.conversationId) === String(conversationId)) setMessages(p => [...p, events.messageNew]); }, [events.messageNew, conversationId]);
 
   const handleSend = useCallback(async (content) => {
@@ -157,6 +268,14 @@ export default function Chat({ user }) {
     const sent = await api.sendMessage(conversationId, content);
     setMessages(p => [...p, sent]);
   }, [conversationId]);
+
+  const handleCreateGroup = useCallback(async (title, participantIds) => {
+    try {
+      const conv = await api.createConversation({ type: 'group', title, participantIds });
+      await loadConversations();
+      navigate(`/chat/${conv._id}`);
+    } catch (err) { console.error(err); }
+  }, [loadConversations, navigate]);
 
   const getMessageSenderName = useCallback((m) => {
     if (m.sender?.username) return m.sender.username;
@@ -167,8 +286,24 @@ export default function Chat({ user }) {
   }, [activeConversation, user]);
 
   return (
-    <div className="flex h-[calc(100vh-140px)] gap-6 overflow-hidden">
-      <ConversationsSidebar conversations={conversations} activeId={conversationId} onSelect={id => navigate(`/chat/${id}`)} currentUsername={user?.username} friends={friends} onCreateDm={fid => api.createConversation({ type: 'dm', participantIds: [fid] }).then(c => { loadConversations(); navigate(`/chat/${c._id}`); })} />
+    <div className="flex h-[calc(100vh-140px)] gap-6 overflow-hidden relative">
+      <CreateGroupModal 
+        isOpen={isGroupModalOpen} 
+        onClose={() => setIsGroupModalOpen(false)} 
+        friends={friends} 
+        onCreate={handleCreateGroup} 
+      />
+
+      <ConversationsSidebar 
+        conversations={conversations} 
+        activeId={conversationId} 
+        onSelect={id => navigate(`/chat/${id}`)} 
+        currentUsername={user?.username} 
+        friends={friends} 
+        onCreateDm={fid => api.createConversation({ type: 'dm', participantIds: [fid] }).then(c => { loadConversations(); navigate(`/chat/${c._id}`); })} 
+        onOpenGroupModal={() => setIsGroupModalOpen(true)}
+      />
+
       <div className="flex-1 flex flex-col gap-4 min-w-0">
         <Card className="flex-1 flex flex-col overflow-hidden bg-card border-white/5 rounded-[2.5rem]">
           <div className="h-20 flex items-center px-8 border-b border-white/5 bg-primary/5 shrink-0">
@@ -176,7 +311,12 @@ export default function Chat({ user }) {
               <div className="w-12 h-12 rounded-2xl bg-primary/20 flex items-center justify-center text-primary"><AtSign className="w-6 h-6" /></div>
               <div>
                 <h3 className="font-black text-white text-lg truncate">{getConversationName(activeConversation, user?.username)}</h3>
-                <div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" /><span className="text-[10px] font-black text-primary uppercase tracking-widest">Çevrimiçi</span></div>
+                <div className="flex items-center gap-2">
+                  <div className={cn("w-2 h-2 rounded-full", activePresence?.isOnline ? "bg-green-500 animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.5)]" : "bg-gray-500")} />
+                  <span className={cn("text-[10px] font-black uppercase tracking-widest", activePresence?.isOnline ? "text-primary" : "text-muted-foreground opacity-60")}>
+                    {activePresence?.isOnline ? (activePresence.isPlaying ? `OYNUYOR: ${activePresence.currentGame}` : "ÇEVRİMİÇİ") : "ÇEVRİMDIŞI"}
+                  </span>
+                </div>
               </div>
             </div>
           </div>

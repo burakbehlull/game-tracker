@@ -240,7 +240,7 @@ router.get('/details/:gameName', async (req, res) => {
 
     // Get top 10 players for this game
     const stats = await GameSession.aggregate([
-      { $match: { gameName: gameName } },
+      { $match: { gameName: { $regex: new RegExp(`^${gameName}$`, 'i') } } },
       {
         $group: {
           _id: '$userId',

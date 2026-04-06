@@ -112,7 +112,7 @@ export default function GameDetails() {
                         <div className="relative">
                            <div className="w-12 h-12 rounded-xl bg-black border border-white/10 p-0.5 overflow-hidden">
                               <img 
-                                src={`https://placehold.co/100x100/2a2a2a/FFF?text=${p.user.username[0]}`} 
+                                src={p.user.avatar || `https://placehold.co/100x100/2a2a2a/FFF?text=${p.user.username[0]}`} 
                                 alt={p.user.username} 
                                 className="w-full h-full object-cover rounded-lg"
                               />

@@ -18,11 +18,16 @@ contextBridge.exposeInMainWorld('electronAPI', {
   minimizeWindow: () => ipcRenderer.invoke('minimize-window'),
   maximizeWindow: () => ipcRenderer.invoke('maximize-window'),
   closeWindow: () => ipcRenderer.invoke('close-window'),
+  setBackgroundTracking: (settings) => ipcRenderer.invoke('set-background-tracking', settings),
+  getBackgroundTracking: () => ipcRenderer.invoke('get-background-tracking'),
 
   // Updates
   onUpdateMessage: (callback) => ipcRenderer.on('update-status', (_, data) => callback(data)),
   startUpdateDownload: () => ipcRenderer.invoke('start-update-download'),
   installUpdate: () => ipcRenderer.invoke('install-update'),
+  
+  // Events
+  onForceLogout: (callback) => ipcRenderer.on('force-logout', () => callback()),
   
   // Library Actions
   selectGameExe: () => ipcRenderer.invoke('select-game-exe'),

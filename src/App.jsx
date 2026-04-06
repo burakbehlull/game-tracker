@@ -27,6 +27,14 @@ function App() {
 
   useEffect(() => {
     checkAuth();
+
+    // Listen for tray logout
+    if (window.electronAPI) {
+      window.electronAPI.onForceLogout(() => {
+        localStorage.removeItem('token');
+        setUser(null);
+      });
+    }
   }, []);
 
   const checkAuth = async () => {

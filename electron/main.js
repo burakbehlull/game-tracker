@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain } = require('electron');
+const { app, BrowserWindow, ipcMain, Tray, Menu } = require('electron');
 const path = require('path');
 const log = require('electron-log');
 
@@ -22,9 +22,17 @@ log.transports.console.level = 'info';
 log.info('App starting...');
 
 let mainWindow;
+let tray = null;
+let isTracking = true;
 let gameTracker = new GameTracker();
 let updateService;
 let serverInstance;
+
+// Background tracking settings
+let backgroundSettings = {
+  runInBackground: true,
+  launchOnStartup: false
+};
 
 function startBackend() {
   try {
@@ -33,6 +41,69 @@ function startBackend() {
   } catch (err) {
     log.error('Failed to start backend:', err);
   }
+}
+
+function createTray() {
+  if (tray) return;
+
+  const iconPath = path.join(__dirname, '../public/icon.png');
+  tray = new Tray(iconPath);
+  updateTrayMenu();
+
+  tray.setToolTip('Game Tracker');
+  tray.on('double-click', () => {
+    mainWindow?.show();
+  });
+}
+
+function updateTrayMenu() {
+  if (!tray) return;
+
+  const contextMenu = Menu.buildFromTemplate([
+    { 
+      label: 'Uygulamayı Aç', 
+      click: () => {
+        mainWindow?.show();
+      } 
+    },
+    { type: 'separator' },
+    {
+      label: isTracking ? '🟢 Takip Aktif' : '🔴 Takip Durduruldu',
+      enabled: false
+    },
+    {
+      label: isTracking ? 'İzlemeyi Durdur' : 'İzlemeyi Başlat',
+      click: async () => {
+        if (isTracking) {
+          await gameTracker?.stop();
+          isTracking = false;
+        } else {
+          gameTracker?.start();
+          isTracking = true;
+        }
+        updateTrayMenu();
+      }
+    },
+    { type: 'separator' },
+    {
+      label: 'Çıkış Yap',
+      click: () => {
+        gameTracker?.setAuthToken(null);
+        mainWindow?.webContents.send('force-logout');
+        mainWindow?.show();
+        updateTrayMenu();
+      }
+    },
+    { 
+      label: 'Tamamen Kapat', 
+      click: () => {
+        isQuitting = true;
+        app.quit();
+      } 
+    }
+  ]);
+
+  tray.setContextMenu(contextMenu);
 }
 
 function createWindow() {
@@ -51,20 +122,50 @@ function createWindow() {
 
   if (isDev) {
     mainWindow.loadURL('http://localhost:5173');
-    mainWindow.webContents.openDevTools({ mode: 'detach' });
+    // mainWindow.webContents.openDevTools({ mode: 'detach' });
   } else {
     mainWindow.loadFile(path.join(__dirname, '../dist/index.html'));
   }
+
+  mainWindow.on('close', (event) => {
+    if (!isQuitting && backgroundSettings.runInBackground) {
+      event.preventDefault();
+      mainWindow.hide();
+      // Optimize memory when hidden
+      if (process.platform === 'win32') {
+        app.setAppUserModelId(app.name);
+      }
+      return false;
+    }
+  });
 
   mainWindow.on('closed', () => {
     mainWindow = null;
   });
 }
 
+// Single Instance Lock - Check this as early as possible
+const gotTheLock = app.requestSingleInstanceLock();
+if (!gotTheLock) {
+  log.info('Another instance is already running, quitting...');
+  app.quit();
+  return; // Exit script execution
+}
+
+app.on('second-instance', () => {
+  if (mainWindow) {
+    if (mainWindow.isMinimized()) mainWindow.restore();
+    mainWindow.show();
+    mainWindow.focus();
+  }
+});
+
 app.whenReady().then(() => {
   log.info('App Ready');
+  
   startBackend();
   createWindow();
+  createTray();
   
   try {
     gameTracker.start();
@@ -90,7 +191,9 @@ app.whenReady().then(() => {
 });
 
 app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') app.quit();
+  if (process.platform !== 'darwin' && !backgroundSettings.runInBackground) {
+    app.quit();
+  }
 });
 
 let isQuitting = false;
@@ -124,11 +227,35 @@ ipcMain.handle('maximize-window', () => {
     : mainWindow.maximize();
 });
 
-ipcMain.handle('close-window', () => mainWindow?.close());
+ipcMain.handle('close-window', () => {
+  if (backgroundSettings.runInBackground) {
+    mainWindow?.hide();
+  } else {
+    mainWindow?.close();
+  }
+});
+
+ipcMain.handle('set-background-tracking', (_, settings) => {
+  backgroundSettings = { ...backgroundSettings, ...settings };
+  
+  // Handle Auto Launch
+  if (app.isPackaged) {
+    app.setLoginItemSettings({
+      openAtLogin: backgroundSettings.launchOnStartup,
+      path: app.getPath('exe')
+    });
+  }
+  
+  return { success: true };
+});
 
 ipcMain.handle('set-auth-token', (_, token) => {
   gameTracker?.setAuthToken(token);
   return { success: true };
+});
+
+ipcMain.handle('get-background-tracking', () => {
+  return backgroundSettings;
 });
 
 ipcMain.handle('logout', () => {

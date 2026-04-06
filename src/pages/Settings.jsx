@@ -38,6 +38,21 @@ export default function SettingsPage({ user: currentUser }) {
         email: currentUser.email || '',
         password: ''
       });
+
+      // Sync background settings from Electron if available
+      if (window.electronAPI) {
+        window.electronAPI.getBackgroundTracking().then(bgSettings => {
+          if (bgSettings) {
+            setUser(prev => ({
+              ...prev,
+              settings: {
+                ...prev.settings,
+                backgroundTracking: bgSettings
+              }
+            }));
+          }
+        });
+      }
     }
   }, [currentUser, setTheme]);
 
@@ -130,6 +145,39 @@ export default function SettingsPage({ user: currentUser }) {
       console.error('Tema ayarı güncellenemedi:', err);
       setError('Tema ayarı kaydedilemedi');
       setTheme(previousTheme);
+    }
+  };
+
+  const handleToggleBackground = async (field, enabled) => {
+    // Optimistic Update
+    const previousUser = { ...user };
+    const updatedBackgroundSettings = {
+      ...(user?.settings?.backgroundTracking || { runInBackground: true, launchOnStartup: false }),
+      [field]: enabled
+    };
+
+    setUser(prev => ({
+      ...prev,
+      settings: { 
+        ...prev.settings, 
+        backgroundTracking: updatedBackgroundSettings 
+      }
+    }));
+
+    try {
+      const updatedUser = await api.updateProfile({ 
+        settings: { backgroundTracking: updatedBackgroundSettings } 
+      });
+      
+      setUser(updatedUser);
+      
+      if (window.electronAPI) {
+        window.electronAPI.setBackgroundTracking(updatedBackgroundSettings);
+      }
+    } catch (err) {
+      console.error('Arka plan ayarı güncellenemedi:', err);
+      setError('Ayar güncellenirken hata oluştu');
+      setUser(previousUser);
     }
   };
 
@@ -419,6 +467,46 @@ export default function SettingsPage({ user: currentUser }) {
                       className="data-[state=checked]:bg-emerald-500"
                     />
                   </div>
+
+                  {window.electronAPI && (
+                    <>
+                      <div className="flex items-center justify-between p-6 bg-white/[0.02] border border-white/5 rounded-[2rem] hover:border-white/10 transition-colors">
+                        <div className="flex gap-4 items-center">
+                            <div className="p-3 rounded-2xl bg-primary/10 text-primary">
+                                 <Monitor className="w-6 h-6" />
+                            </div>
+                            <div>
+                              <div className="text-base font-black text-white tracking-tight">Arka Planda Çalıştır</div>
+                              <p className="text-xs text-gray-500 font-medium">Pencere kapansa bile oyun takibi devam eder.</p>
+                            </div>
+                        </div>
+                        <Switch 
+                          id="run-in-background"
+                          checked={user?.settings?.backgroundTracking?.runInBackground !== false} 
+                          onCheckedChange={(checked) => handleToggleBackground('runInBackground', checked)}
+                          className="data-[state=checked]:bg-primary"
+                        />
+                      </div>
+
+                      <div className="flex items-center justify-between p-6 bg-white/[0.02] border border-white/5 rounded-[2rem] hover:border-white/10 transition-colors">
+                        <div className="flex gap-4 items-center">
+                            <div className="p-3 rounded-2xl bg-orange-500/10 text-orange-500">
+                                 <Monitor className="w-6 h-6" />
+                            </div>
+                            <div>
+                              <div className="text-base font-black text-white tracking-tight">Başlangıçta Çalıştır</div>
+                              <p className="text-xs text-gray-500 font-medium">Bilgisayar açıldığında uygulamayı otomatik başlat.</p>
+                            </div>
+                        </div>
+                        <Switch 
+                          id="launch-on-startup"
+                          checked={user?.settings?.backgroundTracking?.launchOnStartup === true} 
+                          onCheckedChange={(checked) => handleToggleBackground('launchOnStartup', checked)}
+                          className="data-[state=checked]:bg-orange-500"
+                        />
+                      </div>
+                    </>
+                  )}
                   
                   <div className="flex items-center justify-between p-6 bg-white/[0.02] border border-white/5 rounded-[2rem] opacity-50 cursor-not-allowed">
                     <div className="flex gap-4 items-center">

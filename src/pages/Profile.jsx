@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Settings, MessageSquare, Award, Monitor, Clock, Trophy, Zap, Star, Eye, EyeOff } from 'lucide-react';
+import { Settings, MessageSquare, Award, Monitor, Clock, Trophy, Zap, Star, Eye, EyeOff, LibraryBig, Archive, Heart, Flame, Gamepad2, Swords, TrendingUp, Crown, ShieldCheck } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { Button } from '../components/ui/button';
 import { api } from '../services/api';
@@ -16,6 +16,7 @@ export default function Profile({ user: currentUser }) {
 
   const [profileUser, setProfileUser] = useState(null);
   const [stats, setStats] = useState([]);
+  const [allBadges, setAllBadges] = useState([]);
   const [totalTime, setTotalTime] = useState(0);
   const [loading, setLoading] = useState(true);
   
@@ -55,45 +56,36 @@ export default function Profile({ user: currentUser }) {
   // If no username (or it matches current), we are viewing ours.
 
 
-  useEffect(() => {
-    loadProfile();
-  }, [username, currentUser]);
-
-  const loadProfile = async () => {
+  const fetchProfile = async () => {
     setLoading(true);
     try {
-      if (isOwnProfile && currentUser) {
-        // Load own stats
-        setProfileUser(currentUser);
-        await loadStats();
-      } else if (username) {
-        // Load public profile
-        const data = await api.getUserProfile(username);
-        setProfileUser(data.user);
-        processStats(data.stats);
-      }
-    } catch (error) {
-      console.error('Profil yükleme hatası:', error);
+      const targetUsername = username || currentUser?.username;
+      if (!targetUsername) return;
+      
+      const userRes = await api.getUserProfile(targetUsername);
+      setProfileUser(userRes.user || userRes);
+      
+      const statsRes = await api.getUserStats(targetUsername);
+      setStats(statsRes);
+      
+      const total = statsRes.reduce((acc, curr) => acc + curr.totalTime, 0);
+      setTotalTime(total);
+
+      const badgesRes = await api.getAllBadges();
+      setAllBadges(badgesRes);
+    } catch (err) {
+      console.error(err);
     } finally {
       setLoading(false);
     }
   };
 
-  const loadStats = async () => {
-     const statsData = await api.getStats();
-     processStats(statsData);
-  };
+  useEffect(() => {
+    fetchProfile();
+  }, [username, currentUser]);
 
-  const processStats = (statsData) => {
-    if (!statsData) return;
-    statsData.sort((a, b) => {
-      const dateA = a.lastPlayed ? new Date(a.lastPlayed) : new Date(0);
-      const dateB = b.lastPlayed ? new Date(b.lastPlayed) : new Date(0);
-      return dateB - dateA;
-    });
-    setStats(statsData);
-    const total = statsData.reduce((sum, stat) => sum + stat.totalTime, 0);
-    setTotalTime(total);
+  const badgeIcons = {
+    LibraryBig, Archive, Heart, Flame, Gamepad2, Swords, Zap, TrendingUp, Crown, Trophy, ShieldCheck
   };
 
   const handleToggleHideGame = async (gameName) => {
@@ -216,16 +208,17 @@ export default function Profile({ user: currentUser }) {
               <div className="flex-1 min-w-0 pb-1">
                 <div className="flex items-center gap-3 mb-1">
                   <h1 className="text-4xl font-black text-foreground tracking-tight lowercase">{profileUser?.globalName || profileUser?.username}</h1>
-                  <span className="px-2 py-0.5 rounded text-[10px] font-black bg-blue-500/20 text-blue-400 border border-blue-500/20 uppercase tracking-widest">
+                 {/* <span className="px-2 py-0.5 rounded text-[10px] font-black bg-blue-500/20 text-blue-400 border border-blue-500/20 uppercase tracking-widest">
                     PRO
-                  </span>
+                  </span>*/}
                 </div>
                 <div className="flex flex-wrap items-center gap-4 text-xs font-bold text-muted-foreground uppercase tracking-widest">
-                  <span className="flex items-center gap-2">
+                  {/*<span className="flex items-center gap-2">
                     <Monitor className="w-4 h-4" />
                     PC Gamer
                   </span>
-                  <span className="w-1 h-1 rounded-full bg-white/20" />
+                  */}
+                  {/*<span className="w-1 h-1 rounded-full bg-white/20" />*/}
                   <span className="lowercase">{profileUser?.username}</span>
                   {/*<span className="w-1 h-1 rounded-full bg-white/20" />
                   <span className="text-blue-500/80">User ID: {profileUser?.id}</span>*/}
@@ -440,19 +433,41 @@ export default function Profile({ user: currentUser }) {
             <div className="rounded-[2rem] border border-white/5 bg-[#0d1117] p-8">
               <div className="flex items-center justify-between mb-6">
                 <h3 className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">Rozetler</h3>
-                <span className="text-[10px] font-black bg-blue-500/10 text-blue-400 px-2 py-1 rounded-full">{stats.length + 1} Yeni</span>
+                <span className="text-[10px] font-black bg-blue-500/10 text-blue-400 px-2 py-1 rounded-full">
+                  {profileUser?.badges?.length || 0} Kazanıldı
+                </span>
               </div>
               
-              <div className="flex gap-3">
-                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-600 to-blue-800 shadow-[0_5px_15px_rgba(37,99,235,0.3)] flex items-center justify-center font-black text-white text-lg hover:scale-105 transition-transform cursor-pointer">
-                  5+
-                </div>
-                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-purple-600 to-purple-800 shadow-[0_5px_15px_rgba(147,51,234,0.3)] flex items-center justify-center font-black text-white text-xs hover:scale-105 transition-transform cursor-pointer">
-                  2025
-                </div>
-                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-orange-500 to-red-600 shadow-[0_5px_15px_rgba(234,88,12,0.3)] flex items-center justify-center text-white hover:scale-105 transition-transform cursor-pointer">
-                  <Star className="w-7 h-7 fill-current" />
-                </div>
+              <div className="grid grid-cols-4 gap-4">
+                {allBadges.map((badge) => {
+                  const isEarned = profileUser?.badges?.includes(badge.id);
+                  const Icon = badgeIcons[badge.icon] || Trophy;
+                  
+                  return (
+                    <div 
+                      key={badge.id}
+                      title={`${badge.title}: ${badge.description}`}
+                      className={cn(
+                        "group relative aspect-square rounded-2xl flex items-center justify-center transition-all duration-300",
+                        isEarned 
+                          ? `bg-gradient-to-br ${badge.color} shadow-lg cursor-pointer hover:scale-110 active:scale-95` 
+                          : "bg-white/5 grayscale opacity-40 hover:opacity-60"
+                      )}
+                    >
+                      <Icon className={cn(
+                        "w-7 h-7",
+                        isEarned ? "text-white drop-shadow-md" : "text-gray-500"
+                      )} />
+                      
+                      {/* Tooltip on hover */}
+                      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-black/90 border border-white/10 rounded-xl text-[10px] w-32 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity z-50">
+                        <div className="font-black text-white mb-1 uppercase tracking-widest">{badge.title}</div>
+                        <div className="text-gray-400 font-medium leading-tight">{badge.description}</div>
+                        {!isEarned && <div className="mt-2 text-blue-400 font-black uppercase tracking-tighter">Henüz Kazanılmadı</div>}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
 

@@ -114,7 +114,19 @@ const userSchema = new mongoose.Schema({
       exePath: { type: String, default: '' },
       addedAt: { type: Date, default: Date.now }
     }
-  ]
+  ],
+  // Rozetler & Başarımlar
+  badges: {
+    type: [String],
+    default: []
+  },
+  stats: {
+    totalChallengesCompleted: { type: Number, default: 0 },
+    consecutiveLoginDays: { type: Number, default: 0 },
+    lastLoginDate: { type: Date, default: null },
+    totalPlayTimeMinutes: { type: Number, default: 0 },
+    differentGamesPlayed: { type: [String], default: [] }
+  }
 });
 
 // Şifre hashleme

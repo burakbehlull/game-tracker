@@ -1,4 +1,5 @@
 const User = require('../models/User');
+const BadgeService = require('./badgeService');
 
 const CHALLENGE_POOL = [
   {
@@ -131,6 +132,11 @@ class ChallengeService {
           challenge.isCompleted = true;
           user.xp += challenge.xpReward;
           user.level = Math.floor(user.xp / 1000) + 1;
+          
+          // Increment total challenges completed
+          if (!user.stats) user.stats = {};
+          user.stats.totalChallengesCompleted = (user.stats.totalChallengesCompleted || 0) + 1;
+          user.markModified('stats');
         }
         updated = true;
         user.markModified('dailyChallenges');
@@ -139,6 +145,8 @@ class ChallengeService {
 
     if (updated) {
       await user.save();
+      // Check for badges after challenge completion
+      await BadgeService.checkBadges(userId);
     }
   }
 }

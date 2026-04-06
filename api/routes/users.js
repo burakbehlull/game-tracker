@@ -3,13 +3,19 @@ const router = express.Router();
 const User = require('../models/User');
 const GameSession = require('../models/GameSession');
 const auth = require('../middleware/auth');
+const BadgeService = require('../services/badgeService');
 
 const ChallengeService = require('../services/challengeService');
+
+// Badges definitions
+router.get('/badges/all', async (req, res) => {
+  res.json(BadgeService.getAllBadges());
+});
 
 // Me
 router.get('/me', auth, async (req, res) => {
   const user = await User.findById(req.userId)
-    .select('username email globalName avatar createdAt level xp settings dailyChallenges lastChallengeReset library');
+    .select('username email globalName avatar createdAt level xp settings dailyChallenges lastChallengeReset library badges stats');
 
   res.json(user);
 });
@@ -75,7 +81,7 @@ router.put('/me', auth, async (req, res) => {
 // Public profile
 router.get('/profile/:username', async (req, res) => {
   const user = await User.findOne({ username: req.params.username })
-    .select('username globalName avatar createdAt settings.privacy.hiddenGames');
+    .select('username globalName avatar createdAt level xp badges settings.privacy.hiddenGames');
 
   if (!user) return res.status(404).json({ error: 'User not found' });
 
@@ -106,7 +112,7 @@ router.get('/search', async (req, res) => {
   try {
     const filter = q ? { username: { $regex: q, $options: 'i' } } : {};
     const users = await User.find(filter)
-      .select('username globalName avatar createdAt level xp')
+      .select('username globalName avatar createdAt level xp badges')
       .sort({ xp: -1 })
       .limit(20);
     res.json(users);
@@ -132,6 +138,11 @@ router.post('/library/add', auth, async (req, res) => {
 
     user.library.push({ gameName, exePath });
     await user.save();
+    
+    // Check for library badges
+    const BadgeService = require('../services/badgeService');
+    await BadgeService.checkBadges(user._id);
+    
     res.json(user.library);
   } catch (error) {
     console.error('[Library API Error]', error);

@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const BadgeService = require('../services/badgeService');
 
 const JWT_SECRET = process.env.JWT_SECRET;
 if (!JWT_SECRET && process.env.NODE_ENV === 'production') {
@@ -61,8 +62,31 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
-    user.lastLogin = new Date();
+    const now = new Date();
+    const lastLogin = user.stats?.lastLoginDate;
+    
+    if (!user.stats) user.stats = {};
+    
+    if (lastLogin) {
+      const diffTime = Math.abs(now - lastLogin);
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      
+      if (diffDays === 1) {
+        user.stats.consecutiveLoginDays = (user.stats.consecutiveLoginDays || 0) + 1;
+      } else if (diffDays > 1) {
+        user.stats.consecutiveLoginDays = 1;
+      }
+    } else {
+      user.stats.consecutiveLoginDays = 1;
+    }
+    
+    user.stats.lastLoginDate = now;
+    user.lastLogin = now;
+    user.markModified('stats');
     await user.save();
+
+    // Check badges on login
+    await BadgeService.checkBadges(user._id);
 
     const token = jwt.sign(
       { userId: user._id },

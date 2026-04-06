@@ -50,6 +50,10 @@ export const api = {
     return request(`${API_URL}/users/me`, { headers: getHeaders() });
   },
 
+  getAllBadges: async () => {
+    return request(`${API_URL}/users/badges/all`);
+  },
+
   updateProfile: async (data) => {
     return request(`${API_URL}/users/me`, {
       method: 'PUT',

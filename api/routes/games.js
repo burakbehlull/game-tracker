@@ -87,7 +87,22 @@ router.post('/end', auth, async (req, res) => {
         if (user) {
           user.xp += xpGained;
           user.level = Math.floor(user.xp / 1000) + 1;
+          
+          // Update total play time and different games played
+          if (!user.stats) user.stats = {};
+          user.stats.totalPlayTimeMinutes = (user.stats.totalPlayTimeMinutes || 0) + extraMinutes;
+          
+          if (!user.stats.differentGamesPlayed) user.stats.differentGamesPlayed = [];
+          if (!user.stats.differentGamesPlayed.includes(session.gameName)) {
+            user.stats.differentGamesPlayed.push(session.gameName);
+          }
+          
+          user.markModified('stats');
           await user.save();
+          
+          // Check badges
+          const BadgeService = require('../services/badgeService');
+          await BadgeService.checkBadges(user._id);
         }
       }
 

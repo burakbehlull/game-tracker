@@ -32,12 +32,13 @@ export default function Layout({ children, user, onLogout }) {
   };
 
   const navLinks = [
-    { to: '/friends', icon: Users, label: 'Arkadaşlar', protected: true },
-    { to: '/chat', icon: MessageSquare, label: 'Sohbet', protected: true },
+    
     { to: '/discover', icon: Globe, label: 'Keşfet' },
     { to: '/dashboard', icon: BarChart3, label: 'Panel', protected: true },
     { to: '/timer', icon: Clock, label: 'Zamanlayıcı', protected: true },
     { to: '/library', icon: Library, label: 'Kütüphane', protected: true },
+    { to: '/friends', icon: Users, label: 'Arkadaşlar', protected: true },
+    { to: '/chat', icon: MessageSquare, label: 'Sohbet', protected: true },
   ];
 
   return (

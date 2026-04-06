@@ -78,6 +78,13 @@ const BADGE_DEFINITIONS = {
     description: '7 gün boyunca en az 1 oturum aç.',
     icon: 'ShieldCheck',
     color: 'from-slate-500 to-slate-700'
+  },
+  'early_adopter': {
+    id: 'early_adopter',
+    title: 'İlk Kullanıcı',
+    description: 'Şubat 2026\'dan önce katılan efsanevi üye.',
+    icon: 'Rocket',
+    color: 'from-indigo-500 via-purple-500 to-pink-500'
   }
 };
 
@@ -149,6 +156,14 @@ class BadgeService {
     // 11. Demir İrade (7 gün üst üste)
     if (!currentBadges.includes('iron_will') && (user.stats?.consecutiveLoginDays || 0) >= 7) {
       newBadges.push('iron_will');
+    }
+
+    // 12. İlk Kullanıcı (Şubat 2026 öncesi kayıt)
+    if (!currentBadges.includes('early_adopter')) {
+      const cutOffDate = new Date('2026-02-01');
+      if (user.createdAt < cutOffDate) {
+        newBadges.push('early_adopter');
+      }
     }
 
     if (newBadges.length > 0) {

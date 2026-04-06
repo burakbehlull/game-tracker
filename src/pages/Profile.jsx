@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Settings, MessageSquare, Award, Monitor, Clock, Trophy, Zap, Star, Eye, EyeOff, LibraryBig, Archive, Heart, Flame, Gamepad2, Swords, TrendingUp, Crown, ShieldCheck } from 'lucide-react';
+import { Settings, MessageSquare, Award, Monitor, Clock, Trophy, Zap, Star, Eye, EyeOff, LibraryBig, Archive, Heart, Flame, Gamepad2, Swords, TrendingUp, Crown, ShieldCheck, Rocket } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { Button } from '../components/ui/button';
 import { api } from '../services/api';
@@ -85,7 +85,7 @@ export default function Profile({ user: currentUser }) {
   }, [username, currentUser]);
 
   const badgeIcons = {
-    LibraryBig, Archive, Heart, Flame, Gamepad2, Swords, Zap, TrendingUp, Crown, Trophy, ShieldCheck
+    LibraryBig, Archive, Heart, Flame, Gamepad2, Swords, Zap, TrendingUp, Crown, Trophy, ShieldCheck, Rocket
   };
 
   const handleToggleHideGame = async (gameName) => {

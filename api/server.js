@@ -1,8 +1,11 @@
 // Backend logic integrated into Electron process
 require('dotenv').config();
 const express = require('express');
+const http = require('http');
 const mongoose = require('mongoose');
 const cors = require('cors');
+const { Server } = require('socket.io');
+const { setupWebSocket } = require('./services/wsGateway');
 
 const app = express();
 
@@ -50,10 +53,16 @@ mongoose.connect(mongoUri, {
 const authRoutes = require('./routes/auth');
 const gameRoutes = require('./routes/games');
 const userRoutes = require('./routes/users');
+const friendRoutes = require('./routes/friends');
+const presenceRoutes = require('./routes/presence');
+const chatRoutes = require('./routes/chat');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/games', gameRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/friends', friendRoutes);
+app.use('/api/presence', presenceRoutes);
+app.use('/api/chat', chatRoutes);
 
 // Global Error Handler
 app.use((err, req, res, next) => {
@@ -67,7 +76,16 @@ app.use((err, req, res, next) => {
 const PORT = process.env.PORT || 3000;
 
 function startServer() {
-  return app.listen(PORT, '0.0.0.0', () => {
+  const server = http.createServer(app);
+  const io = new Server(server, {
+    cors: {
+      origin: allowedOrigins,
+      methods: ['GET', 'POST']
+    }
+  });
+  setupWebSocket(io);
+
+  return server.listen(PORT, '0.0.0.0', () => {
     console.log(`Backend Server running on port ${PORT}`);
   });
 }

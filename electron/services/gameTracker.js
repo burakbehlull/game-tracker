@@ -173,6 +173,22 @@ class GameTracker {
     }
   }
 
+  async syncPresence(isPlaying, currentGame = null) {
+    if (!this.authToken) return;
+    try {
+      await fetch(`${this.apiUrl}/presence/me`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${this.authToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ isPlaying, currentGame })
+      });
+    } catch (err) {
+      log.warn('[GameTracker] Presence sync failed:', err.message);
+    }
+  }
+
   async startSession(game) {
     if (!this.authToken) return;
 
@@ -203,6 +219,7 @@ class GameTracker {
       if (this.discordService && this.discordRPCEnabled) {
         this.discordService.updateActivity(game.gameName);
       }
+      await this.syncPresence(true, game.gameName);
 
       log.info(`[GameTracker] Session started: ${data.sessionId} (Process: ${game.processName})`);
     } catch (err) {
@@ -233,6 +250,7 @@ class GameTracker {
       if (this.discordService) {
         this.discordService.clearActivity();
       }
+      await this.syncPresence(false, null);
 
       this.currentSession = null;
     } catch (err) {

@@ -3,7 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { useTheme } from '../contexts/ThemeContext';
 import { Button } from './ui/button';
 import { Switch } from './ui/switch';
-import { Moon, Sun, User, LogOut, Gamepad2, Globe, BarChart3, Download, Clock, Settings, ChevronDown, Library } from 'lucide-react';
+import { Moon, Sun, User, LogOut, Gamepad2, Globe, BarChart3, Download, Clock, Settings, ChevronDown, Library, Users, MessageSquare } from 'lucide-react';
 
 const DownloadURL = import.meta.env.VITE_DOWNLOAD_URL;
 
@@ -76,6 +76,24 @@ export default function Layout({ children, user, onLogout }) {
                       >
                         <Library className="h-4 w-4" />
                         <span className="hidden md:inline">Kütüphane</span>
+                      </Button>
+                    </Link>
+                    <Link to="/friends">
+                      <Button
+                        variant={location.pathname === '/friends' ? 'default' : 'ghost'}
+                        className="flex items-center gap-2 h-9 px-3"
+                      >
+                        <Users className="h-4 w-4" />
+                        <span className="hidden md:inline">Arkadaşlar</span>
+                      </Button>
+                    </Link>
+                    <Link to="/chat">
+                      <Button
+                        variant={location.pathname.startsWith('/chat') ? 'default' : 'ghost'}
+                        className="flex items-center gap-2 h-9 px-3"
+                      >
+                        <MessageSquare className="h-4 w-4" />
+                        <span className="hidden md:inline">Sohbet</span>
                       </Button>
                     </Link>
                   </>

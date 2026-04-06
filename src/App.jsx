@@ -11,11 +11,14 @@ import Timer from './pages/Timer';
 import Settings from './pages/Settings';
 import Library from './pages/Library';
 import GameDetails from './pages/GameDetails';
+import Friends from './pages/Friends';
+import Chat from './pages/Chat';
 import Layout from './components/Layout';
 import { api } from './services/api';
 
 import TitleBar from './components/TitleBar';
 import UpdateNotification from './components/UpdateNotification';
+import { WebSocketProvider } from './contexts/WebSocketContext';
 
 function App() {
   const [user, setUser] = useState(null);
@@ -72,6 +75,7 @@ function App() {
   };
 
   const isElectron = !!window.electronAPI;
+  const authToken = localStorage.getItem('token');
 
   return (
     <ThemeProvider>
@@ -103,12 +107,13 @@ function App() {
           </div>
         ) : null
       ) : (
-        <div className="flex flex-col h-screen overflow-hidden bg-background text-foreground">
-          <TitleBar />
-          <UpdateNotification />
-          <div className="flex-1 overflow-auto">
-            <Router>
-              <Routes>
+        <WebSocketProvider token={authToken}>
+          <div className="flex flex-col h-screen overflow-hidden bg-background text-foreground">
+            <TitleBar />
+            <UpdateNotification />
+            <div className="flex-1 overflow-auto">
+              <Router>
+                <Routes>
                 <Route 
                   path="/login" 
                   element={!user ? <Login onLogin={handleLogin} /> : <Navigate to="/" />} 
@@ -201,11 +206,36 @@ function App() {
                     </Layout>
                   } 
                 />
+                <Route
+                  path="/friends"
+                  element={
+                    user ? (
+                      <Layout user={user} onLogout={handleLogout}>
+                        <Friends />
+                      </Layout>
+                    ) : (
+                      <Navigate to="/login" />
+                    )
+                  }
+                />
+                <Route
+                  path="/chat/:conversationId?"
+                  element={
+                    user ? (
+                      <Layout user={user} onLogout={handleLogout}>
+                        <Chat />
+                      </Layout>
+                    ) : (
+                      <Navigate to="/login" />
+                    )
+                  }
+                />
                 <Route path="*" element={<Navigate to="/" />} />
-              </Routes>
-            </Router>
+                </Routes>
+              </Router>
+            </div>
           </div>
-        </div>
+        </WebSocketProvider>
       )}
     </ThemeProvider>
   );

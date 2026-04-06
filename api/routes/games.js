@@ -5,6 +5,7 @@ const auth = require('../middleware/auth');
 const mongoose = require('mongoose');
 
 const ChallengeService = require('../services/challengeService');
+const { setPlaying } = require('../services/presenceService');
 
 // Start session
 router.post('/start', auth, async (req, res) => {
@@ -36,6 +37,7 @@ router.post('/start', auth, async (req, res) => {
     });
 
     await session.save();
+    await setPlaying(req.userId, gameName);
 
     // Görev ilerlemesi: Oyun açılışı
     await ChallengeService.updateProgress(req.userId, 'open_game', 1, { gameName });
@@ -96,6 +98,7 @@ router.post('/end', auth, async (req, res) => {
     }
 
     await session.save();
+    await setPlaying(req.userId, null);
     res.json(session);
   } catch (error) {
     console.error('[Games API Error]', error);
@@ -146,6 +149,7 @@ router.put('/:id/heartbeat', auth, async (req, res) => {
     }
 
     await session.save();
+    await setPlaying(req.userId, session.gameName);
     res.json({ success: true, duration: session.duration });
   } catch (error) {
     console.error('[Games API Error]', error);

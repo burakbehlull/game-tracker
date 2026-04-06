@@ -1,4 +1,5 @@
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+export const WS_URL = import.meta.env.VITE_WS_URL || API_URL.replace('/api', '');
 
 const request = async (url, options = {}) => {
   const res = await fetch(url, options);
@@ -101,6 +102,94 @@ export const api = {
   removeFromLibrary: async (gameName) => {
     return request(`${API_URL}/users/library/${encodeURIComponent(gameName)}`, {
       method: 'DELETE',
+      headers: getHeaders()
+    });
+  },
+
+  // Friends
+  sendFriendRequest: async ({ targetUserId, username }) => {
+    return request(`${API_URL}/friends/request`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify({ targetUserId, username })
+    });
+  },
+
+  getFriendRequests: async () => {
+    return request(`${API_URL}/friends/requests`, { headers: getHeaders() });
+  },
+
+  acceptFriendRequest: async (requestId) => {
+    return request(`${API_URL}/friends/requests/${requestId}/accept`, {
+      method: 'POST',
+      headers: getHeaders()
+    });
+  },
+
+  rejectFriendRequest: async (requestId) => {
+    return request(`${API_URL}/friends/requests/${requestId}/reject`, {
+      method: 'POST',
+      headers: getHeaders()
+    });
+  },
+
+  getFriends: async () => {
+    return request(`${API_URL}/friends/list`, { headers: getHeaders() });
+  },
+
+  removeFriend: async (friendId) => {
+    return request(`${API_URL}/friends/${friendId}`, {
+      method: 'DELETE',
+      headers: getHeaders()
+    });
+  },
+
+  // Presence
+  getFriendsPresence: async () => {
+    return request(`${API_URL}/presence/friends`, { headers: getHeaders() });
+  },
+
+  updateMyPresence: async ({ isPlaying, currentGame }) => {
+    return request(`${API_URL}/presence/me`, {
+      method: 'PUT',
+      headers: getHeaders(),
+      body: JSON.stringify({ isPlaying, currentGame })
+    });
+  },
+
+  // Chat
+  createConversation: async ({ type, participantIds, title }) => {
+    return request(`${API_URL}/chat/conversations`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify({ type, participantIds, title })
+    });
+  },
+
+  getConversations: async () => {
+    return request(`${API_URL}/chat/conversations`, { headers: getHeaders() });
+  },
+
+  getConversationMessages: async (conversationId, cursor = null, limit = 30) => {
+    const qs = new URLSearchParams();
+    if (cursor) qs.set('cursor', cursor);
+    if (limit) qs.set('limit', String(limit));
+    return request(`${API_URL}/chat/conversations/${conversationId}/messages?${qs.toString()}`, {
+      headers: getHeaders()
+    });
+  },
+
+  sendMessage: async (conversationId, content) => {
+    return request(`${API_URL}/chat/conversations/${conversationId}/messages`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify({ content })
+    });
+  },
+
+  markConversationRead: async (conversationId) => {
+    return request(`${API_URL}/chat/conversations/${conversationId}/read`, {
+      method: 'POST',
       headers: getHeaders()
     });
   }

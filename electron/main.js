@@ -1,7 +1,14 @@
-const { app, BrowserWindow, ipcMain, Tray, Menu, nativeImage } = require('electron');
+const { app, BrowserWindow, ipcMain, Tray, Menu, nativeImage, net } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const log = require('electron-log');
+const dns = require('dns');
+
+// Fix for Node.js ERR_INTERNAL_ASSERTION / internalConnectMultiple
+// This forces Node to prefer IPv4 and prevents the crash
+if (dns.setDefaultResultOrder) {
+  dns.setDefaultResultOrder('ipv4first');
+}
 
 // Setup environment variables
 const isDev = !app.isPackaged;
@@ -11,6 +18,15 @@ const envPath = isDev
   : path.join(process.resourcesPath, '.env');
 
 require('dotenv').config({ path: envPath });
+
+// Global Error Handling to prevent crash popups in production
+process.on('uncaughtException', (error) => {
+  log.error('Uncaught Exception:', error);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  log.error('Unhandled Rejection at:', promise, 'reason:', reason);
+});
 
 const GameTracker = require('./services/gameTracker');
 const UpdateService = require('./services/updateService');

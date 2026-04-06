@@ -6,6 +6,12 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const { Server } = require('socket.io');
 const { setupWebSocket } = require('./services/wsGateway');
+const dns = require('dns');
+
+// Force IPv4 for local connections to prevent ERR_INTERNAL_ASSERTION
+if (dns.setDefaultResultOrder) {
+  dns.setDefaultResultOrder('ipv4first');
+}
 
 const app = express();
 

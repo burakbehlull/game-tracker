@@ -4,6 +4,7 @@ import { useTheme } from '../contexts/ThemeContext';
 import { Button } from './ui/button';
 import { Switch } from './ui/switch';
 import { Moon, Sun, User, LogOut, Gamepad2, Globe, BarChart3, Download, Clock, Settings, ChevronDown, Library, Users, MessageSquare } from 'lucide-react';
+import { cn } from '../lib/utils';
 import SocialSidebar from './SocialSidebar';
 
 const DownloadURL = import.meta.env.VITE_DOWNLOAD_URL;

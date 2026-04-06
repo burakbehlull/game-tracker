@@ -1,5 +1,6 @@
-const { app, BrowserWindow, ipcMain, Tray, Menu } = require('electron');
+const { app, BrowserWindow, ipcMain, Tray, Menu, nativeImage } = require('electron');
 const path = require('path');
+const fs = require('fs');
 const log = require('electron-log');
 
 // Setup environment variables
@@ -28,11 +29,33 @@ let gameTracker = new GameTracker();
 let updateService;
 let serverInstance;
 
-// Background tracking settings
+// Settings path
+const settingsPath = path.join(app.getPath('userData'), 'background-settings.json');
+
+// Background tracking settings with persistence
 let backgroundSettings = {
   runInBackground: true,
   launchOnStartup: false
 };
+
+// Load settings on startup
+try {
+  if (fs.existsSync(settingsPath)) {
+    const saved = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
+    backgroundSettings = { ...backgroundSettings, ...saved };
+    log.info('Loaded background settings:', backgroundSettings);
+  }
+} catch (err) {
+  log.error('Failed to load background settings:', err);
+}
+
+function saveSettings() {
+  try {
+    fs.writeFileSync(settingsPath, JSON.stringify(backgroundSettings), 'utf8');
+  } catch (err) {
+    log.error('Failed to save background settings:', err);
+  }
+}
 
 function startBackend() {
   try {
@@ -46,8 +69,26 @@ function startBackend() {
 function createTray() {
   if (tray) return;
 
-  const iconPath = path.join(__dirname, '../public/icon.png');
-  tray = new Tray(iconPath);
+  // Use a more robust path for the tray icon
+  const iconPath = isDev 
+    ? path.join(__dirname, '../public/icon.png')
+    : path.join(process.resourcesPath, 'app/public/icon.png');
+  
+  log.info('Tray icon path:', iconPath);
+  
+  let image;
+  try {
+    image = nativeImage.createFromPath(iconPath);
+    if (image.isEmpty()) {
+      // Fallback if the first path fails
+      const fallbackPath = path.join(__dirname, '../public/icon.png');
+      image = nativeImage.createFromPath(fallbackPath);
+    }
+  } catch (err) {
+    log.error('Failed to load tray icon:', err);
+  }
+
+  tray = new Tray(image || iconPath);
   updateTrayMenu();
 
   tray.setToolTip('Game Tracker');
@@ -107,12 +148,16 @@ function updateTrayMenu() {
 }
 
 function createWindow() {
+  const iconPath = isDev 
+    ? path.join(__dirname, '../public/icon.png')
+    : path.join(process.resourcesPath, 'app/public/icon.png');
+
   mainWindow = new BrowserWindow({
     width: 1400,
     height: 900,
     frame: false,
     backgroundColor: '#000000',
-    icon: path.join(__dirname, '../public/icon.png'),
+    icon: iconPath,
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
@@ -166,6 +211,14 @@ app.whenReady().then(() => {
   startBackend();
   createWindow();
   createTray();
+
+  // Apply auto-launch setting on startup
+  if (app.isPackaged) {
+    app.setLoginItemSettings({
+      openAtLogin: backgroundSettings.launchOnStartup,
+      path: app.getPath('exe')
+    });
+  }
   
   try {
     gameTracker.start();
@@ -237,6 +290,7 @@ ipcMain.handle('close-window', () => {
 
 ipcMain.handle('set-background-tracking', (_, settings) => {
   backgroundSettings = { ...backgroundSettings, ...settings };
+  saveSettings();
   
   // Handle Auto Launch
   if (app.isPackaged) {

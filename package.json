@@ -76,6 +76,7 @@
       "dist/**/*",
       "electron/**/*",
       "api/**/*",
+      "public/**/*",
       "package.json",
       "!dist/build/**/*",
       "!dist/assets/**/*.map"

@@ -31,7 +31,7 @@ export default function Login({ onLogin }) {
       onLogin(result.user);
       navigate('/');
     } catch (err) {
-      setError(err.error || 'Giriş başarısız');
+      setError(err?.data?.error || err?.message || 'Giriş başarısız');
     } finally {
       setLoading(false);
     }

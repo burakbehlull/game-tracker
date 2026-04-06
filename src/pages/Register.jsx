@@ -38,7 +38,7 @@ export default function Register({ onLogin }) {
       onLogin(result.user);
       navigate('/');
     } catch (err) {
-      setError(err.error || 'Kayıt başarısız');
+      setError(err?.data?.error || err?.message || 'Kayıt başarısız');
     } finally {
       setLoading(false);
     }

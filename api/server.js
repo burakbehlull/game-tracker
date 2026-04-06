@@ -6,18 +6,23 @@ const cors = require('cors');
 
 const app = express();
 
+const defaultAllowedOrigins = [
+  'http://localhost:5173',
+  'http://localhost:3000',
+  'http://127.0.0.1:5173',
+  'https://thegametracker.vercel.app'
+];
+
+const allowedOrigins = process.env.CORS_ORIGINS
+  ? process.env.CORS_ORIGINS.split(',').map(origin => origin.trim()).filter(Boolean)
+  : defaultAllowedOrigins;
+
 // Middleware
 app.use(cors({
   origin: function (origin, callback) {
     // Allow requests with no origin (like mobile apps or curl)
     if (!origin) return callback(null, true);
-    
-    const allowedOrigins = [
-      'http://localhost:5173',
-      'http://localhost:3000',
-      'http://127.0.0.1:5173'
-    ];
-    
+
     if (allowedOrigins.indexOf(origin) !== -1 || process.env.NODE_ENV !== 'production') {
       callback(null, true);
     } else {

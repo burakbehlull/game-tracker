@@ -4,6 +4,7 @@ import { useTheme } from '../contexts/ThemeContext';
 import { Button } from './ui/button';
 import { Switch } from './ui/switch';
 import { Moon, Sun, User, LogOut, Gamepad2, Globe, BarChart3, Download, Clock, Settings, ChevronDown, Library, Users, MessageSquare } from 'lucide-react';
+import SocialSidebar from './SocialSidebar';
 
 const DownloadURL = import.meta.env.VITE_DOWNLOAD_URL;
 
@@ -29,9 +30,18 @@ export default function Layout({ children, user, onLogout }) {
     onLogout();
   };
 
+  const navLinks = [
+    { to: '/discover', icon: Globe, label: 'Keşfet' },
+    { to: '/dashboard', icon: BarChart3, label: 'Panel', protected: true },
+    { to: '/timer', icon: Clock, label: 'Zamanlayıcı', protected: true },
+    { to: '/library', icon: Library, label: 'Kütüphane', protected: true },
+    { to: '/friends', icon: Users, label: 'Arkadaşlar', protected: true },
+    { to: '/chat', icon: MessageSquare, label: 'Sohbet', protected: true },
+  ];
+
   return (
-    <div className="min-h-screen bg-background">
-      <nav className="border-b bg-card">
+    <div className="flex flex-col min-h-screen bg-background h-screen overflow-hidden">
+      <nav className="border-b bg-card shrink-0">
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center gap-6 overflow-hidden">
@@ -39,65 +49,22 @@ export default function Layout({ children, user, onLogout }) {
                 <Gamepad2 className="h-6 w-6 text-primary" />
                 <span className="hidden sm:inline">Game Tracker</span>
               </Link>
-              <div className="flex gap-2">
-                <Link to="/discover">
-                  <Button 
-                    variant={location.pathname === '/discover' ? 'default' : 'ghost'}
-                    className="flex items-center gap-2 h-9 px-3"
-                  >
-                    <Globe className="h-4 w-4" />
-                    <span className="hidden md:inline">Keşfet</span>
-                  </Button>
-                </Link>
-                {user && (
-                  <>
-                    <Link to="/dashboard">
+              <div className="hidden sm:flex gap-2">
+                {navLinks.map((link) => {
+                  if (link.protected && !user) return null;
+                  const isActive = location.pathname === link.to || (link.to === '/chat' && location.pathname.startsWith('/chat'));
+                  return (
+                    <Link key={link.to} to={link.to}>
                       <Button 
-                        variant={location.pathname === '/dashboard' ? 'default' : 'ghost'}
+                        variant={isActive ? 'default' : 'ghost'}
                         className="flex items-center gap-2 h-9 px-3"
                       >
-                        <BarChart3 className="h-4 w-4" />
-                        <span className="hidden md:inline">Panel</span>
+                        <link.icon className="h-4 w-4" />
+                        <span className="hidden md:inline">{link.label}</span>
                       </Button>
                     </Link>
-                    <Link to="/timer">
-                      <Button 
-                        variant={location.pathname === '/timer' ? 'default' : 'ghost'}
-                        className="flex items-center gap-2 h-9 px-3"
-                      >
-                        <Clock className="h-4 w-4" />
-                        <span className="hidden md:inline">Zamanlayıcı</span>
-                      </Button>
-                    </Link>
-                    <Link to="/library">
-                      <Button 
-                        variant={location.pathname === '/library' ? 'default' : 'ghost'}
-                        className="flex items-center gap-2 h-9 px-3"
-                      >
-                        <Library className="h-4 w-4" />
-                        <span className="hidden md:inline">Kütüphane</span>
-                      </Button>
-                    </Link>
-                    <Link to="/friends">
-                      <Button
-                        variant={location.pathname === '/friends' ? 'default' : 'ghost'}
-                        className="flex items-center gap-2 h-9 px-3"
-                      >
-                        <Users className="h-4 w-4" />
-                        <span className="hidden md:inline">Arkadaşlar</span>
-                      </Button>
-                    </Link>
-                    <Link to="/chat">
-                      <Button
-                        variant={location.pathname.startsWith('/chat') ? 'default' : 'ghost'}
-                        className="flex items-center gap-2 h-9 px-3"
-                      >
-                        <MessageSquare className="h-4 w-4" />
-                        <span className="hidden md:inline">Sohbet</span>
-                      </Button>
-                    </Link>
-                  </>
-                )}
+                  );
+                })}
               </div>
             </div>
 
@@ -108,15 +75,10 @@ export default function Layout({ children, user, onLogout }) {
                     className="hidden lg:flex items-center gap-2 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 h-9 font-bold rounded-xl animate-pulse-subtle"
                   >
                     <Download className="h-4 w-4" />
-                    Uygulamayı İndir
+                    İndir
                   </Button>
                 </a>
               )}
-              {/*<div className="hidden sm:flex items-center gap-2 mr-2">
-                <Sun className="h-4 w-4 text-muted-foreground" />
-                <Switch checked={theme === 'dark'} onCheckedChange={toggleTheme} />
-                <Moon className="h-4 w-4 text-muted-foreground" />
-              </div>*/}
               
               {user ? (
                 <div className="relative" ref={menuRef}>
@@ -188,9 +150,39 @@ export default function Layout({ children, user, onLogout }) {
           </div>
         </div>
       </nav>
-      <main className={location.pathname === '/' || location.pathname === '/profile' || location.pathname.startsWith('/profile/') ? 'w-full' : 'container mx-auto px-4 py-8'}>
-        {children}
-      </main>
+
+      <div className="flex flex-1 overflow-hidden relative">
+        <main className={cn(
+          "flex-1 overflow-y-auto",
+          (location.pathname === '/' || location.pathname === '/profile' || location.pathname.startsWith('/profile/')) ? 'w-full' : 'container mx-auto px-4 py-8'
+        )}>
+          {children}
+        </main>
+        
+        {user && <SocialSidebar />}
+      </div>
+
+      {/* Bottom Nav for Mobile */}
+      <div className="sm:hidden border-t bg-card h-16 shrink-0 flex items-center justify-around px-2 pb-safe">
+        {navLinks.map((link) => {
+          if (link.protected && !user) return null;
+          const isActive = location.pathname === link.to || (link.to === '/chat' && location.pathname.startsWith('/chat'));
+          return (
+            <Link key={link.to} to={link.to} className="flex flex-col items-center gap-1 group">
+              <div className={cn(
+                "p-2 rounded-xl transition-all duration-200",
+                isActive ? "bg-primary text-white" : "text-muted-foreground group-hover:text-primary group-hover:bg-primary/10"
+              )}>
+                <link.icon className="h-5 w-5" />
+              </div>
+              <span className={cn(
+                "text-[9px] font-bold uppercase tracking-wider",
+                isActive ? "text-primary" : "text-muted-foreground"
+              )}>{link.label}</span>
+            </Link>
+          );
+        })}
+      </div>
     </div>
   );
 }

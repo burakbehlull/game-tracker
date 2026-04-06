@@ -1,0 +1,9 @@
+api/
+electron/
+assets/
+docs/
+.env
+README.md
+LICENSE
+CONTRIBUTING.md
+CODE_OF_CONDUCT.md

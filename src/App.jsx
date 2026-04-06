@@ -223,7 +223,7 @@ function App() {
                   element={
                     user ? (
                       <Layout user={user} onLogout={handleLogout}>
-                        <Chat />
+                        <Chat user={user} />
                       </Layout>
                     ) : (
                       <Navigate to="/login" />

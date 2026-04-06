@@ -11,10 +11,17 @@ const router = express.Router();
 const MAX_PAGE_SIZE = 50;
 
 function toPublicMessage(message) {
+  const isPopulated = message.senderId && typeof message.senderId === 'object' && message.senderId.username;
+  
   return {
     _id: message._id,
     conversationId: message.conversationId,
-    senderId: message.senderId,
+    senderId: isPopulated ? (message.senderId._id || message.senderId) : message.senderId,
+    sender: isPopulated ? {
+      username: message.senderId.username,
+      globalName: message.senderId.globalName,
+      avatar: message.senderId.avatar
+    } : null,
     content: message.content,
     kind: message.kind,
     createdAt: message.createdAt,
@@ -100,7 +107,12 @@ router.get('/conversations/:id/messages', auth, async (req, res) => {
     const query = { conversationId: req.params.id, deletedAt: null };
     if (req.query.cursor) query._id = { $lt: req.query.cursor };
 
-    const messages = await Message.find(query).sort({ _id: -1 }).limit(pageSize).lean();
+    const messages = await Message.find(query)
+      .sort({ _id: -1 })
+      .limit(pageSize)
+      .populate('senderId', 'username globalName avatar')
+      .lean();
+
     res.json(messages.reverse().map(toPublicMessage));
   } catch (error) {
     res.status(500).json({ error: 'Mesajlar alınamadı' });
@@ -126,7 +138,11 @@ router.post('/conversations/:id/messages', auth, async (req, res) => {
     conversation.lastMessageAt = new Date();
     await conversation.save();
 
-    const payload = toPublicMessage(message);
+    const populatedMessage = await Message.findById(message._id)
+      .populate('senderId', 'username globalName avatar')
+      .lean();
+
+    const payload = toPublicMessage(populatedMessage);
     emitToConversation(conversation._id, 'message:new', payload);
     emitToUsers(conversation.participants, 'conversation:updated', {
       type: 'message',

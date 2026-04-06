@@ -46,7 +46,7 @@ export default function SocialSidebar() {
   if (loading) return null;
 
   return (
-    <div className="w-64 bg-card border-l flex flex-col h-full hidden lg:flex">
+    <div className="w-64 bg-card border-l flex flex-col h-full hidden md:flex">
       <div className="p-4 border-b flex items-center justify-between">
         <h2 className="font-bold flex items-center gap-2 text-sm uppercase tracking-wider">
           <Users className="w-4 h-4 text-primary" />

@@ -32,12 +32,12 @@ export default function Layout({ children, user, onLogout }) {
   };
 
   const navLinks = [
+    { to: '/friends', icon: Users, label: 'Arkadaşlar', protected: true },
+    { to: '/chat', icon: MessageSquare, label: 'Sohbet', protected: true },
     { to: '/discover', icon: Globe, label: 'Keşfet' },
     { to: '/dashboard', icon: BarChart3, label: 'Panel', protected: true },
     { to: '/timer', icon: Clock, label: 'Zamanlayıcı', protected: true },
     { to: '/library', icon: Library, label: 'Kütüphane', protected: true },
-    { to: '/friends', icon: Users, label: 'Arkadaşlar', protected: true },
-    { to: '/chat', icon: MessageSquare, label: 'Sohbet', protected: true },
   ];
 
   return (
@@ -45,12 +45,12 @@ export default function Layout({ children, user, onLogout }) {
       <nav className="border-b bg-card shrink-0">
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between h-16">
-            <div className="flex items-center gap-6 overflow-hidden">
+            <div className="flex items-center gap-4">
               <Link to="/" className="flex items-center gap-2 text-xl font-bold shrink-0">
                 <Gamepad2 className="h-6 w-6 text-primary" />
                 <span className="hidden sm:inline">Game Tracker</span>
               </Link>
-              <div className="hidden sm:flex gap-2">
+              <div className="hidden sm:flex gap-1 md:gap-2">
                 {navLinks.map((link) => {
                   if (link.protected && !user) return null;
                   const isActive = location.pathname === link.to || (link.to === '/chat' && location.pathname.startsWith('/chat'));
@@ -58,10 +58,10 @@ export default function Layout({ children, user, onLogout }) {
                     <Link key={link.to} to={link.to}>
                       <Button 
                         variant={isActive ? 'default' : 'ghost'}
-                        className="flex items-center gap-2 h-9 px-3"
+                        className="flex items-center gap-2 h-9 px-2 md:px-3"
                       >
                         <link.icon className="h-4 w-4" />
-                        <span className="hidden md:inline">{link.label}</span>
+                        <span className="hidden xl:inline">{link.label}</span>
                       </Button>
                     </Link>
                   );

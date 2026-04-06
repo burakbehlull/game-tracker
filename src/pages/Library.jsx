@@ -13,12 +13,18 @@ export default function Library({ user }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [currentGame, setCurrentGame] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [loadingLibrary, setLoadingLibrary] = useState(true);
 
   useEffect(() => {
-    loadSupportedGames();
-    const interval = setInterval(checkCurrentGame, 3000);
+    loadInitialData();
+    const interval = setInterval(checkCurrentGameSafe, 3000);
     return () => clearInterval(interval);
   }, []);
+
+  useEffect(() => {
+    // Keep local state aligned when parent user object changes.
+    setLibrary(Array.isArray(user?.library) ? user.library : []);
+  }, [user]);
 
   const getGameImage = (gameName) => {
     if (!gameName) return null;
@@ -26,17 +32,42 @@ export default function Library({ user }) {
     return getAssetUrl(`assets/games/${fileName}_banner.jpg`);
   };
 
-  const loadSupportedGames = async () => {
-    if (window.electronAPI) {
-      const games = await window.electronAPI.getSupportedGames();
-      setSupportedGames(games);
+  const getErrorMessage = (err, fallback) => {
+    return err?.data?.error || err?.message || fallback;
+  };
+
+  const loadInitialData = async () => {
+    try {
+      await Promise.all([loadLibrary(), loadSupportedGames(), checkCurrentGameSafe()]);
+    } finally {
+      setLoadingLibrary(false);
     }
   };
 
-  const checkCurrentGame = async () => {
+  const loadLibrary = async () => {
+    try {
+      const currentUser = await api.getCurrentUser();
+      setLibrary(Array.isArray(currentUser?.library) ? currentUser.library : []);
+    } catch (err) {
+      console.error('Kütüphane yüklenemedi:', err);
+    }
+  };
+
+  const loadSupportedGames = async () => {
     if (window.electronAPI) {
-      const game = await window.electronAPI.getCurrentGame();
-      setCurrentGame(game);
+      const games = await window.electronAPI.getSupportedGames();
+      setSupportedGames(Array.isArray(games) ? games : []);
+    }
+  };
+
+  const checkCurrentGameSafe = async () => {
+    if (window.electronAPI) {
+      try {
+        const game = await window.electronAPI.getCurrentGame();
+        setCurrentGame(game);
+      } catch (err) {
+        console.error('Aktif oyun alınamadı:', err);
+      }
     }
   };
 
@@ -47,7 +78,7 @@ export default function Library({ user }) {
       setLibrary(updatedLibrary);
       setShowAddModal(false);
     } catch (err) {
-      alert(err.error || 'Oyun eklenemedi');
+      alert(getErrorMessage(err, 'Oyun eklenemedi'));
     } finally {
       setLoading(false);
     }
@@ -61,7 +92,7 @@ export default function Library({ user }) {
         const updatedLibrary = await api.updateLibraryExe(gameName, path);
         setLibrary(updatedLibrary);
       } catch (err) {
-        alert(err.error || 'Dosya yolu kaydedilemedi');
+        alert(getErrorMessage(err, 'Dosya yolu kaydedilemedi'));
       }
     }
   };
@@ -80,7 +111,7 @@ export default function Library({ user }) {
       const updatedLibrary = await api.removeFromLibrary(gameName);
       setLibrary(updatedLibrary);
     } catch (err) {
-      alert(err.error || 'Oyun silinemedi');
+      alert(getErrorMessage(err, 'Oyun silinemedi'));
     }
   };
 
@@ -107,7 +138,12 @@ export default function Library({ user }) {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        {library.length === 0 ? (
+        {loadingLibrary ? (
+          <div className="col-span-full py-20 bg-secondary/20 border-2 border-dashed border-white/5 rounded-[2.5rem] flex flex-col items-center justify-center text-center">
+            <Loader2 className="w-8 h-8 animate-spin text-primary mb-3" />
+            <p className="text-muted-foreground font-bold uppercase tracking-widest">Kütüphane yükleniyor...</p>
+          </div>
+        ) : library.length === 0 ? (
           <div className="col-span-full py-20 bg-secondary/20 border-2 border-dashed border-white/5 rounded-[2.5rem] flex flex-col items-center justify-center text-center">
             <div className="p-4 rounded-full bg-white/5 mb-4">
               <Gamepad2 className="w-12 h-12 text-muted-foreground/50" />

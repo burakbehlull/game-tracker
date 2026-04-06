@@ -1,4 +1,24 @@
-const API_URL = import.meta.env.VITE_API_URL
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+
+const request = async (url, options = {}) => {
+  const res = await fetch(url, options);
+  let body = null;
+
+  try {
+    body = await res.json();
+  } catch {
+    body = null;
+  }
+
+  if (!res.ok) {
+    const error = new Error(body?.error || body?.message || 'Request failed');
+    error.status = res.status;
+    error.data = body;
+    throw error;
+  }
+
+  return body;
+};
 
 const getHeaders = () => {
   const token = localStorage.getItem('token');
@@ -10,104 +30,78 @@ const getHeaders = () => {
 
 export const api = {
   login: async (username, password) => {
-    const res = await fetch(`${API_URL}/auth/login`, {
+    return request(`${API_URL}/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username, password })
     });
-    if (!res.ok) throw await res.json();
-    return res.json();
   },
   
   register: async (data) => {
-    const res = await fetch(`${API_URL}/auth/register`, {
+    return request(`${API_URL}/auth/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
     });
-    if (!res.ok) throw await res.json();
-    return res.json();
   },
 
   getCurrentUser: async () => {
-    const res = await fetch(`${API_URL}/users/me`, { headers: getHeaders() });
-    if (!res.ok) throw await res.json();
-    return res.json();
+    return request(`${API_URL}/users/me`, { headers: getHeaders() });
   },
 
   updateProfile: async (data) => {
-    const res = await fetch(`${API_URL}/users/me`, {
+    return request(`${API_URL}/users/me`, {
       method: 'PUT',
       headers: getHeaders(),
       body: JSON.stringify(data)
     });
-    if (!res.ok) throw await res.json();
-    return res.json();
   },
 
   getStats: async () => {
-    const res = await fetch(`${API_URL}/games/stats`, { headers: getHeaders() });
-    if (!res.ok) throw await res.json();
-    return res.json();
+    return request(`${API_URL}/games/stats`, { headers: getHeaders() });
   },
 
   getSessions: async () => {
-    const res = await fetch(`${API_URL}/games/history`, { headers: getHeaders() });
-    if (!res.ok) throw await res.json();
-    return res.json();
+    return request(`${API_URL}/games/history`, { headers: getHeaders() });
   },
   
   searchUsers: async (query) => {
-    const res = await fetch(`${API_URL}/users/search?q=${query}`, { headers: getHeaders() });
-    if (!res.ok) throw await res.json();
-    return res.json();
+    return request(`${API_URL}/users/search?q=${query}`, { headers: getHeaders() });
   },
 
   getChallenges: async () => {
-    const res = await fetch(`${API_URL}/users/challenges`, { headers: getHeaders() });
-    if (!res.ok) throw await res.json();
-    return res.json();
+    return request(`${API_URL}/users/challenges`, { headers: getHeaders() });
   },
 
   getUserProfile: async (username) => {
-    const res = await fetch(`${API_URL}/users/profile/${username}`, { headers: getHeaders() });
-    if (!res.ok) throw await res.json();
-    return res.json();
+    return request(`${API_URL}/users/profile/${username}`, { headers: getHeaders() });
   },
   
   getGameDetails: async (gameName) => {
-    const res = await fetch(`${API_URL}/games/details/${encodeURIComponent(gameName)}`, { headers: getHeaders() });
-    if (!res.ok) throw await res.json();
-    return res.json();
+    return request(`${API_URL}/games/details/${encodeURIComponent(gameName)}`, { headers: getHeaders() });
   },
 
   // Library
   addToLibrary: async (gameName, exePath = '') => {
-    const res = await fetch(`${API_URL}/users/library/add`, {
+    return request(`${API_URL}/users/library/add`, {
       method: 'POST',
       headers: getHeaders(),
       body: JSON.stringify({ gameName, exePath })
     });
-    if (!res.ok) throw await res.json();
-    return res.json();
   },
 
   updateLibraryExe: async (gameName, exePath) => {
-    const res = await fetch(`${API_URL}/users/library/update`, {
+    return request(`${API_URL}/users/library/update`, {
       method: 'PUT',
       headers: getHeaders(),
       body: JSON.stringify({ gameName, exePath })
     });
-    if (!res.ok) throw await res.json();
-    return res.json();
   },
 
   removeFromLibrary: async (gameName) => {
-    const res = await fetch(`${API_URL}/users/library/${encodeURIComponent(gameName)}`, {
+    return request(`${API_URL}/users/library/${encodeURIComponent(gameName)}`, {
       method: 'DELETE',
       headers: getHeaders()
     });
-    if (!res.ok) throw await res.json();
-    return res.json();
   }
 };

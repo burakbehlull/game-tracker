@@ -46,7 +46,7 @@ function App() {
     } catch (error) {
       console.error('Auth verification failed:', error);
       // Only clear token on explicit 401 Unauthorized, preserve it on network errors (startup)
-      if (error.response && error.response.status === 401) {
+      if (error?.status === 401) {
         localStorage.removeItem('token');
         if (window.electronAPI) window.electronAPI.logout();
       }

@@ -65,3 +65,27 @@
     -webkit-app-region: no-drag;
   }
 }
+
+/* Settings page light mode overrides for legacy dark utility classes */
+.settings-light .bg-\[\#0d1117\] {
+  background-color: hsl(var(--card));
+}
+
+.settings-light .text-white,
+.settings-light .text-gray-200,
+.settings-light .text-gray-300,
+.settings-light .text-gray-400,
+.settings-light .text-gray-500 {
+  color: hsl(var(--foreground));
+}
+
+.settings-light .border-white\/5,
+.settings-light .border-white\/10 {
+  border-color: hsl(var(--border));
+}
+
+.settings-light .bg-black\/40,
+.settings-light .bg-white\/5,
+.settings-light .bg-white\/10 {
+  background-color: hsl(var(--secondary));
+}

@@ -2,11 +2,14 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Input } from '../components/ui/input';
 import { Button } from '../components/ui/button';
-import { Search, User, Monitor, Gamepad2 } from 'lucide-react';
+import { Search, Monitor, Gamepad2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { api } from '../services/api';
+import { useTheme } from '../contexts/ThemeContext';
 
 export default function Discover() {
+  const { theme } = useTheme();
+  const isLight = theme === 'light';
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -64,7 +67,7 @@ export default function Discover() {
       {/* Search Hero Section */}
       <div className="flex flex-col items-center justify-center text-center space-y-6 py-12 relative">
         <div className="absolute inset-0 bg-primary/5 blur-3xl rounded-full -z-10" />
-        <h1 className="text-4xl md:text-6xl font-black tracking-tight text-white mb-2">
+        <h1 className="text-4xl md:text-6xl font-black tracking-tight text-foreground mb-2">
           Oyuncuları <span className="text-primary">Keşfet</span>
         </h1>
         <p className="text-xl text-muted-foreground max-w-2xl">
@@ -98,7 +101,7 @@ export default function Discover() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 animate-in fade-in slide-in-from-bottom-8 duration-500">
           {results.map((user) => (
             <Link key={user._id} to={`/profile/${user.username}`}>
-              <div className="group relative bg-white/5 border border-white/5 hover:bg-white/10 hover:border-primary/20 rounded-xl p-4 transition-all hover:scale-[1.02] cursor-pointer">
+              <div className={`group relative rounded-xl p-4 transition-all hover:scale-[1.02] cursor-pointer ${isLight ? 'bg-card border border-border hover:bg-accent hover:border-primary/20' : 'bg-white/5 border border-white/5 hover:bg-white/10 hover:border-primary/20'}`}>
                 <div className="flex items-center gap-4">
                   <div className="w-14 h-14 rounded-full bg-gradient-to-br from-gray-800 to-black p-0.5 border border-white/10 group-hover:border-primary/50 transition-colors shrink-0">
                     <img 
@@ -109,12 +112,12 @@ export default function Discover() {
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center justify-between gap-2">
-                      <h3 className="font-bold text-lg text-white group-hover:text-primary truncate transition-colors">
+                      <h3 className={`font-bold text-lg group-hover:text-primary truncate transition-colors ${isLight ? 'text-foreground' : 'text-white'}`}>
                         {user.username}
                       </h3>
                       <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-primary/10 border border-primary/20">
                         <span className="text-[10px] font-bold text-primary uppercase tracking-wider">Level</span>
-                        <span className="text-sm font-black text-white">{user.level || 1}</span>
+                        <span className={`text-sm font-black ${isLight ? 'text-foreground' : 'text-white'}`}>{user.level || 1}</span>
                       </div>
                     </div>
                     

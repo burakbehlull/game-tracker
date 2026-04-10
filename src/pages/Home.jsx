@@ -1,6 +1,6 @@
 import { Button } from '../components/ui/button';
 import { Card, CardContent } from '../components/ui/card';
-import { Zap, Target, Users, Search, ChevronRight, BarChart3, Shield, Download } from 'lucide-react';
+import { Zap, Users, ChevronRight, BarChart3, Shield } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { getAssetUrl } from '../lib/assetHelper';
 

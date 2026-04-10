@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Trophy, Clock, Zap, Users, Monitor, ChevronRight } from 'lucide-react';
-import { cn } from '../lib/utils';
+import { Trophy, Zap, Users, Monitor, ChevronRight } from 'lucide-react';
 import { api } from '../services/api';
 import { getAssetUrl } from '../lib/assetHelper';
 

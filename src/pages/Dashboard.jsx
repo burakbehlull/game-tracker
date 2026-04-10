@@ -1,7 +1,7 @@
-import { useState, useEffect, useCallback } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
+import { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
-import { Gamepad2, Clock, Calendar, TrendingUp, AlertCircle, Moon, Sun, Sunset, Coffee, Zap, Brain, ShieldCheck, Target, Trophy, CheckCircle2, Circle, Star } from 'lucide-react';
+import { Gamepad2, Clock, Calendar, TrendingUp, AlertCircle, Moon, 
+  Sun, Sunset, Coffee, Zap, Brain, ShieldCheck, Target, Trophy, CheckCircle2, Star } from 'lucide-react';
 import { api } from '../services/api';
 import { Link } from 'react-router-dom';
 import { cn } from '../lib/utils';

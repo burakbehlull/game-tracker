@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Settings, MessageSquare, Award, Monitor, Clock, Trophy, Zap, Star, Eye, EyeOff, LibraryBig, Archive, Heart, Flame, Gamepad2, Swords, TrendingUp, Crown, ShieldCheck, Rocket } from 'lucide-react';
+import { Settings, Monitor, Clock, Trophy, Zap, Eye, EyeOff, LibraryBig, Archive, 
+  Heart, Flame, Gamepad2, Swords, TrendingUp, Crown, ShieldCheck, Rocket } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { Button } from '../components/ui/button';
 import { api } from '../services/api';
@@ -238,7 +239,7 @@ export default function Profile({ user: currentUser }) {
                   </span>
                   */}
                   {/*<span className="w-1 h-1 rounded-full bg-white/20" />*/}
-                  <span className="lowercase">{profileUser?.username}</span>
+                  <span className="lowercase">@{profileUser?.username}</span>
                   {/*<span className="w-1 h-1 rounded-full bg-white/20" />
                   <span className="text-blue-500/80">User ID: {profileUser?.id}</span>*/}
                 </div>

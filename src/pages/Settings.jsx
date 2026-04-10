@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { User, Monitor, Bell, Check, X, AlertCircle, Shield, Lock, ChevronRight, Eye, EyeOff, ShieldAlert, Fingerprint, Search, Moon, Sun } from 'lucide-react';
+import { User, Monitor, Bell, Check, X, AlertCircle, Shield, Lock, ChevronRight, 
+  Eye, EyeOff, ShieldAlert, Fingerprint, Search, Moon, Sun } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Switch } from '../components/ui/switch';
 import { Input } from '../components/ui/input';

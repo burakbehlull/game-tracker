@@ -5,7 +5,7 @@ import { Card } from '../components/ui/card';
 import { api } from '../services/api';
 import { useWebSocket } from '../contexts/WebSocketContext';
 import { Link } from 'react-router-dom';
-import { Users, UserPlus, Search, MessageSquare, UserMinus, Check, X, Clock, Monitor } from 'lucide-react';
+import { Users, Search, MessageSquare, UserMinus, Check, X, Clock, Monitor } from 'lucide-react';
 import { cn } from '../lib/utils';
 
 // --- YARDIMCI FONKSİYONLAR ---

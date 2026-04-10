@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/card';
 import { Button } from '../components/ui/button';
-import { Clock, Zap, AlertCircle, Gamepad2, ShieldCheck, Timer as TimerIcon } from 'lucide-react';
-import { log } from 'electron-log';
+import { Clock, AlertCircle, Gamepad2, ShieldCheck, Timer as TimerIcon } from 'lucide-react';
 
 export default function TimerPage({ user }) {
   const [currentGame, setCurrentGame] = useState(null);

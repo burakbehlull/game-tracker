@@ -38,3 +38,11 @@ The game library detects the game, or you can add and launch it from a single lo
 It provides a detailed page for the games, listing who plays them the most and which games are being played.
 
 <img src="assets/images/game_detail_page.png" alt="Library Page" width="600"/>
+
+## Friends Page
+
+<img src="assets/images/friends_page.png" alt="Library Page" width="600"/>
+
+## Chat Page
+
+<img src="assets/images/chat_page.png" alt="Library Page" width="600"/>

@@ -2,8 +2,8 @@ import { useState, useRef, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useTheme } from '../contexts/ThemeContext';
 import { Button } from './ui/button';
-import { Switch } from './ui/switch';
-import { Moon, Sun, User, LogOut, Gamepad2, Globe, BarChart3, Download, Clock, Settings, ChevronDown, Library, Users, MessageSquare } from 'lucide-react';
+import { User, LogOut, Gamepad2, Globe, BarChart3, Download, Clock, 
+  Settings, ChevronDown, Library, Users, MessageSquare } from 'lucide-react';
 import { cn } from '../lib/utils';
 
 const DownloadURL = import.meta.env.VITE_DOWNLOAD_URL;

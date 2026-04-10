@@ -2,13 +2,6 @@ import * as React from 'react';
 import { Slot } from '@radix-ui/react-slot';
 import { cn } from '@/lib/utils';
 
-// Basit variant sistemi
-const getVariantClasses = (variant, size, variants, defaultVariants) => {
-  const variantClass = variants?.variant?.[variant || defaultVariants?.variant] || '';
-  const sizeClass = variants?.size?.[size || defaultVariants?.size] || '';
-  return `${variantClass} ${sizeClass}`.trim();
-};
-
 const buttonVariants = {
   variant: {
     default: 'bg-primary text-primary-foreground hover:bg-primary/90',

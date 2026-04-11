@@ -34,9 +34,17 @@ router.post('/register', authLimiter, async (req, res) => {
       return res.status(400).json({ error: 'Geçersiz veri formatı' });
     }
 
-    const existingUser = await User.findOne({ username });
+    const existingUser = await User.findOne({ 
+      $or: [{ username }, { email: email.toLowerCase() }] 
+    });
+
     if (existingUser) {
-      return res.status(400).json({ error: 'Username already exists' });
+      if (existingUser.isVerified) {
+        return res.status(400).json({ error: 'Kullanıcı adı veya e-posta zaten kullanımda.' });
+      } else {
+        // Doğrulanmamış askıda kalan hesabı temizle (DoS Vektörü kapandı)
+        await User.deleteOne({ _id: existingUser._id });
+      }
     }
 
     const verificationCode = crypto.randomInt(100000, 999999).toString();

@@ -1,7 +1,18 @@
 const nodemailer = require('nodemailer');
+const dns = require('dns');
+
+// Render.com'un IPv6 (ENETUNREACH) hatasını çözmek için IPv4 adreslerini zorunlu tutuyoruz.
+if (dns.setDefaultResultOrder) {
+  dns.setDefaultResultOrder('ipv4first');
+}
 
 const transporter = nodemailer.createTransport({
-  service: 'gmail',
+  host: 'smtp.gmail.com',
+  port: 465,
+  secure: true,
+  // Node.js'e IPv6'yı yoksayıp zorla IPv4 üzerinden bağlanmasını söylüyoruz:
+  // Render.com'un IPv6 bug'ını (ENETUNREACH) çözer.
+  tls: { rejectUnauthorized: false },
   auth: {
     user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASS

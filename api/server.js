@@ -15,6 +15,10 @@ if (dns.setDefaultResultOrder) {
 
 const app = express();
 
+// Render.com Load Balancers (Yük dengeleyici) ve Ters Proxy (Reverse Proxy) ayarı
+// Bu kod olmazsa express-rate-limit sistemi IP bulamadığı için çöker.
+app.set('trust proxy', 1);
+
 const defaultAllowedOrigins = [
   'http://localhost:5173',
   'http://localhost:3000',

@@ -14,6 +14,9 @@ export default function Register({ onLogin }) {
   const [globalName, setGlobalName] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [verificationMode, setVerificationMode] = useState(false);
+  const [verificationCode, setVerificationCode] = useState('');
+  const [userId, setUserId] = useState(null);
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
@@ -29,6 +32,33 @@ export default function Register({ onLogin }) {
 
     try {
       const result = await api.register({ username, password, email, globalName });
+      
+      if (result.requireVerification) {
+        setUserId(result.userId);
+        setVerificationMode(true);
+        setError('');
+      } else {
+        localStorage.setItem('token', result.token);
+        if (window.electronAPI) {
+          await window.electronAPI.setAuthToken(result.token);
+        }
+        onLogin(result.user);
+        navigate('/');
+      }
+    } catch (err) {
+      setError(err?.data?.error || err?.message || 'Kayıt başarısız');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerify = async (e) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+
+    try {
+      const result = await api.verifyEmail(userId, verificationCode);
       localStorage.setItem('token', result.token);
       
       if (window.electronAPI) {
@@ -38,7 +68,7 @@ export default function Register({ onLogin }) {
       onLogin(result.user);
       navigate('/');
     } catch (err) {
-      setError(err?.data?.error || err?.message || 'Kayıt başarısız');
+      setError(err?.data?.error || err?.message || 'Doğrulama başarısız.');
     } finally {
       setLoading(false);
     }
@@ -54,77 +84,112 @@ export default function Register({ onLogin }) {
           <CardTitle className="text-2xl font-bold">Kayıt Ol</CardTitle>
           <CardDescription>Yeni hesap oluşturun ve oyun sürelerinizi takip edin</CardDescription>
         </CardHeader>
-        <form onSubmit={handleSubmit}>
-          <CardContent className="space-y-4">
-            {error && (
-              <div className="p-3 text-sm text-destructive bg-destructive/10 rounded-md">
-                {error}
+        {verificationMode ? (
+          <form onSubmit={handleVerify}>
+            <CardContent className="space-y-4">
+              <div className="p-3 text-sm text-emerald-500 bg-emerald-500/10 rounded-md text-center font-bold">
+                E-posta adresinize gönderilen doğrulama kodunu girin.
               </div>
-            )}
-            <div className="space-y-2">
-              <Label htmlFor="globalName">Görünen Adınız</Label>
-              <Input
-                id="globalName"
-                type="text"
-                placeholder="Görünen Adınız"
-                value={globalName}
-                onChange={(e) => setGlobalName(e.target.value)}
-                disabled={loading}
-              />
-            </div>
+              {error && (
+                <div className="p-3 text-sm text-destructive bg-destructive/10 rounded-md">
+                  {error}
+                </div>
+              )}
+              <div className="space-y-2">
+                <Label htmlFor="verificationCode">Doğrulama Kodu</Label>
+                <Input
+                  id="verificationCode"
+                  type="text"
+                  placeholder="6 Haneli Kod"
+                  className="text-center text-2xl tracking-widest"
+                  value={verificationCode}
+                  onChange={(e) => setVerificationCode(e.target.value)}
+                  required
+                  maxLength={6}
+                  disabled={loading}
+                />
+              </div>
+            </CardContent>
+            <CardFooter className="flex flex-col space-y-4">
+              <Button type="submit" className="w-full" disabled={loading}>
+                {loading ? 'Doğrulanıyor...' : 'Doğrula ve Kaydı Tamamla'}
+              </Button>
+            </CardFooter>
+          </form>
+        ) : (
+          <form onSubmit={handleSubmit}>
+            <CardContent className="space-y-4">
+              {error && (
+                <div className="p-3 text-sm text-destructive bg-destructive/10 rounded-md">
+                  {error}
+                </div>
+              )}
+              <div className="space-y-2">
+                <Label htmlFor="globalName">Görünen Adınız</Label>
+                <Input
+                  id="globalName"
+                  type="text"
+                  placeholder="Görünen Adınız"
+                  value={globalName}
+                  onChange={(e) => setGlobalName(e.target.value)}
+                  disabled={loading}
+                />
+              </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="username">Kullanıcı Adı</Label>
-              <Input
-                id="username"
-                type="text"
-                placeholder="kullaniciadi"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                required
-                minLength={3}
-                maxLength={20}
-                disabled={loading}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="email">E-posta</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="ornek@email.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                disabled={loading}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">Şifre</Label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                minLength={6}
-                disabled={loading}
-              />
-              <p className="text-xs text-muted-foreground">En az 6 karakter</p>
-            </div>
-          </CardContent>
-          <CardFooter className="flex flex-col space-y-4">
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? 'Kayıt yapılıyor...' : 'Kayıt Ol'}
-            </Button>
-            <div className="text-sm text-center text-muted-foreground">
-              Zaten hesabınız var mı?{' '}
-              <Link to="/login" className="text-primary hover:underline">
-                Giriş Yap
-              </Link>
-            </div>
-          </CardFooter>
-        </form>
+              <div className="space-y-2">
+                <Label htmlFor="username">Kullanıcı Adı</Label>
+                <Input
+                  id="username"
+                  type="text"
+                  placeholder="kullaniciadi"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  required
+                  minLength={3}
+                  maxLength={20}
+                  disabled={loading}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="email">E-posta</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="ornek@email.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  disabled={loading}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="password">Şifre</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  minLength={6}
+                  disabled={loading}
+                />
+                <p className="text-xs text-muted-foreground">En az 6 karakter</p>
+              </div>
+            </CardContent>
+            <CardFooter className="flex flex-col space-y-4">
+              <Button type="submit" className="w-full" disabled={loading}>
+                {loading ? 'Kayıt yapılıyor...' : 'Kayıt Ol'}
+              </Button>
+              <div className="text-sm text-center text-muted-foreground">
+                Zaten hesabınız var mı?{' '}
+                <Link to="/login" className="text-primary hover:underline">
+                  Giriş Yap
+                </Link>
+              </div>
+            </CardFooter>
+          </form>
+        )}
       </Card>
     </div>
   );

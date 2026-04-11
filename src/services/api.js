@@ -46,6 +46,30 @@ export const api = {
     });
   },
 
+  verifyEmail: async (userId, code) => {
+    return request(`${API_URL}/auth/verify-email`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId, code })
+    });
+  },
+
+  forgotPassword: async (email) => {
+    return request(`${API_URL}/auth/forgot-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email })
+    });
+  },
+
+  resetPassword: async (token, newPassword) => {
+    return request(`${API_URL}/auth/reset-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token, newPassword })
+    });
+  },
+
   getCurrentUser: async () => {
     return request(`${API_URL}/users/me`, { headers: getHeaders() });
   },

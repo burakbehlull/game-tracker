@@ -12,6 +12,9 @@ export default function Login({ onLogin }) {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [verificationMode, setVerificationMode] = useState(false);
+  const [verificationCode, setVerificationCode] = useState('');
+  const [userId, setUserId] = useState(null);
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
@@ -23,7 +26,6 @@ export default function Login({ onLogin }) {
       const result = await api.login(username, password);
       localStorage.setItem('token', result.token);
       
-      // If running in Electron, send token to main process
       if (window.electronAPI) {
         await window.electronAPI.setAuthToken(result.token);
       }
@@ -31,7 +33,35 @@ export default function Login({ onLogin }) {
       onLogin(result.user);
       navigate('/');
     } catch (err) {
-      setError(err?.data?.error || err?.message || 'Giriş başarısız');
+      if (err?.data?.requireVerification) {
+        setUserId(err.data.userId);
+        setVerificationMode(true);
+        setError(err?.data?.error || 'Lütfen e-postanızı doğrulayın.');
+      } else {
+        setError(err?.data?.error || err?.message || 'Giriş başarısız');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerify = async (e) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+
+    try {
+      const result = await api.verifyEmail(userId, verificationCode);
+      localStorage.setItem('token', result.token);
+      
+      if (window.electronAPI) {
+        await window.electronAPI.setAuthToken(result.token);
+      }
+      
+      onLogin(result.user);
+      navigate('/');
+    } catch (err) {
+      setError(err?.data?.error || err?.message || 'Doğrulama başarısız.');
     } finally {
       setLoading(false);
     }
@@ -47,50 +77,89 @@ export default function Login({ onLogin }) {
           <CardTitle className="text-2xl font-bold">Hoş Geldiniz</CardTitle>
           <CardDescription>Oyun süre takip uygulamanıza giriş yapın</CardDescription>
         </CardHeader>
-        <form onSubmit={handleSubmit}>
-          <CardContent className="space-y-4">
-            {error && (
-              <div className="p-3 text-sm text-destructive bg-destructive/10 rounded-md">
-                {error}
+        {verificationMode ? (
+          <form onSubmit={handleVerify}>
+            <CardContent className="space-y-4">
+              {error && (
+                <div className="p-3 text-sm text-destructive bg-destructive/10 rounded-md">
+                  {error}
+                </div>
+              )}
+              <div className="space-y-2">
+                <Label htmlFor="verificationCode">Doğrulama Kodu</Label>
+                <Input
+                  id="verificationCode"
+                  type="text"
+                  placeholder="6 Haneli Kod"
+                  className="text-center text-2xl tracking-widest"
+                  value={verificationCode}
+                  onChange={(e) => setVerificationCode(e.target.value)}
+                  required
+                  maxLength={6}
+                  disabled={loading}
+                />
               </div>
-            )}
-            <div className="space-y-2">
-              <Label htmlFor="username">Kullanıcı Adı</Label>
-              <Input
-                id="username"
-                type="text"
-                placeholder="kullaniciadi"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                required
-                disabled={loading}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">Şifre</Label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                disabled={loading}
-              />
-            </div>
-          </CardContent>
-          <CardFooter className="flex flex-col space-y-4">
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? 'Giriş yapılıyor...' : 'Giriş Yap'}
-            </Button>
-            <div className="text-sm text-center text-muted-foreground">
-              Hesabınız yok mu?{' '}
-              <Link to="/register" className="text-primary hover:underline">
-                Kayıt Ol
-              </Link>
-            </div>
-          </CardFooter>
-        </form>
+            </CardContent>
+            <CardFooter className="flex flex-col space-y-4">
+              <Button type="submit" className="w-full" disabled={loading}>
+                {loading ? 'Doğrulanıyor...' : 'Doğrula ve Giriş Yap'}
+              </Button>
+              <div className="text-sm text-center text-muted-foreground">
+                <button type="button" onClick={() => setVerificationMode(false)} className="text-primary hover:underline">
+                  Giriş ekranına dön
+                </button>
+              </div>
+            </CardFooter>
+          </form>
+        ) : (
+          <form onSubmit={handleSubmit}>
+            <CardContent className="space-y-4">
+              {error && (
+                <div className="p-3 text-sm text-destructive bg-destructive/10 rounded-md">
+                  {error}
+                </div>
+              )}
+              <div className="space-y-2">
+                <Label htmlFor="username">Kullanıcı Adı</Label>
+                <Input
+                  id="username"
+                  type="text"
+                  placeholder="kullaniciadi"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  required
+                  disabled={loading}
+                />
+              </div>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="password">Şifre</Label>
+                  <Link to="/forgot-password" className="text-xs text-primary hover:underline" tabIndex="-1">Şifremi unuttum</Link>
+                </div>
+                <Input
+                  id="password"
+                  type="password"
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  disabled={loading}
+                />
+              </div>
+            </CardContent>
+            <CardFooter className="flex flex-col space-y-4">
+              <Button type="submit" className="w-full" disabled={loading}>
+                {loading ? 'Giriş yapılıyor...' : 'Giriş Yap'}
+              </Button>
+              <div className="text-sm text-center text-muted-foreground">
+                Hesabınız yok mu?{' '}
+                <Link to="/register" className="text-primary hover:underline">
+                  Kayıt Ol
+                </Link>
+              </div>
+            </CardFooter>
+          </form>
+        )}
       </Card>
     </div>
   );

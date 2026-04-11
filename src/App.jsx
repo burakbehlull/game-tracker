@@ -3,6 +3,8 @@ import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { ThemeProvider } from './contexts/ThemeContext';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
 import Home from './pages/Home';
 import Discover from './pages/Discover';
 import Dashboard from './pages/Dashboard';
@@ -129,6 +131,14 @@ function App() {
                 <Route 
                   path="/register" 
                   element={!user ? <Register onLogin={handleLogin} /> : <Navigate to="/" />} 
+                />
+                <Route 
+                  path="/forgot-password" 
+                  element={!user ? <ForgotPassword /> : <Navigate to="/" />} 
+                />
+                <Route 
+                  path="/reset-password/:token" 
+                  element={!user ? <ResetPassword /> : <Navigate to="/" />} 
                 />
                 <Route
                   path="/"

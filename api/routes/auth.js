@@ -61,8 +61,9 @@ router.post('/register', authLimiter, async (req, res) => {
     await user.save();
 
     const content = 'Game Tracker ağına hoş geldin! Hesabını aktifleştirmek için aşağıdaki doğrulama kodunu kullanabilirsin.';
+    const htmlEmail = getEmailTemplate('E-posta Doğrulaması', content, verificationCode);
+    
     // Mühendislik Kararı: Mail gönderilmeden işlemi "başarılı" saymıyoruz.
-    // Eğer mail gönderimi patlarsa, aşağıdaki Catch bloğu hatayı yakalar ve 500 döner.
     await sendEmail(email, 'Game Tracker - E-posta Doğrulama', htmlEmail);
 
     res.status(201).json({

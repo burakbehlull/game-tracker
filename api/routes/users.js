@@ -67,7 +67,19 @@ router.put('/me', auth, async (req, res) => {
     }
     
     if (password) {
-      if (typeof password !== 'string' || password.length < 6) return res.status(400).json({ error: 'Şifre en az 6 karakter olmalı' });
+      if (typeof password !== 'string' || password.length < 6) {
+        return res.status(400).json({ error: 'Şifre en az 6 karakter olmalı' });
+      }
+      
+      const { oldPassword } = req.body;
+      if (!oldPassword || typeof oldPassword !== 'string') {
+        return res.status(400).json({ error: 'Lütfen mevcut şifrenizi (Eski Şifre) giriniz.' });
+      }
+
+      if (!(await user.comparePassword(oldPassword))) {
+        return res.status(400).json({ error: 'Eski şifre doğru değil.' });
+      }
+
       user.password = password;
       user.tokenVersion = (user.tokenVersion || 0) + 1; // Invalidate existing active sessions
     }

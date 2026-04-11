@@ -3,21 +3,34 @@ const router = express.Router();
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const BadgeService = require('../services/badgeService');
+const crypto = require('crypto');
+const rateLimit = require('express-rate-limit');
+
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5, // Limit each IP to 5 requests per `window`
+  message: { error: 'Too many requests from this IP, please try again after 15 minutes' }
+});
 
 const JWT_SECRET = process.env.JWT_SECRET;
 if (!JWT_SECRET && process.env.NODE_ENV === 'production') {
   console.error('FATAL: JWT_SECRET is not set in production');
   process.exit(1);
 }
-const ACTUAL_SECRET = JWT_SECRET || 'dev-secret-unsafe';
+const ACTUAL_SECRET = JWT_SECRET || crypto.randomBytes(32).toString('hex');
 
 // Register
-router.post('/register', async (req, res) => {
+router.post('/register', authLimiter, async (req, res) => {
   try {
     const { username, password, email, globalName } = req.body;
 
     if (!username || !password || !email) {
       return res.status(400).json({ error: 'Eksik alanlar var' });
+    }
+
+    // NoSQL Injection Protection
+    if (typeof username !== 'string' || typeof password !== 'string' || typeof email !== 'string') {
+      return res.status(400).json({ error: 'Geçersiz veri formatı' });
     }
 
     const existingUser = await User.findOne({ username });
@@ -29,7 +42,7 @@ router.post('/register', async (req, res) => {
     await user.save();
 
     const token = jwt.sign(
-      { userId: user._id },
+      { userId: user._id, tokenVersion: user.tokenVersion || 0 },
       ACTUAL_SECRET,
       { expiresIn: '7d' }
     );
@@ -53,9 +66,14 @@ router.post('/register', async (req, res) => {
 });
 
 // Login
-router.post('/login', async (req, res) => {
+router.post('/login', authLimiter, async (req, res) => {
   try {
     const { username, password } = req.body;
+
+    // NoSQL Injection Protection
+    if (typeof username !== 'string' || typeof password !== 'string') {
+      return res.status(400).json({ error: 'Geçersiz veri formatı' });
+    }
 
     const user = await User.findOne({ username });
     if (!user || !(await user.comparePassword(password))) {
@@ -89,7 +107,7 @@ router.post('/login', async (req, res) => {
     await BadgeService.checkBadges(user._id);
 
     const token = jwt.sign(
-      { userId: user._id },
+      { userId: user._id, tokenVersion: user.tokenVersion || 0 },
       ACTUAL_SECRET,
       { expiresIn: '7d' }
     );

@@ -51,17 +51,25 @@ router.put('/me', auth, async (req, res) => {
     const user = await User.findById(req.userId);
     if (!user) return res.status(404).json({ error: 'Kullanıcı bulunamadı' });
 
-    if (username) {
-      if (username.length < 3) return res.status(400).json({ error: 'Kullanıcı adı en az 3 karakter olmalı' });
+    if (username !== undefined) {
+      if (typeof username !== 'string' || username.length < 3) return res.status(400).json({ error: 'Kullanıcı adı en az 3 karakter olmalı' });
       user.username = username;
     }
     
-    if (globalName !== undefined) user.globalName = globalName;
-    if (email !== undefined) user.email = email;
+    if (globalName !== undefined) {
+      if (typeof globalName !== 'string') return res.status(400).json({ error: 'Geçersiz veri formatı' });
+      user.globalName = globalName;
+    }
+    
+    if (email !== undefined) {
+      if (typeof email !== 'string') return res.status(400).json({ error: 'Geçersiz veri formatı' });
+      user.email = email;
+    }
     
     if (password) {
-      if (password.length < 6) return res.status(400).json({ error: 'Şifre en az 6 karakter olmalı' });
+      if (typeof password !== 'string' || password.length < 6) return res.status(400).json({ error: 'Şifre en az 6 karakter olmalı' });
       user.password = password;
+      user.tokenVersion = (user.tokenVersion || 0) + 1; // Invalidate existing active sessions
     }
 
     if (settings && typeof settings === 'object') {
@@ -121,7 +129,10 @@ router.get('/profile/:username', async (req, res) => {
       }
     ]);
 
-    res.json({ user: updatedUser, stats });
+    const responseUser = updatedUser.toObject();
+    delete responseUser._id;
+
+    res.json({ user: responseUser, stats });
   } catch (err) {
     console.error('[Profile API Error]', err);
     res.status(500).json({ error: 'Profil bilgileri alınamadı' });
@@ -134,7 +145,7 @@ router.get('/search', async (req, res) => {
   try {
     const filter = q ? { username: { $regex: q, $options: 'i' } } : {};
     const users = await User.find(filter)
-      .select('username globalName avatar createdAt level xp badges')
+      .select('-_id username globalName avatar createdAt level xp badges')
       .sort({ xp: -1 })
       .limit(20);
     res.json(users);

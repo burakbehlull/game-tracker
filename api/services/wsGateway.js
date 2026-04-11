@@ -1,18 +1,27 @@
 const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
 const Conversation = require('../models/Conversation');
+const User = require('../models/User'); // Need User model to check tokenVersion
 const { markOnline, markOffline } = require('./presenceService');
 const { setIO } = require('./realtime');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-unsafe';
+const JWT_SECRET = process.env.JWT_SECRET || crypto.randomBytes(32).toString('hex');
 
 function setupWebSocket(io) {
   setIO(io);
 
-  io.use((socket, next) => {
+  io.use(async (socket, next) => {
     try {
       const token = socket.handshake.auth?.token || socket.handshake.query?.token;
       if (!token) return next(new Error('Unauthorized'));
       const decoded = jwt.verify(token, JWT_SECRET);
+
+      const user = await User.findById(decoded.userId).select('tokenVersion');
+      if (!user) return next(new Error('User not found'));
+      if (decoded.tokenVersion !== undefined && user.tokenVersion !== decoded.tokenVersion) {
+        return next(new Error('Session expired or password changed'));
+      }
+
       socket.userId = decoded.userId;
       return next();
     } catch (error) {

@@ -24,8 +24,14 @@ const userSchema = new mongoose.Schema({
   },
   email: {
     type: String,
+    required: true,
+    unique: true,
     trim: true,
     lowercase: true
+  },
+  tokenVersion: {
+    type: Number,
+    default: 0
   },
   avatar: {
     type: String,

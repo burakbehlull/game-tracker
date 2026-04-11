@@ -15,7 +15,7 @@ class mailSender {
 		console.log(`[KRİTİK BİLGİ]: Kod şu adrese gönderiliyor: ${targetEmail}`); // <--- Burada göreceğiz
 		
 		const mailOptions = {
-			from: `"Game Tracker" <${process.env.GMAIL_USER || process.env.SMTP_USER}>`,
+			from: `"Game Tracker" <${process.env.SMTP_USER}>`,
 			to: targetEmail,
 			subject: title,
 			text,

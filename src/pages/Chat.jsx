@@ -5,7 +5,7 @@ import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { api } from '../services/api';
 import { useWebSocket } from '../contexts/WebSocketContext';
-import { Send, PlusCircle, MessageSquare, AtSign, X, Check, Users } from 'lucide-react';
+import { Send, PlusCircle, MessageSquare, AtSign, X, Check, Users, Trash2 } from 'lucide-react';
 import { cn } from '../lib/utils';
 
 // --- YARDIMCI FONKSİYONLAR ---
@@ -173,7 +173,7 @@ const MessageInput = memo(({ onSend, disabled, placeholder }) => {
   );
 });
 
-const MessageItem = memo(({ message, senderName, isMe, showHeader }) => (
+const MessageItem = memo(({ message, senderName, isMe, showHeader, onDelete }) => (
   <div className={cn("flex flex-col", isMe ? "items-end" : "items-start", !showHeader && "-mt-6")}>
     {showHeader && (
       <div className={cn("flex items-center gap-3 mb-2 px-1", isMe ? "flex-row-reverse" : "flex-row")}>
@@ -184,16 +184,29 @@ const MessageItem = memo(({ message, senderName, isMe, showHeader }) => (
     )}
     <div className={cn("max-w-[80%] px-6 py-4 text-sm relative group transition-colors", isMe ? "bg-primary text-white rounded-t-[1.5rem] rounded-bl-[1.5rem] rounded-br-[0.5rem]" : "bg-secondary/20 text-gray-200 border border-white/5 rounded-t-[1.5rem] rounded-br-[1.5rem] rounded-bl-[0.5rem]")}>
       <div className="break-words whitespace-pre-wrap leading-relaxed font-medium italic">{message.content}</div>
-      {!showHeader && (
-        <div className={cn("absolute top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity text-[8px] font-black uppercase tracking-tighter text-muted-foreground", isMe ? "-left-12 text-right" : "-right-12 text-left")}>
-          {new Date(message.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-        </div>
-      )}
+      
+      {/* Time and Actions Container inside tooltip area */}
+      <div className={cn("absolute top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-2", isMe ? "-left-20 flex-row-reverse" : "-right-16")}>
+        {!showHeader && (
+          <span className="text-[8px] font-black uppercase tracking-tighter text-muted-foreground whitespace-nowrap">
+            {new Date(message.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+          </span>
+        )}
+        {isMe && (
+          <button 
+            onClick={() => onDelete(message._id)} 
+            className="p-1.5 rounded-full bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-colors"
+            title="Mesajı Sil"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+          </button>
+        )}
+      </div>
     </div>
   </div>
 ));
 
-const MessageList = memo(({ messages, loading, getMessageSenderName, currentUser }) => {
+const MessageList = memo(({ messages, loading, getMessageSenderName, currentUser, onDeleteMessage }) => {
   const scrollRef = useRef(null);
   useEffect(() => { if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight; }, [messages]);
   if (loading) return <div className="flex flex-col items-center justify-center h-full gap-4"><div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin" /><span className="text-xs font-black text-primary uppercase tracking-[0.3em]">Yükleniyor</span></div>;
@@ -203,7 +216,7 @@ const MessageList = memo(({ messages, loading, getMessageSenderName, currentUser
         const sender = getMessageSenderName(m);
         const isMe = currentUser && String(m.senderId) === String(currentUser.id || currentUser._id);
         const showH = i === 0 || messages[i-1].senderId !== m.senderId || (new Date(m.createdAt) - new Date(messages[i-1].createdAt) > 300000);
-        return <MessageItem key={m._id} message={m} senderName={sender} isMe={isMe} showHeader={showH} />;
+        return <MessageItem key={m._id} message={m} senderName={sender} isMe={isMe} showHeader={showH} onDelete={onDeleteMessage} />;
       })}
     </div>
   );
@@ -261,7 +274,27 @@ export default function Chat({ user }) {
   useEffect(() => { loadMessages(conversationId); }, [conversationId, loadMessages]);
   useEffect(() => { if (events.conversationUpdated) loadConversations(); }, [events.conversationUpdated, loadConversations]);
   useEffect(() => { if (events.presence?.userId) setPresence(prev => ({ ...prev, [String(events.presence.userId)]: events.presence })); }, [events.presence]);
-  useEffect(() => { if (events.messageNew && String(events.messageNew.conversationId) === String(conversationId)) setMessages(p => [...p, events.messageNew]); }, [events.messageNew, conversationId]);
+  
+  useEffect(() => { 
+    if (events.messageNew && String(events.messageNew.conversationId) === String(conversationId)) {
+      setMessages(p => [...p, events.messageNew]); 
+    }
+  }, [events.messageNew, conversationId]);
+
+  useEffect(() => {
+    if (events.messageDeleted && String(events.messageDeleted.conversationId) === String(conversationId)) {
+      setMessages(p => p.filter(m => String(m._id) !== String(events.messageDeleted.messageId)));
+    }
+  }, [events.messageDeleted, conversationId]);
+
+  const handleDeleteMessage = useCallback(async (messageId) => {
+    try {
+      await api.deleteMessage(conversationId, messageId);
+      setMessages(p => p.filter(m => String(m._id) !== String(messageId)));
+    } catch (err) {
+      console.error('Mesaj silinemedi', err);
+    }
+  }, [conversationId]);
 
   const handleSend = useCallback(async (content) => {
     if (!content || !conversationId) return;
@@ -320,7 +353,7 @@ export default function Chat({ user }) {
               </div>
             </div>
           </div>
-          <MessageList messages={messages} loading={loading} getMessageSenderName={getMessageSenderName} currentUser={user} />
+          <MessageList messages={messages} loading={loading} getMessageSenderName={getMessageSenderName} currentUser={user} onDeleteMessage={handleDeleteMessage} />
           <div className="p-8 shrink-0 bg-gradient-to-t from-black/10 to-transparent">
             <MessageInput onSend={handleSend} disabled={!conversationId} placeholder={`${getConversationName(activeConversation, user?.username)} kanalına fısılda...`} />
           </div>

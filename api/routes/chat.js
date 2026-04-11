@@ -181,4 +181,32 @@ router.post('/conversations/:id/read', auth, async (req, res) => {
   }
 });
 
+router.delete('/conversations/:id/messages/:messageId', auth, async (req, res) => {
+  try {
+    const conversation = await ensureParticipant(req.params.id, req.userId);
+    if (!conversation) return res.status(404).json({ error: 'Konuşma bulunamadı' });
+
+    const message = await Message.findOne({
+      _id: req.params.messageId,
+      conversationId: conversation._id,
+      senderId: req.userId,
+      deletedAt: null
+    });
+
+    if (!message) return res.status(404).json({ error: 'Mesaj bulunamadı veya yetkiniz yok' });
+
+    message.deletedAt = new Date();
+    await message.save();
+
+    emitToConversation(conversation._id, 'message:deleted', {
+      conversationId: conversation._id,
+      messageId: message._id
+    });
+
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: 'Mesaj silinemedi' });
+  }
+});
+
 module.exports = router;

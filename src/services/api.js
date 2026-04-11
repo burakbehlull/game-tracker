@@ -215,6 +215,13 @@ export const api = {
     });
   },
 
+  deleteMessage: async (conversationId, messageId) => {
+    return request(`${API_URL}/chat/conversations/${conversationId}/messages/${messageId}`, {
+      method: 'DELETE',
+      headers: getHeaders()
+    });
+  },
+
   markConversationRead: async (conversationId) => {
     return request(`${API_URL}/chat/conversations/${conversationId}/read`, {
       method: 'POST',

@@ -52,31 +52,34 @@ router.post('/register', authLimiter, async (req, res) => {
     const user = new User({ 
       username, 
       password, 
-      email, 
+      email: email.toLowerCase(), 
       globalName, 
-      isVerified: false,
+      isVerified: true, // Şimdilik onaylı olarak işaretliyoruz
       verificationCode
     });
     
     await user.save();
 
-    const content = 'Game Tracker ağına hoş geldin! Hesabını aktifleştirmek için aşağıdaki doğrulama kodunu kullanabilirsin.';
     const htmlEmail = getEmailTemplate('E-posta Doğrulaması', content, verificationCode);
     
-    // Mail gönderimini deniyoruz ama patlarsa ekranın takılmasını engelliyoruz
-    try {
-      const mailResult = await sendEmail(email, 'Game Tracker - E-posta Doğrulama', htmlEmail);
-      if (!mailResult.status) {
-        console.warn("[Mail Uyarı]: Mail kuyruğa alınamadı, kullanıcı kodu göremeyebilir.");
-      }
-    } catch (mailErr) {
-      console.error("[Mail Kritik Hata]:", mailErr.message);
-    }
+    // Mail göndermeyi dene ama hata verirse kaydı bozma
+    sendEmail(email, 'Game Tracker - E-posta Doğrulama', htmlEmail).catch(e => console.log("Mail gönderilemedi ama kayıt devam ediyor."));
+
+    // Giriş yapıp token ver (Doğrulama ekranını atlıyoruz)
+    const token = jwt.sign(
+      { userId: user._id, tokenVersion: user.tokenVersion || 0 },
+      ACTUAL_SECRET,
+      { expiresIn: '7d' }
+    );
 
     res.status(201).json({
-      requireVerification: true,
-      message: 'Hesabınız oluşturuldu. Kod e-postanıza (veya Spam klasörüne) gönderildi.',
-      userId: user._id
+      token,
+      user: {
+        id: user._id,
+        username: user.username,
+        email: user.email,
+        globalName: user.globalName
+      }
     });
   } catch (error) {
     console.error('[Auth API Error]', error);

@@ -63,12 +63,16 @@ router.post('/register', authLimiter, async (req, res) => {
     const content = 'Game Tracker ağına hoş geldin! Hesabını aktifleştirmek için aşağıdaki doğrulama kodunu kullanabilirsin.';
     const htmlEmail = getEmailTemplate('E-posta Doğrulaması', content, verificationCode);
     
-    // Mühendislik Kararı: Mail gönderilmeden işlemi "başarılı" saymıyoruz.
-    await sendEmail(email, 'Game Tracker - E-posta Doğrulama', htmlEmail);
+    // Doğrudan kullanıcının girdiği 'email' değişkenini kullanıyoruz.
+    const mailResult = await sendEmail(email, 'Game Tracker - E-posta Doğrulama', htmlEmail);
+    
+    if (!mailResult.status) {
+      throw new Error("Mail gönderimi servis tarafında reddedildi.");
+    }
 
     res.status(201).json({
       requireVerification: true,
-      message: 'Hesabınız oluşturuldu. Lütfen e-postanıza gelen 6 haneli kodu giriniz.',
+      message: 'Kayıt başarılı. Kodunuz ' + email + ' adresine gönderildi.',
       userId: user._id
     });
   } catch (error) {

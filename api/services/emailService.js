@@ -16,15 +16,27 @@ const sendEmail = async (to, subject, htmlContent) => {
   }
 
   try {
+    console.log(`\n=================== [E-POSTA SİSTEMİ BİLGİSİ] ===================`);
+    console.log(`[İşlem] Mail gönderimi başlatıldı.`);
+    console.log(`[Hedef] ${to}`);
+    console.log(`[Servis] Gmail`);
+    console.log(`[Gönderen] ${process.env.SMTP_USER}`);
+    
     const info = await transporter.sendMail({
       from: `"Game Tracker" <${process.env.SMTP_USER}>`,
       to,
       subject,
       html: htmlContent
     });
+    console.log(`[Başarılı] Mail başarıyla ulaştı! İşlem No: ${info.messageId}`);
+    console.log(`=================================================================\n`);
     return info;
   } catch (error) {
-    console.error('[Email Error]', error);
+    console.error(`\n=================== [E-POSTA SİSTEMİ HATASI] ===================`);
+    console.error(`[HATA SEBEBİ]`, error.message);
+    if (error.code) console.error(`[HATA KODU]`, error.code);
+    if (error.response) console.error(`[HATA EKRANI]`, error.response);
+    console.error(`=================================================================\n`);
     throw new Error('E-posta gönderilemedi.');
   }
 };

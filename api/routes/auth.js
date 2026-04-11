@@ -54,16 +54,10 @@ router.post('/register', authLimiter, async (req, res) => {
       password, 
       email: email.toLowerCase(), 
       globalName, 
-      isVerified: true, // Şimdilik onaylı olarak işaretliyoruz
-      verificationCode
+      isVerified: true // E-posta doğrulaması devre dışı bırakıldı
     });
     
     await user.save();
-
-    const htmlEmail = getEmailTemplate('E-posta Doğrulaması', content, verificationCode);
-    
-    // Mail göndermeyi dene ama hata verirse kaydı bozma
-    sendEmail(email, 'Game Tracker - E-posta Doğrulama', htmlEmail).catch(e => console.log("Mail gönderilemedi ama kayıt devam ediyor."));
 
     // Giriş yapıp token ver (Doğrulama ekranını atlıyoruz)
     const token = jwt.sign(
@@ -148,13 +142,7 @@ router.post('/login', authLimiter, async (req, res) => {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
-    if (user.isVerified === false) {
-      return res.status(403).json({ 
-        error: 'Lütfen önce e-posta adresinizi doğrulayın.',
-        requireVerification: true,
-        userId: user._id
-      });
-    }
+
 
     const now = new Date();
     const lastLogin = user.stats?.lastLoginDate;

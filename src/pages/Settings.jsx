@@ -24,7 +24,8 @@ export default function SettingsPage({ user: currentUser }) {
     username: '',
     globalName: '',
     email: '',
-    password: ''
+    password: '',
+    oldPassword: ''
   });
 
   useEffect(() => {
@@ -37,7 +38,8 @@ export default function SettingsPage({ user: currentUser }) {
         username: currentUser.username || '',
         globalName: currentUser.globalName || '',
         email: currentUser.email || '',
-        password: ''
+        password: '',
+        oldPassword: ''
       });
 
       // Sync background settings from Electron if available
@@ -65,12 +67,16 @@ export default function SettingsPage({ user: currentUser }) {
       const dataToUpdate = {};
       dataToUpdate[field] = formData[field];
       
+      if (field === 'password') {
+        dataToUpdate.oldPassword = formData.oldPassword;
+      }
+      
       const updatedUser = await api.updateProfile(dataToUpdate);
       setUser(updatedUser);
       setEditField(null);
       setSuccess(`${field === 'password' ? 'Şifre' : 'Bilgiler'} başarıyla güncellendi`);
       
-      if (field === 'password') setFormData(prev => ({ ...prev, password: '' }));
+      if (field === 'password') setFormData(prev => ({ ...prev, password: '', oldPassword: '' }));
     } catch (err) {
       setError(err?.data?.error || err?.message || 'Güncelleme başarısız oldu');
     } finally {
@@ -362,6 +368,16 @@ export default function SettingsPage({ user: currentUser }) {
                 
                 {editField === 'password' ? (
                   <div className="space-y-4 max-w-sm">
+                    <div className="space-y-2">
+                      <Label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Mevcut Şifre</Label>
+                      <Input 
+                        type="password"
+                        value={formData.oldPassword}
+                        onChange={(e) => setFormData({...formData, oldPassword: e.target.value})}
+                        className="bg-black/40 border-white/10 focus-visible:ring-primary"
+                        placeholder="Mevcut şifreniz"
+                      />
+                    </div>
                     <div className="space-y-2">
                       <Label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Yeni Şifre</Label>
                       <Input 

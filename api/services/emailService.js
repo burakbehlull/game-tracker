@@ -3,60 +3,30 @@ const dns = require('dns');
 
 class mailSender {
 	constructor() {
-		this.transporter = null;
-        this.gmailUser = process.env.SMTP_USER;
-        this.gmailPass = process.env.SMTP_PASS;
+		// En sade ve esnek Gmail ayarları (Port 587 / STARTTLS)
+		this.transporter = nodemailer.createTransport({
+			host: 'smtp.gmail.com',
+			port: 587,
+			secure: false, // Port 587 için false olmalı
+			auth: {
+				user: process.env.SMTP_USER,
+				pass: process.env.SMTP_PASS
+			},
+			tls: {
+				rejectUnauthorized: false
+			}
+		});
 	}
 
-    // Gmail'in o anki IPv4 adresini manuel olarak çözen zeki fonksiyon
-    async resolveIPv4(host) {
-        return new Promise((resolve) => {
-            dns.lookup(host, { family: 4 }, (err, address) => {
-                if (err) {
-                    console.error("[DNS Hatası]: IPv4 çözülemedi, isme geri dönülüyor.");
-                    resolve(host); // Hata varsa isme dön (fallback)
-                } else {
-                    console.log(`[DNS Başarılı]: Gmail IPv4 adresi bulundu: ${address}`);
-                    resolve(address);
-                }
-            });
-        });
-    }
-
-    async initTransporter() {
-        const ipv4Host = await this.resolveIPv4('smtp.gmail.com');
-        
-        this.transporter = nodemailer.createTransport({
-            host: ipv4Host, // İsmi değil, doğrudan çözülen IP'yi kullanıyoruz!
-            port: 465,
-            secure: true,
-            auth: {
-                user: this.gmailUser,
-                pass: this.gmailPass
-            },
-            tls: {
-                // IP kullandığımız için sertifika ismini manuel belirtiyoruz
-                servername: 'smtp.gmail.com',
-                rejectUnauthorized: false
-            },
-            connectionTimeout: 10000
-        });
-    }
-
 	async send(targetEmail, { text, html, title }) {
-        // İlk gönderimde veya her seferinde transporter'ı IPv4 ile tazele
-        if (!this.transporter) {
-            await this.initTransporter();
-        }
-
-		console.log(`[KRİTİK BİLGİ]: Kod şu adrese gönderiliyor: ${targetEmail}`);
+		console.log(`[Mail] Gönderiliyor: ${targetEmail}`);
 		
 		const mailOptions = {
-			from: `"Game Tracker" <${this.gmailUser}>`,
+			from: process.env.SMTP_USER,
 			to: targetEmail,
 			subject: title,
-			text,
-			html
+			text: text || 'Game Tracker Doğrulama Kodu',
+			html: html
 		};
 		
 		return new Promise((resolve) => {
@@ -65,7 +35,7 @@ class mailSender {
 					console.error("[Mail Hatası]: ", err.message);
 					resolve({ status: false, error: err });
 				} else {
-					console.log("[Mail Başarılı]: Kod gönderildi.");
+					console.log("[Mail Başarılı] :)");
 					resolve({ status: true, data: data });
 				}
 			});
@@ -79,17 +49,20 @@ const sendEmail = async (to, subject, htmlContent) => {
   return await mailService.send(to, { title: subject, html: htmlContent });
 };
 
+// İstediğin gibi çok sade bir şablon
 const getEmailTemplate = (title, content, codeText = null) => {
   return `
-    <div style="font-family: Arial, sans-serif; background: #09090b; color: #fff; padding: 30px; border-radius: 12px; border: 1px solid #27272a;">
-      <h1 style="color: #8b5cf6;">GAMETRACKER</h1>
-      <h3>${title}</h3>
-      <p style="color: #a1a1aa;">${content}</p>
+    <div style="font-family: sans-serif; color: #333; line-height: 1.6;">
+      <h2 style="color: #6633ee;">Game Tracker</h2>
+      <p>${content}</p>
       ${codeText ? `
-      <div style="background: #18181b; padding: 20px; border-radius: 8px; text-align: center; margin: 25px 0; border: 1px dashed #8b5cf6;">
-        <span style="font-size: 34px; font-weight: bold; color: #a78bfa; letter-spacing: 10px;">${codeText}</span>
-      </div>
+        <div style="background: #f4f4f4; padding: 15px; border: 1px solid #ddd; font-size: 24px; font-weight: bold; text-align: center; letter-spacing: 5px;">
+          ${codeText}
+        </div>
       ` : ''}
+      <p style="font-size: 12px; color: #999; margin-top: 20px;">
+        Bu e-posta doğrulama amacıyla gönderilmiştir.
+      </p>
     </div>
   `;
 };

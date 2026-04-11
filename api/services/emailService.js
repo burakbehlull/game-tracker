@@ -1,19 +1,28 @@
 const nodemailer = require('nodemailer');
 const dns = require('dns');
 
+// IPv6 (ENETUNREACH) takılmasını önlemek için DNS önceliği
+if (dns.setDefaultResultOrder) {
+  dns.setDefaultResultOrder('ipv4first');
+}
+
 class mailSender {
 	constructor() {
-		// En sade ve esnek Gmail ayarları (Port 587 / STARTTLS)
+        // Şifredeki boşlukları temizleyerek alıyoruz (letf bbif -> letfbbif)
+        const cleanPass = process.env.SMTP_PASS ? process.env.SMTP_PASS.replace(/\s+/g, '') : '';
+        
 		this.transporter = nodemailer.createTransport({
 			host: 'smtp.gmail.com',
-			port: 587,
-			secure: false, // Port 587 için false olmalı
+			port: 465, // Port 465 genellikle bulutlarda daha kararlıdır
+			secure: true,
+            family: 4, // Kesinlikle IPv4 zorlaması
 			auth: {
 				user: process.env.SMTP_USER,
-				pass: process.env.SMTP_PASS
+				pass: cleanPass
 			},
 			tls: {
-				rejectUnauthorized: false
+				rejectUnauthorized: false,
+                servername: 'smtp.gmail.com'
 			}
 		});
 	}
@@ -22,10 +31,10 @@ class mailSender {
 		console.log(`[Mail] Gönderiliyor: ${targetEmail}`);
 		
 		const mailOptions = {
-			from: process.env.SMTP_USER,
+			from: `"Game Tracker" <${process.env.SMTP_USER}>`,
 			to: targetEmail,
 			subject: title,
-			text: text || 'Game Tracker Doğrulama Kodu',
+			text: text || '',
 			html: html
 		};
 		
@@ -35,7 +44,7 @@ class mailSender {
 					console.error("[Mail Hatası]: ", err.message);
 					resolve({ status: false, error: err });
 				} else {
-					console.log("[Mail Başarılı] :)");
+					console.log("[Mail Başarılı]");
 					resolve({ status: true, data: data });
 				}
 			});
@@ -49,20 +58,14 @@ const sendEmail = async (to, subject, htmlContent) => {
   return await mailService.send(to, { title: subject, html: htmlContent });
 };
 
-// İstediğin gibi çok sade bir şablon
 const getEmailTemplate = (title, content, codeText = null) => {
   return `
-    <div style="font-family: sans-serif; color: #333; line-height: 1.6;">
-      <h2 style="color: #6633ee;">Game Tracker</h2>
+    <div style="font-family: Arial, sans-serif; background: #09090b; color: #fff; padding: 20px; border-radius: 10px; border: 1px solid #333;">
+      <h2 style="color: #8b5cf6;">Game Tracker</h2>
       <p>${content}</p>
-      ${codeText ? `
-        <div style="background: #f4f4f4; padding: 15px; border: 1px solid #ddd; font-size: 24px; font-weight: bold; text-align: center; letter-spacing: 5px;">
-          ${codeText}
-        </div>
-      ` : ''}
-      <p style="font-size: 12px; color: #999; margin-top: 20px;">
-        Bu e-posta doğrulama amacıyla gönderilmiştir.
-      </p>
+      <div style="background: #18181b; padding: 20px; border-radius: 8px; text-align: center; font-size: 30px; font-weight: bold; color: #a78bfa; letter-spacing: 5px;">
+        ${codeText}
+      </div>
     </div>
   `;
 };

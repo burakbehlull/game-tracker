@@ -96,7 +96,8 @@ class ProcessMonitor {
       'Far Cry 2': ['FarCry2.exe'],
       'Far Cry 3': ['farCry3.exe', 'farCry3_d3d11.exe'],
       'Far Cry 4': ['FarCry4.exe'],
-      'Far Cry 5': ['FarCry5.exe']
+      'Far Cry 5': ['FarCry5.exe'],
+      'FIFA 22': ['FIFA22.exe']
     };
   }
 

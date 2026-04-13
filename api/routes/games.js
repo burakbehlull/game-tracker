@@ -193,7 +193,7 @@ router.get('/stats', auth, async (req, res) => {
         _id: '$gameName',
         totalTime: { $sum: '$duration' },
         sessionCount: { $sum: 1 },
-        lastPlayed: { $max: '$endTime' }
+        lastPlayed: { $max: { $ifNull: ['$endTime', '$startTime'] } }
       }
     },
     { $sort: { lastPlayed: -1 } }
@@ -245,7 +245,7 @@ router.get('/details/:gameName', async (req, res) => {
         $group: {
           _id: '$userId',
           totalTime: { $sum: '$duration' },
-          lastPlayed: { $max: '$endTime' }
+          lastPlayed: { $max: { $ifNull: ['$endTime', '$startTime'] } }
         }
       },
       {

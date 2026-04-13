@@ -136,9 +136,10 @@ router.get('/profile/:username', async (req, res) => {
         $group: {
           _id: '$gameName',
           totalTime: { $sum: '$duration' },
-          lastPlayed: { $max: '$endTime' }
+          lastPlayed: { $max: { $ifNull: ['$endTime', '$startTime'] } }
         }
-      }
+      },
+      { $sort: { lastPlayed: -1 } }
     ]);
 
     const responseUser = updatedUser.toObject();

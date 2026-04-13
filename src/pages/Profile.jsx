@@ -68,7 +68,7 @@ export default function Profile({ user: currentUser }) {
       const userStats = userRes.stats || [];
       
       setProfileUser(userData);
-      setStats(userStats);
+      setStats((userStats || []).sort((a, b) => new Date(b.lastPlayed || 0) - new Date(a.lastPlayed || 0)));
       
       const total = userStats.reduce((acc, curr) => acc + curr.totalTime, 0);
       setTotalTime(total);

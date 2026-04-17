@@ -78,6 +78,7 @@ const friendRoutes = require('./routes/friends');
 const presenceRoutes = require('./routes/presence');
 const chatRoutes = require('./routes/chat');
 const adminRoutes = require('./routes/admin');
+const statsRoutes = require('./routes/stats');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/games', gameRoutes);
@@ -86,6 +87,7 @@ app.use('/api/friends', friendRoutes);
 app.use('/api/presence', presenceRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/stats', statsRoutes);
 
 // Global Error Handler
 app.use((err, req, res, next) => {

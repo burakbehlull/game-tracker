@@ -88,3 +88,44 @@ Login with your admin credentials to access the dashboard.
 - After 5 failed attempts, the account is locked for 10 minutes
 - All login attempts (successful and failed) are logged with IP addresses
 - Admin-only routes are protected with role-based authentication middleware
+
+## Security & Environment Variables
+
+### ⚠️ Important: .env File Security
+
+The `.env` file is **NOT included** in production builds for security reasons. This prevents sensitive information (JWT secrets, database credentials, API keys) from being exposed to end users.
+
+### Development Setup
+
+1. Copy `.env.example` to `.env`:
+```bash
+cp .env.example .env
+```
+
+2. Update the values in `.env` with your configuration:
+```env
+MONGO_URI=mongodb://localhost:27017/gametracker
+JWT_SECRET=your-super-secret-jwt-key-change-this
+EMAIL_USER=your-email@gmail.com
+EMAIL_PASSWORD=your-app-password
+```
+
+### Production Deployment
+
+For production builds, environment variables must be set via:
+- System environment variables
+- Application config file in user's AppData
+- Installer configuration
+
+See `docs/production-deployment.md` for detailed instructions.
+
+### Build Security Check
+
+After building, verify that `.env` is not included:
+
+```bash
+npm run build:desktop
+npm run build:check
+```
+
+This will scan the build output and ensure no sensitive files are included.

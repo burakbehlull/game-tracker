@@ -13,11 +13,27 @@ if (dns.setDefaultResultOrder) {
 // Setup environment variables
 const isDev = !app.isPackaged;
 process.env.NODE_ENV = isDev ? 'development' : 'production';
-const envPath = isDev 
-  ? path.join(__dirname, '../.env') 
-  : path.join(process.resourcesPath, '.env');
 
-require('dotenv').config({ path: envPath });
+// Only load .env in development mode
+if (isDev) {
+  const envPath = path.join(__dirname, '../.env');
+  require('dotenv').config({ path: envPath });
+  log.info('Loaded .env from:', envPath);
+} else {
+  // In production, use environment variables or defaults
+  // These should be set via system environment or installer
+  log.info('Production mode: Using system environment variables');
+  
+  // Set default values if not provided
+  if (!process.env.MONGO_URI) {
+    process.env.MONGO_URI = 'mongodb://localhost:27017/gametracker';
+  }
+  if (!process.env.JWT_SECRET) {
+    // Generate a random secret if not provided (not recommended for production)
+    log.warn('JWT_SECRET not set! Using generated secret (not recommended for production)');
+    process.env.JWT_SECRET = require('crypto').randomBytes(64).toString('hex');
+  }
+}
 
 // Global Error Handling to prevent crash popups in production
 process.on('uncaughtException', (error) => {

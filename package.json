@@ -10,6 +10,7 @@
     "build": "vite build",
     "build:web": "vite build",
     "build:desktop": "npm run build && electron-builder --win nsis",
+    "build:check": "node scripts/check-build-security.js",
     "preview": "vite preview",
     "start": "electron .",
     "dist": "electron-builder"
@@ -81,10 +82,9 @@
       "public/**/*",
       "package.json",
       "!dist/build/**/*",
-      "!dist/assets/**/*.map"
-    ],
-    "extraResources": [
-      "./.env"
+      "!dist/assets/**/*.map",
+      "!**/.env",
+      "!**/.env.*"
     ],
     "win": {
       "target": "nsis",

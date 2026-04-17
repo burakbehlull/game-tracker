@@ -71,6 +71,14 @@ web_modules/
 .env.*
 !.env.example
 
+# Electron build output
+release/
+dist/
+
+# Build artifacts that might contain sensitive data
+*.asar
+app.asar
+
 # parcel-bundler cache (https://parceljs.org/)
 .cache
 .parcel-cache

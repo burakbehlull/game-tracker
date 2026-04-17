@@ -7,7 +7,7 @@ import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 import Home from './pages/Home';
 import Discover from './pages/Discover';
-import Dashboard from './pages/Dashboard-New';
+import Dashboard from './pages/Dashboard';
 import Profile from './pages/Profile';
 import Timer from './pages/Timer';
 import Settings from './pages/Settings';

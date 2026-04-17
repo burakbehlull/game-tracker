@@ -86,6 +86,18 @@ export const api = {
     });
   },
 
+  getGlobalStats: async () => {
+    return request(`${API_URL}/stats/global`);
+  },
+
+  getTopGamesByPeriod: async (period) => {
+    return request(`${API_URL}/stats/top-games/${period}`);
+  },
+
+  getActiveUsersByPeriod: async (period) => {
+    return request(`${API_URL}/stats/active-users/${period}`);
+  },
+
   getStats: async () => {
     return request(`${API_URL}/games/stats`, { headers: getHeaders() });
   },

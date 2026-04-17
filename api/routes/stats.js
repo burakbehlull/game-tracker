@@ -27,6 +27,9 @@ router.get('/global', async (req, res) => {
     // Total unique games played
     const uniqueGames = await GameSession.distinct('gameName');
     const totalUniqueGames = uniqueGames.length;
+
+    // Total sessions (games played count, including repeats)
+    const totalSessionsCount = await GameSession.countDocuments();
     
     // Total play time (in minutes)
     const totalPlayTime = await GameSession.aggregate([
@@ -45,6 +48,7 @@ router.get('/global', async (req, res) => {
     res.json({
       totalUsers,
       totalUniqueGames,
+      totalSessionsCount,
       totalPlayMinutes: totalMinutes,
       totalPlayHours: totalHours,
       totalPlayDays: totalDays

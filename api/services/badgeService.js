@@ -107,7 +107,7 @@ class BadgeService {
     }
 
     // 3 & 4. Sadık Oyuncu & Takıntılı (Tek oyunda süre)
-    const sessions = await GameSession.find({ userId });
+    const sessions = await GameSession.find({ userId }).select('gameName duration');
     const timePerGame = sessions.reduce((acc, session) => {
       acc[session.gameName] = (acc[session.gameName] || 0) + (session.duration / 60); // dakikaya çevir
       return acc;

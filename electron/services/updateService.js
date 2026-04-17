@@ -17,26 +17,32 @@ class UpdateService {
 
   setupListeners() {
     autoUpdater.on('checking-for-update', () => {
+      log.info('[Update] Checking for updates...');
       this.sendStatusToWindow('CHECKING_FOR_UPDATE');
     });
 
     autoUpdater.on('update-available', (info) => {
+      log.info('[Update] Update available:', info);
       this.sendStatusToWindow('UPDATE_AVAILABLE', info);
     });
 
     autoUpdater.on('update-not-available', (info) => {
+      log.info('[Update] No update available');
       this.sendStatusToWindow('UPDATE_NOT_AVAILABLE');
     });
 
     autoUpdater.on('error', (err) => {
+      log.error('[Update] Update error:', err);
       this.sendStatusToWindow('UPDATE_ERROR', err.message);
     });
 
     autoUpdater.on('download-progress', (progressObj) => {
+      log.info(`[Update] Download progress: ${progressObj.percent}%`);
       this.sendStatusToWindow('DOWNLOAD_PROGRESS', progressObj);
     });
 
     autoUpdater.on('update-downloaded', (info) => {
+      log.info('[Update] Update downloaded:', info);
       this.sendStatusToWindow('UPDATE_DOWNLOADED', info);
     });
   }

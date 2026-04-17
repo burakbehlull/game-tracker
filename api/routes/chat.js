@@ -100,12 +100,24 @@ router.get('/conversations', auth, async (req, res) => {
 
 router.get('/conversations/:id/messages', auth, async (req, res) => {
   try {
-    const conversation = await ensureParticipant(req.params.id, req.userId);
+    const conversationId = req.params.id;
+    
+    // NoSQL injection protection
+    if (!mongoose.Types.ObjectId.isValid(conversationId)) {
+      return res.status(400).json({ error: 'Invalid conversation ID' });
+    }
+    
+    const conversation = await ensureParticipant(conversationId, req.userId);
     if (!conversation) return res.status(404).json({ error: 'Konuşma bulunamadı' });
 
     const pageSize = Math.min(Number(req.query.limit) || 30, MAX_PAGE_SIZE);
-    const query = { conversationId: req.params.id, deletedAt: null };
-    if (req.query.cursor) query._id = { $lt: req.query.cursor };
+    const query = { conversationId, deletedAt: null };
+    if (req.query.cursor) {
+      if (!mongoose.Types.ObjectId.isValid(req.query.cursor)) {
+        return res.status(400).json({ error: 'Invalid cursor' });
+      }
+      query._id = { $lt: req.query.cursor };
+    }
 
     const messages = await Message.find(query)
       .sort({ _id: -1 })
@@ -121,7 +133,14 @@ router.get('/conversations/:id/messages', auth, async (req, res) => {
 
 router.post('/conversations/:id/messages', auth, async (req, res) => {
   try {
-    const conversation = await ensureParticipant(req.params.id, req.userId);
+    const conversationId = req.params.id;
+    
+    // NoSQL injection protection
+    if (!mongoose.Types.ObjectId.isValid(conversationId)) {
+      return res.status(400).json({ error: 'Invalid conversation ID' });
+    }
+    
+    const conversation = await ensureParticipant(conversationId, req.userId);
     if (!conversation) return res.status(404).json({ error: 'Konuşma bulunamadı' });
 
     const content = (req.body?.content || '').trim();
@@ -158,7 +177,14 @@ router.post('/conversations/:id/messages', auth, async (req, res) => {
 
 router.post('/conversations/:id/read', auth, async (req, res) => {
   try {
-    const conversation = await ensureParticipant(req.params.id, req.userId);
+    const conversationId = req.params.id;
+    
+    // NoSQL injection protection
+    if (!mongoose.Types.ObjectId.isValid(conversationId)) {
+      return res.status(400).json({ error: 'Invalid conversation ID' });
+    }
+    
+    const conversation = await ensureParticipant(conversationId, req.userId);
     if (!conversation) return res.status(404).json({ error: 'Konuşma bulunamadı' });
 
     await Message.updateMany(
@@ -183,12 +209,23 @@ router.post('/conversations/:id/read', auth, async (req, res) => {
 
 router.delete('/conversations/:id/messages/:messageId', auth, async (req, res) => {
   try {
-    const conversation = await ensureParticipant(req.params.id, req.userId);
+    const conversationId = req.params.id;
+    const messageId = req.params.messageId;
+    
+    // NoSQL injection protection
+    if (!mongoose.Types.ObjectId.isValid(conversationId)) {
+      return res.status(400).json({ error: 'Invalid conversation ID' });
+    }
+    if (!mongoose.Types.ObjectId.isValid(messageId)) {
+      return res.status(400).json({ error: 'Invalid message ID' });
+    }
+    
+    const conversation = await ensureParticipant(conversationId, req.userId);
     if (!conversation) return res.status(404).json({ error: 'Konuşma bulunamadı' });
 
     const message = await Message.findOne({
-      _id: req.params.messageId,
-      conversationId: conversation._id,
+      _id: messageId,
+      conversationId: conversationId,
       senderId: req.userId,
       deletedAt: null
     });

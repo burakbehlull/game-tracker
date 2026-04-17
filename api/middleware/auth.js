@@ -2,7 +2,11 @@ const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const User = require('../models/User'); // Need User model for tokenVersion check
 
-const JWT_SECRET = process.env.JWT_SECRET || crypto.randomBytes(32).toString('hex');
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+  console.error('FATAL: JWT_SECRET is not set in environment variables');
+  process.exit(1);
+}
 
 module.exports = async (req, res, next) => {
   const authHeader = req.headers.authorization;

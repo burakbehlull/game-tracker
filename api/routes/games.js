@@ -237,10 +237,18 @@ router.get('/today', auth, async (req, res) => {
 router.get('/details/:gameName', async (req, res) => {
   try {
     const { gameName } = req.params;
+    
+    // NoSQL injection protection
+    if (typeof gameName !== 'string' || gameName.length < 1 || gameName.length > 100) {
+      return res.status(400).json({ error: 'Invalid game name' });
+    }
+    
+    // Sanitize game name to prevent regex injection
+    const sanitizedGameName = gameName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
     // Get top 10 players for this game
     const stats = await GameSession.aggregate([
-      { $match: { gameName: { $regex: new RegExp(`^${gameName}$`, 'i') } } },
+      { $match: { gameName: { $regex: new RegExp(`^${sanitizedGameName}$`, 'i') } } },
       {
         $group: {
           _id: '$userId',

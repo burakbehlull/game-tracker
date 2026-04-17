@@ -4,6 +4,7 @@ const express = require('express');
 const http = require('http');
 const mongoose = require('mongoose');
 const cors = require('cors');
+const rateLimit = require('express-rate-limit');
 const { Server } = require('socket.io');
 const { setupWebSocket } = require('./services/wsGateway');
 const dns = require('dns');
@@ -30,6 +31,15 @@ const allowedOrigins = process.env.CORS_ORIGINS
   ? process.env.CORS_ORIGINS.split(',').map(origin => origin.trim()).filter(Boolean)
   : defaultAllowedOrigins;
 
+// Global rate limiting
+const globalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 1000, // Limit each IP to 1000 requests per window
+  message: { error: 'Too many requests from this IP, please try again after 15 minutes' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 // Middleware
 app.use(cors({
   origin: function (origin, callback) {
@@ -46,6 +56,7 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 }));
 app.use(express.json());
+app.use(globalLimiter);
 
 // Connect to MongoDB
 const mongoUri = process.env.MONGO_URI || 'mongodb://localhost:27017/gametracker';

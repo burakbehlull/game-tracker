@@ -23,6 +23,18 @@ async function areFriends(userA, userB) {
 router.post('/request', auth, async (req, res) => {
   try {
     const { targetUserId, username } = req.body;
+    
+    // NoSQL injection protection
+    if (targetUserId && !mongoose.Types.ObjectId.isValid(targetUserId)) {
+      return res.status(400).json({ error: 'Invalid user ID' });
+    }
+    if (username && (typeof username !== 'string' || username.length < 3 || username.length > 20)) {
+      return res.status(400).json({ error: 'Invalid username' });
+    }
+    if (!/^[a-zA-Z0-9_]+$/.test(username || '')) {
+      return res.status(400).json({ error: 'Invalid username format' });
+    }
+    
     let target = null;
 
     if (targetUserId && mongoose.Types.ObjectId.isValid(targetUserId)) {
@@ -84,8 +96,15 @@ router.get('/requests', auth, async (req, res) => {
 
 router.post('/requests/:id/accept', auth, async (req, res) => {
   try {
+    const requestId = req.params.id;
+    
+    // NoSQL injection protection
+    if (!mongoose.Types.ObjectId.isValid(requestId)) {
+      return res.status(400).json({ error: 'Invalid request ID' });
+    }
+    
     const request = await FriendRequest.findOne({
-      _id: req.params.id,
+      _id: requestId,
       toUserId: req.userId,
       status: 'pending'
     });
@@ -122,8 +141,15 @@ router.post('/requests/:id/accept', auth, async (req, res) => {
 
 router.post('/requests/:id/reject', auth, async (req, res) => {
   try {
+    const requestId = req.params.id;
+    
+    // NoSQL injection protection
+    if (!mongoose.Types.ObjectId.isValid(requestId)) {
+      return res.status(400).json({ error: 'Invalid request ID' });
+    }
+    
     const request = await FriendRequest.findOne({
-      _id: req.params.id,
+      _id: requestId,
       toUserId: req.userId,
       status: 'pending'
     });
@@ -168,10 +194,14 @@ router.get('/list', auth, async (req, res) => {
 
 router.delete('/:friendId', auth, async (req, res) => {
   try {
-    if (!mongoose.Types.ObjectId.isValid(req.params.friendId)) {
+    const friendId = req.params.friendId;
+    
+    // NoSQL injection protection
+    if (!mongoose.Types.ObjectId.isValid(friendId)) {
       return res.status(400).json({ error: 'Geçersiz kullanıcı' });
     }
-    const ids = [String(req.userId), String(req.params.friendId)].sort();
+    
+    const ids = [String(req.userId), String(friendId)].sort();
 
     const result = await Friendship.updateOne(
       { userA: ids[0], userB: ids[1], deletedAt: null },

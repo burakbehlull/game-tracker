@@ -14,11 +14,11 @@ const authLimiter = rateLimit({
 });
 
 const JWT_SECRET = process.env.JWT_SECRET;
-if (!JWT_SECRET && process.env.NODE_ENV === 'production') {
-  console.error('FATAL: JWT_SECRET is not set in production');
+if (!JWT_SECRET) {
+  console.error('FATAL: JWT_SECRET is not set in environment variables');
   process.exit(1);
 }
-const ACTUAL_SECRET = JWT_SECRET || crypto.randomBytes(32).toString('hex');
+const ACTUAL_SECRET = JWT_SECRET;
 
 // Register
 router.post('/register', authLimiter, async (req, res) => {
@@ -29,9 +29,28 @@ router.post('/register', authLimiter, async (req, res) => {
       return res.status(400).json({ error: 'Eksik alanlar var' });
     }
 
-    // NoSQL Injection Protection
+    // Enhanced input validation
     if (typeof username !== 'string' || typeof password !== 'string' || typeof email !== 'string') {
       return res.status(400).json({ error: 'Geçersiz veri formatı' });
+    }
+
+    // Username validation
+    if (username.length < 3 || username.length > 20) {
+      return res.status(400).json({ error: 'Kullanıcı adı 3-20 karakter arasında olmalıdır' });
+    }
+    if (!/^[a-zA-Z0-9_]+$/.test(username)) {
+      return res.status(400).json({ error: 'Kullanıcı adı sadece harf, rakam ve alt çizgi içerebilir' });
+    }
+
+    // Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({ error: 'Geçerli bir e-posta adresi giriniz' });
+    }
+
+    // Password validation
+    if (password.length < 6) {
+      return res.status(400).json({ error: 'Şifre en az 6 karakter olmalıdır' });
     }
 
     const existingUser = await User.findOne({ 
@@ -132,9 +151,22 @@ router.post('/login', authLimiter, async (req, res) => {
   try {
     const { username, password } = req.body;
 
-    // NoSQL Injection Protection
+    // Enhanced input validation
     if (typeof username !== 'string' || typeof password !== 'string') {
       return res.status(400).json({ error: 'Geçersiz veri formatı' });
+    }
+
+    // Username validation
+    if (username.length < 3 || username.length > 20) {
+      return res.status(400).json({ error: 'Kullanıcı adı 3-20 karakter arasında olmalıdır' });
+    }
+    if (!/^[a-zA-Z0-9_]+$/.test(username)) {
+      return res.status(400).json({ error: 'Kullanıcı adı sadece harf, rakam ve alt çizgi içerebilir' });
+    }
+
+    // Password validation
+    if (password.length < 6) {
+      return res.status(400).json({ error: 'Şifre en az 6 karakter olmalıdır' });
     }
 
     const user = await User.findOne({ username });
@@ -167,8 +199,12 @@ router.post('/login', authLimiter, async (req, res) => {
     user.markModified('stats');
     await user.save();
 
-    // Check badges on login
-    await BadgeService.checkBadges(user._id);
+    // Check badges on login (async to avoid blocking login)
+    setImmediate(() => {
+      BadgeService.checkBadges(user._id).catch(err => {
+        console.error('Badge check error:', err);
+      });
+    });
 
     const token = jwt.sign(
       { userId: user._id, tokenVersion: user.tokenVersion || 0 },

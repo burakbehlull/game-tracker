@@ -110,7 +110,17 @@ router.put('/me', auth, async (req, res) => {
 // Public profile
 router.get('/profile/:username', async (req, res) => {
   try {
-    const user = await User.findOne({ username: req.params.username })
+    const username = req.params.username;
+    
+    // NoSQL injection protection
+    if (typeof username !== 'string' || username.length < 3 || username.length > 20) {
+      return res.status(400).json({ error: 'Invalid username' });
+    }
+    if (!/^[a-zA-Z0-9_]+$/.test(username)) {
+      return res.status(400).json({ error: 'Invalid username format' });
+    }
+    
+    const user = await User.findOne({ username })
       .select('username globalName avatar createdAt level xp badges settings.privacy.hiddenGames');
 
     if (!user) return res.status(404).json({ error: 'User not found' });
@@ -156,7 +166,14 @@ router.get('/profile/:username', async (req, res) => {
 router.get('/search', async (req, res) => {
   const { q } = req.query;
   try {
-    const filter = q ? { username: { $regex: q, $options: 'i' } } : {};
+    // NoSQL injection protection
+    if (q && (typeof q !== 'string' || q.length > 50)) {
+      return res.status(400).json({ error: 'Invalid search query' });
+    }
+    
+    // Sanitize search query to prevent regex injection
+    const sanitizedQuery = q ? q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') : '';
+    const filter = sanitizedQuery ? { username: { $regex: sanitizedQuery, $options: 'i' } } : {};
     const users = await User.find(filter)
       .select('-_id username globalName avatar createdAt level xp badges')
       .sort({ xp: -1 })
@@ -216,10 +233,17 @@ router.put('/library/update', auth, async (req, res) => {
 
 router.delete('/library/:gameName', auth, async (req, res) => {
   try {
+    const gameName = req.params.gameName;
+    
+    // NoSQL injection protection
+    if (typeof gameName !== 'string' || gameName.length < 1 || gameName.length > 100) {
+      return res.status(400).json({ error: 'Invalid game name' });
+    }
+    
     const user = await User.findById(req.userId);
     if (!user) return res.status(404).json({ error: 'Kullanıcı bulunamadı' });
 
-    user.library = user.library.filter(g => g.gameName !== req.params.gameName);
+    user.library = user.library.filter(g => g.gameName !== gameName);
     await user.save();
     res.json(user.library);
   } catch (error) {

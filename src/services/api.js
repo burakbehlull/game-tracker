@@ -227,5 +227,57 @@ export const api = {
       method: 'POST',
       headers: getHeaders()
     });
+  },
+
+  // Admin
+  adminLogin: async (username, password) => {
+    return request(`${API_URL}/admin/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password })
+    });
+  },
+
+  getAdminStats: async () => {
+    const token = localStorage.getItem('adminToken');
+    return request(`${API_URL}/admin/stats`, {
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      }
+    });
+  },
+
+  getAdminUsers: async (page = 1, limit = 20, search = '') => {
+    const token = localStorage.getItem('adminToken');
+    return request(`${API_URL}/admin/users?page=${page}&limit=${limit}&search=${encodeURIComponent(search)}`, {
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      }
+    });
+  },
+
+  updateUserRole: async (userId, role) => {
+    const token = localStorage.getItem('adminToken');
+    return request(`${API_URL}/admin/users/${userId}/role`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ role })
+    });
+  },
+
+  deleteUser: async (userId) => {
+    const token = localStorage.getItem('adminToken');
+    return request(`${API_URL}/admin/users/${userId}`, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      }
+    });
   }
 };

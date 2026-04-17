@@ -15,6 +15,8 @@ import Library from './pages/Library';
 import GameDetails from './pages/GameDetails';
 import Friends from './pages/Friends';
 import Chat from './pages/Chat';
+import AdminLogin from './pages/AdminLogin';
+import AdminDashboard from './pages/AdminDashboard';
 import Layout from './components/Layout';
 import { api } from './services/api';
 
@@ -24,6 +26,7 @@ import { WebSocketProvider } from './contexts/WebSocketContext';
 
 function App() {
   const [user, setUser] = useState(null);
+  const [adminUser, setAdminUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
 
@@ -72,6 +75,10 @@ function App() {
     setUser(userData);
   };
 
+  const handleAdminLogin = (userData) => {
+    setAdminUser(userData);
+  };
+
   const handleLogout = async () => {
     try {
       if (window.electronAPI) {
@@ -82,6 +89,11 @@ function App() {
     } catch (error) {
       console.error('Logout hatası:', error);
     }
+  };
+
+  const handleAdminLogout = () => {
+    localStorage.removeItem('adminToken');
+    setAdminUser(null);
   };
 
   const isElectron = !!window.electronAPI;
@@ -139,6 +151,14 @@ function App() {
                 <Route 
                   path="/reset-password/:token" 
                   element={!user ? <ResetPassword /> : <Navigate to="/" />} 
+                />
+                <Route 
+                  path="/admin" 
+                  element={!adminUser ? <AdminLogin onAdminLogin={handleAdminLogin} /> : <Navigate to="/admin/dashboard" />} 
+                />
+                <Route 
+                  path="/admin/dashboard" 
+                  element={adminUser ? <AdminDashboard adminUser={adminUser} onLogout={handleAdminLogout} /> : <Navigate to="/admin" />} 
                 />
                 <Route
                   path="/"

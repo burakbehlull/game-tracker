@@ -46,3 +46,45 @@ It provides a detailed page for the games, listing who plays them the most and w
 ## Chat Page
 
 <img src="assets/images/chat_page.png" alt="Library Page" width="600"/>
+
+## Admin Panel
+
+The Game Tracker includes a powerful admin panel for managing users, monitoring game sessions, and viewing system statistics.
+
+### Admin Panel Features
+
+- **Dashboard Overview**: View total users, admins, game sessions, and popular games
+- **User Management**: Search, view, edit roles, and delete users
+- **Session Monitoring**: Track all game sessions across the platform
+- **Security**: 5 failed login attempts lock the account for 10 minutes
+- **Role Management**: Promote users to admin or demote admins to regular users
+
+### Creating an Admin User
+
+To create an admin user, run the following command:
+
+```bash
+node api/scripts/createAdmin.js <username> <password> <email>
+```
+
+Example:
+```bash
+node api/scripts/createAdmin.js admin admin123 admin@gametracker.com
+```
+
+### Accessing the Admin Panel
+
+Once you have created an admin user, you can access the admin panel at:
+
+```
+http://localhost:5173/#/admin
+```
+
+Login with your admin credentials to access the dashboard.
+
+### Admin Panel Security
+
+- Failed login attempts are tracked per username
+- After 5 failed attempts, the account is locked for 10 minutes
+- All login attempts (successful and failed) are logged with IP addresses
+- Admin-only routes are protected with role-based authentication middleware

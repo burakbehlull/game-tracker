@@ -257,7 +257,7 @@ export default function Layout({ children, user, onLogout }) {
                           Ayarlar
                         </Link>
 
-                        {user?.roles?.includes('admin') && (
+                        {user?.role?.includes('admin') && (
                           <Link 
                             to="/admin" 
                             className="flex items-center gap-3 px-4 py-2.5 text-[10px] font-black text-red-500/70 uppercase tracking-widest hover:bg-red-500/10 hover:text-red-500 transition-all duration-200 group"

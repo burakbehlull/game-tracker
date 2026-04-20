@@ -107,30 +107,30 @@ export default function AdminDashboard({ adminUser, onLogout }) {
     }
   };
 
-  const handleToggleRole = async (userId, currentRoles) => {
-    const isCurrentlyAdmin = currentRoles && currentRoles.includes('admin');
-    const newRoles = isCurrentlyAdmin 
-      ? (currentRoles.filter(r => r !== 'admin'))
-      : [...(currentRoles || []), 'admin'];
+  const handleToggleRole = async (userId, currentRole) => {
+    const isCurrentlyAdmin = currentRole && currentRole.includes('admin');
+    const newRole = isCurrentlyAdmin 
+      ? (currentRole.filter(r => r !== 'admin'))
+      : [...(currentRole || []), 'admin'];
     
     // Ensure 'user' role is always present
-    if (!newRoles.includes('user')) {
-      newRoles.push('user');
+    if (!newRole.includes('user')) {
+      newRole.push('user');
     }
 
-    if (!confirm(`Bu kullanıcının rollerini "${newRoles.join(', ')}" olarak değiştirmek istediğinizden emin misiniz?`)) return;
+    if (!confirm(`Bu kullanıcının rollerini "${newRole.join(', ')}" olarak değiştirmek istediğinizden emin misiniz?`)) return;
 
     try {
       const res = await fetch(`${API_URL}/admin/users/${userId}/role`, {
         method: 'PUT',
         headers: getHeaders(),
-        body: JSON.stringify({ roles: newRoles })
+        body: JSON.stringify({ role: newRole })
       });
-      if (!res.ok) throw new Error('Failed to update roles');
+      if (!res.ok) throw new Error('Failed to update role');
       loadUsers(currentPage, searchQuery);
       loadDashboardData();
     } catch (error) {
-      console.error('Error updating roles:', error);
+      console.error('Error updating role:', error);
       alert('Roller güncellenemedi');
     }
   };
@@ -367,19 +367,19 @@ export default function AdminDashboard({ adminUser, onLogout }) {
                             </div>
                           </td>
                           <td className="p-4">
-                            <div className="flex flex-wrap gap-1">
-                              {(user.roles || [user.role || 'user']).map(role => (
-                                <span key={role} className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
-                                  role === 'admin' 
-                                    ? 'bg-red-500/10 text-red-500 border border-red-500/20' 
-                                    : 'bg-blue-500/10 text-blue-500 border border-blue-500/20'
-                                }`}>
-                                  {role === 'admin' ? <Shield className="h-3 w-3" /> : <Users className="h-3 w-3" />}
-                                  {role}
-                                </span>
-                              ))}
-                            </div>
-                          </td>
+                              <div className="flex flex-wrap gap-1">
+                                {(user.role || []).map(r => (
+                                  <span key={r} className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
+                                    r === 'admin' 
+                                      ? 'bg-red-500/10 text-red-500 border border-red-500/20' 
+                                      : 'bg-blue-500/10 text-blue-500 border border-blue-500/20'
+                                  }`}>
+                                    {r === 'admin' ? <Shield className="h-3 w-3" /> : <Users className="h-3 w-3" />}
+                                    {r}
+                                  </span>
+                                ))}
+                              </div>
+                            </td>
                           <td className="p-4">
                             <div className="text-sm">Level {user.level}</div>
                             <div className="text-xs text-muted-foreground">{user.xp} XP</div>
@@ -401,10 +401,10 @@ export default function AdminDashboard({ adminUser, onLogout }) {
                               <Button 
                                 variant="ghost" 
                                 size="sm"
-                                onClick={() => handleToggleRole(user._id, user.roles)}
-                                title={user.roles?.includes('admin') ? "Admin Yetkisini Kaldır" : "Admin Yap"}
+                                onClick={() => handleToggleRole(user._id, user.role)}
+                                title={user.role?.includes('admin') ? "Admin Yetkisini Kaldır" : "Admin Yap"}
                               >
-                                <UserCog className={`h-4 w-4 ${user.roles?.includes('admin') ? 'text-red-500' : 'text-muted-foreground'}`} />
+                                <UserCog className={`h-4 w-4 ${user.role?.includes('admin') ? 'text-red-500' : 'text-muted-foreground'}`} />
                               </Button>
                               <Button
                                 size="sm"

@@ -76,7 +76,7 @@ export default function Notifications() {
       case 'MEMBER_REQUEST':
         return `"${n.data.communityName}" topluluğuna yeni üyelik isteği var.`;
       case 'ROLE_UPDATED':
-        return `"${n.data.communityName}" topluluğunda rolün ${n.data.role} olarak güncellendi.`;
+        return `"${n.data.communityName}" topluluğunda rolün ${n.data.roleName || n.data.role} olarak güncellendi.`;
       case 'NEW_MESSAGE':
         return `${n.data.senderName} size mesaj attı: ${n.data.messagePreview}`;
       default:

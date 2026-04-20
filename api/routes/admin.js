@@ -59,8 +59,19 @@ router.post('/login', async (req, res) => {
       });
     }
 
+    // Migration logic: Ensure 'role' is an array and contains at least 'user'
+    let userRole = Array.isArray(user.role) ? user.role : (user.role ? [user.role] : ['user']);
+    
+    // Also handle potential legacy 'rol' or 'roles' fields if they exist in DB
+    if (user.roles && Array.isArray(user.roles)) {
+      user.roles.forEach(r => { if (!userRole.includes(r)) userRole.push(r); });
+    }
+    if (user.rol && Array.isArray(user.rol)) {
+      user.rol.forEach(r => { if (!userRole.includes(r)) userRole.push(r); });
+    }
+
     // Check if user has admin role
-    if (!user.roles || !user.roles.includes('admin')) {
+    if (!userRole.includes('admin')) {
       await AdminLoginAttempt.create({
         username,
         ipAddress,
@@ -69,6 +80,10 @@ router.post('/login', async (req, res) => {
       
       return res.status(403).json({ error: 'Bu hesap admin yetkisine sahip değil' });
     }
+
+    // Update user to have the correct role array if needed
+    user.role = userRole;
+    await user.save();
 
     // Successful login - log it
     await AdminLoginAttempt.create({
@@ -86,7 +101,7 @@ router.post('/login', async (req, res) => {
 
     // Generate token
     const token = jwt.sign(
-      { userId: user._id, tokenVersion: user.tokenVersion || 0, roles: user.roles },
+      { userId: user._id, tokenVersion: user.tokenVersion || 0, role: user.role },
       JWT_SECRET,
       { expiresIn: '7d' }
     );
@@ -97,7 +112,7 @@ router.post('/login', async (req, res) => {
         id: user._id,
         username: user.username,
         email: user.email,
-        roles: user.roles
+        role: user.role
       }
     });
   } catch (error) {
@@ -116,8 +131,8 @@ router.get('/stats', adminAuth, async (req, res) => {
       recentUsers,
       topGames
     ] = await Promise.all([
-      User.countDocuments({ roles: 'user' }),
-      User.countDocuments({ roles: 'admin' }),
+      User.countDocuments({ role: 'user' }),
+      User.countDocuments({ role: 'admin' }),
       GameSession.countDocuments(),
       User.find()
         .select('username email createdAt lastLogin level xp')
@@ -168,7 +183,7 @@ router.get('/users', adminAuth, async (req, res) => {
 
     const [users, total] = await Promise.all([
       User.find(query)
-        .select('username email roles createdAt lastLogin level xp isVerified')
+        .select('username email role createdAt lastLogin level xp isVerified')
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit),
@@ -212,17 +227,17 @@ router.get('/users/:userId', adminAuth, async (req, res) => {
 // Update user role
 router.put('/users/:userId/role', adminAuth, async (req, res) => {
   try {
-    const { roles } = req.body; // Expect an array of roles
+    const { role } = req.body; // Expect an array of roles
     
-    if (!Array.isArray(roles) || roles.some(r => !['user', 'admin', 'moderator'].includes(r))) {
+    if (!Array.isArray(role) || role.some(r => !['user', 'admin', 'moderator'].includes(r))) {
       return res.status(400).json({ error: 'Geçersiz roller' });
     }
 
     const user = await User.findByIdAndUpdate(
       req.params.userId,
-      { roles },
+      { role },
       { new: true }
-    ).select('username email roles');
+    ).select('username email role');
 
     if (!user) {
       return res.status(404).json({ error: 'Kullanıcı bulunamadı' });

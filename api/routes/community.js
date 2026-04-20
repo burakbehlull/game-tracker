@@ -20,6 +20,7 @@ router.post('/:slug/leave', auth, CommunityController.leave);
 // Management Routes
 router.get('/:slug/pending-members', auth, checkCommunityRole(['admin']), CommunityController.getPendingMembers);
 router.post('/:slug/approve-member', auth, checkCommunityRole(['admin']), CommunityController.approveMember);
+router.post('/:slug/reject-member', auth, checkCommunityRole(['admin']), CommunityController.rejectMember);
 router.put('/:slug/settings', auth, checkCommunityRole(['admin']), CommunityController.updateSettings);
 router.delete('/:slug', auth, checkCommunityRole(['owner']), CommunityController.deleteCommunity);
 

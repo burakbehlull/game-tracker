@@ -100,6 +100,26 @@ class CommunityService {
 
     return community;
   }
+
+  static async rejectMember(slug, targetUserId) {
+    const community = await Community.findOne({ slug });
+    if (!community) throw new Error('Community not found');
+
+    community.pendingMembers = community.pendingMembers.filter(m => m.toString() !== targetUserId.toString());
+    
+    // Add to a "rejected" list or just remove from pending? 
+    // The user wants "if rejected, show join again". 
+    // In our current model, removing from pending is enough for them to click join again.
+    
+    await community.save();
+
+    await NotificationService.createNotification(targetUserId, 'MEMBER_REJECTED', {
+      communityName: community.name,
+      communitySlug: community.slug
+    });
+
+    return community;
+  }
 }
 
 module.exports = CommunityService;

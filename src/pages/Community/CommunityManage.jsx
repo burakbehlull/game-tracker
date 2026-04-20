@@ -109,6 +109,15 @@ export default function CommunityManage({ user, communityData, onUpdate }) {
     }
   };
 
+  const handleRejectMember = async (userId) => {
+    try {
+      await api.rejectMember(slug, userId);
+      setPendingMembers(prev => prev.filter(m => m._id !== userId));
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+
   const handleApproveDiscussion = async (id) => {
     try {
       await api.approveDiscussion(id);
@@ -296,10 +305,10 @@ export default function CommunityManage({ user, communityData, onUpdate }) {
                       <span className="font-bold">{m.username}</span>
                     </div>
                     <div className="flex gap-2">
-                      <Button size="sm" variant="secondary" className="rounded-lg h-8 w-8 p-0" onClick={() => handleApproveMember(m._id)}>
+                      <Button size="sm" variant="secondary" className="rounded-lg h-8 w-8 p-0 hover:bg-green-500/20" onClick={() => handleApproveMember(m._id)} title="Onayla">
                         <Check className="w-4 h-4 text-green-500" />
                       </Button>
-                      <Button size="sm" variant="ghost" className="rounded-lg h-8 w-8 p-0">
+                      <Button size="sm" variant="ghost" className="rounded-lg h-8 w-8 p-0 hover:bg-red-500/20" onClick={() => handleRejectMember(m._id)} title="Reddet">
                         <X className="w-4 h-4 text-red-500" />
                       </Button>
                     </div>

@@ -153,6 +153,16 @@ class CommunityController {
       res.status(400).json({ error: err.message });
     }
   }
+
+  static async rejectMember(req, res) {
+    try {
+      const { userId } = req.body;
+      const community = await CommunityService.rejectMember(req.params.slug, userId);
+      res.json(community);
+    } catch (err) {
+      res.status(400).json({ error: err.message });
+    }
+  }
 }
 
 module.exports = CommunityController;

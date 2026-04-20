@@ -337,6 +337,14 @@ export const api = {
     });
   },
 
+  rejectMember: async (slug, userId) => {
+    return request(`${API_URL}/community/${slug}/reject-member`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify({ userId })
+    });
+  },
+
   // Notifications
   getNotifications: async () => {
     return request(`${API_URL}/notifications`, { headers: getHeaders() });

@@ -4,7 +4,7 @@ import { api } from '../../services/api';
 import { Button } from '../../components/ui/button';
 import { Card } from '../../components/ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '../../components/ui/tabs';
-import { Users2, MessageSquare, Calendar, Settings, Shield, Plus, Loader2, ArrowLeft, MoreVertical, Trash2 } from 'lucide-react';
+import { Users2, MessageSquare, Calendar, Settings, Shield, Plus, Loader2, ArrowLeft, MoreVertical, Trash2, Check, Clock } from 'lucide-react';
 import { cn } from '../../lib/utils';
 
 import CommunityManage from './CommunityManage';
@@ -126,8 +126,9 @@ export default function CommunityDetail({ user }) {
     );
   }
 
-  const isMember = community.members.includes(user?._id);
-  const isAdmin = community.ownerId._id === user?._id || community.admins.includes(user?._id);
+  const isMember = community.members.some(m => String(m._id || m) === String(user?._id));
+  const isPending = community.pendingMembers?.some(m => String(m._id || m) === String(user?._id));
+  const isAdmin = community.ownerId._id === user?._id || community.admins.some(a => String(a._id || a) === String(user?._id));
   const isOwner = community.ownerId._id === user?._id;
 
   return (
@@ -157,20 +158,6 @@ export default function CommunityDetail({ user }) {
                 {community.name}
               </h1>
             </div>
-            
-            <div className="flex items-center gap-3 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground relative">
-              {/* The requested design line */}
-              <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-[1px] bg-white/10 -z-10" />
-              
-              <span className="flex items-center gap-1.5 text-primary bg-[#0d1117] px-3 py-1 rounded-full border border-primary/20 z-10">
-                <Users2 className="w-3 h-3" />
-                {community.members.length} Üye
-              </span>
-              <span className="bg-[#0d1117] px-2 z-10">•</span>
-              <span className="bg-[#0d1117] pr-3 py-1 z-10 text-gray-400">
-                Kurucu: <span className="text-white">{community.ownerId.username}</span>
-              </span>
-            </div>
           </div>
         </div>
 
@@ -185,6 +172,11 @@ export default function CommunityDetail({ user }) {
                 <Button variant="ghost" className="rounded-xl font-bold text-muted-foreground hover:text-red-500 hover:bg-red-500/10" onClick={handleLeave}>Ayrıl</Button>
               )}
             </>
+          ) : isPending ? (
+            <Button variant="secondary" className="rounded-xl font-bold bg-amber-500/10 text-amber-500 border-amber-500/20 cursor-default">
+              <Clock className="w-4 h-4 mr-2" />
+              İstek Gönderildi
+            </Button>
           ) : (
             <Button 
               className="rounded-xl font-bold px-8 h-11" 
@@ -200,6 +192,17 @@ export default function CommunityDetail({ user }) {
       <div className="pt-8 grid grid-cols-1 lg:grid-cols-4 gap-8">
         {/* Left Column: Info */}
         <div className="space-y-6">
+          <div className="flex items-center gap-3 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground relative mb-2">
+            <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-[1px] bg-white/10 -z-10" />
+            <span className="flex items-center gap-1.5 text-primary bg-[#0d1117] px-3 py-1 rounded-full border border-primary/20 z-10">
+              <Users2 className="w-3 h-3" />
+              {community.members.length} Üye
+            </span>
+            <span className="bg-[#0d1117] px-2 z-10">•</span>
+            <span className="bg-[#0d1117] pr-3 py-1 z-10 text-gray-400">
+              Kurucu: <span className="text-white">{community.ownerId.username}</span>
+            </span>
+          </div>
           <Card className="p-6 bg-card/50 border-white/5 space-y-4">
             <h3 className="text-xs font-black uppercase tracking-widest text-muted-foreground">Hakkında</h3>
             <p className="text-sm font-medium leading-relaxed text-gray-300">

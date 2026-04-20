@@ -198,6 +198,179 @@ export const api = {
   },
 
   // Chat
+  getConversations: async () => {
+    return request(`${API_URL}/chat/conversations`, { headers: getHeaders() });
+  },
+
+  getMessages: async (conversationId) => {
+    return request(`${API_URL}/chat/messages/${conversationId}`, { headers: getHeaders() });
+  },
+
+  sendMessage: async (conversationId, text) => {
+    return request(`${API_URL}/chat/messages/${conversationId}`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify({ text })
+    });
+  },
+
+  getOrCreateConversation: async (participantId) => {
+    return request(`${API_URL}/chat/conversations/${participantId}`, {
+      method: 'POST',
+      headers: getHeaders()
+    });
+  },
+
+  // Community
+  getCommunities: async () => {
+    return request(`${API_URL}/community`, { headers: getHeaders() });
+  },
+
+  getCommunityBySlug: async (slug) => {
+    return request(`${API_URL}/community/${slug}`, { headers: getHeaders() });
+  },
+
+  createCommunity: async (data) => {
+    return request(`${API_URL}/community/create`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(data)
+    });
+  },
+
+  joinCommunity: async (slug) => {
+    return request(`${API_URL}/community/${slug}/join`, {
+      method: 'POST',
+      headers: getHeaders()
+    });
+  },
+
+  leaveCommunity: async (slug) => {
+    return request(`${API_URL}/community/${slug}/leave`, {
+      method: 'POST',
+      headers: getHeaders()
+    });
+  },
+
+  getCommunityFeed: async () => {
+    return request(`${API_URL}/community/feed`, { headers: getHeaders() });
+  },
+
+  getUserCommunities: async (userId) => {
+    return request(`${API_URL}/community/user/${userId}`, { headers: getHeaders() });
+  },
+
+  getDiscussions: async (communityId) => {
+    return request(`${API_URL}/community/discussions/list?communityId=${communityId}`, { headers: getHeaders() });
+  },
+
+  getDiscussionById: async (id) => {
+    return request(`${API_URL}/community/discussions/${id}`, { headers: getHeaders() });
+  },
+
+  createDiscussion: async (data) => {
+    return request(`${API_URL}/community/discussions`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(data)
+    });
+  },
+
+  getComments: async (discussionId) => {
+    return request(`${API_URL}/community/discussions/${discussionId}/comments`, { headers: getHeaders() });
+  },
+
+  createComment: async (discussionId, content) => {
+    return request(`${API_URL}/community/discussions/${discussionId}/comments`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify({ content })
+    });
+  },
+
+  updateCommunitySettings: async (slug, settings) => {
+    return request(`${API_URL}/community/${slug}/settings`, {
+      method: 'PUT',
+      headers: getHeaders(),
+      body: JSON.stringify(settings)
+    });
+  },
+
+  getPendingMembers: async (slug) => {
+    return request(`${API_URL}/community/${slug}/pending-members`, { headers: getHeaders() });
+  },
+
+  approveMember: async (slug, userId) => {
+    return request(`${API_URL}/community/${slug}/approve-member`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify({ userId })
+    });
+  },
+
+  // Notifications
+  getNotifications: async () => {
+    return request(`${API_URL}/notifications`, { headers: getHeaders() });
+  },
+
+  markNotificationRead: async (id) => {
+    return request(`${API_URL}/notifications/${id}/read`, {
+      method: 'PUT',
+      headers: getHeaders()
+    });
+  },
+
+  markAllNotificationsRead: async () => {
+    return request(`${API_URL}/notifications/read-all`, {
+      method: 'PUT',
+      headers: getHeaders()
+    });
+  },
+
+  getEvents: async (communityId) => {
+    return request(`${API_URL}/community/events/list?communityId=${communityId}`, { headers: getHeaders() });
+  },
+
+  createEvent: async (data) => {
+    return request(`${API_URL}/community/events`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(data)
+    });
+  },
+
+  deleteEvent: async (id) => {
+    return request(`${API_URL}/community/events/${id}`, {
+      method: 'DELETE',
+      headers: getHeaders()
+    });
+  },
+
+  getPendingDiscussions: async (communityId) => {
+    return request(`${API_URL}/community/discussions/pending?communityId=${communityId}`, { headers: getHeaders() });
+  },
+
+  approveDiscussion: async (discussionId) => {
+    return request(`${API_URL}/community/discussions/${discussionId}/approve`, {
+      method: 'POST',
+      headers: getHeaders()
+    });
+  },
+
+  deleteDiscussion: async (discussionId) => {
+    return request(`${API_URL}/community/discussions/${discussionId}`, {
+      method: 'DELETE',
+      headers: getHeaders()
+    });
+  },
+
+  deleteCommunity: async (slug) => {
+    return request(`${API_URL}/community/${slug}`, {
+      method: 'DELETE',
+      headers: getHeaders()
+    });
+  }
+};
   createConversation: async ({ type, participantIds, title }) => {
     return request(`${API_URL}/chat/conversations`, {
       method: 'POST',

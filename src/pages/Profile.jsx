@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Settings, Monitor, Clock, Trophy, Zap, Eye, EyeOff, LibraryBig, Archive, 
-  Heart, Flame, Gamepad2, Swords, TrendingUp, Crown, ShieldCheck, Rocket } from 'lucide-react';
+  Heart, Flame, Gamepad2, Swords, TrendingUp, Crown, ShieldCheck, Rocket, Users2 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { Button } from '../components/ui/button';
 import { api } from '../services/api';
@@ -19,6 +19,7 @@ export default function Profile({ user: currentUser }) {
   const [stats, setStats] = useState([]);
   const [allBadges, setAllBadges] = useState([]);
   const [totalTime, setTotalTime] = useState(0);
+  const [communities, setCommunities] = useState([]);
   const [loading, setLoading] = useState(true);
   
   // Edit Modal State
@@ -73,8 +74,12 @@ export default function Profile({ user: currentUser }) {
       const total = userStats.reduce((acc, curr) => acc + curr.totalTime, 0);
       setTotalTime(total);
 
-      const badgesRes = await api.getAllBadges();
+      const [badgesRes, commsRes] = await Promise.all([
+        api.getAllBadges(),
+        api.getUserCommunities(userData._id || userData.id)
+      ]);
       setAllBadges(badgesRes || []);
+      setCommunities(commsRes || []);
     } catch (err) {
       console.error('Profil yükleme hatası:', err);
     } finally {
@@ -490,16 +495,39 @@ export default function Profile({ user: currentUser }) {
             </div>
 
             {/* Groups/Community */}
-            <div className="rounded-2xl border border-white/10 bg-black/20 p-6">
-               <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-4">Topluluklar</h3>
-               <div className="flex items-center gap-3 p-2 -mx-2 hover:bg-white/5 rounded-lg cursor-pointer transition-colors group">
-                 <div className="w-10 h-10 rounded-lg bg-emerald-500/20 text-emerald-500 flex items-center justify-center border border-emerald-500/20 group-hover:bg-emerald-500 group-hover:text-white transition-all">
-                   <Monitor className="w-5 h-5" />
-                 </div>
-                 <div>
-                   <div className="font-medium text-sm group-hover:text-primary transition-colors">Son Minikkıraft Bükücüler</div>
-                   <div className="text-xs text-muted-foreground">1.2k Üye</div>
-                 </div>
+            <div className="rounded-[2rem] border border-white/5 bg-[#0d1117] p-8">
+               <div className="flex items-center justify-between mb-6">
+                 <h3 className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">Topluluklar</h3>
+                 <span className="text-[10px] font-black bg-emerald-500/10 text-emerald-400 px-2 py-1 rounded-full">
+                   {communities.length} Katılım
+                 </span>
+               </div>
+               
+               <div className="space-y-4">
+                 {communities.map((community) => (
+                   <Link key={community._id} to={`/community/${community.slug}`} className="flex items-center gap-4 group cursor-pointer">
+                     <div className="w-12 h-12 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center border border-emerald-500/20 group-hover:bg-emerald-500 group-hover:text-white transition-all shrink-0 overflow-hidden">
+                       {community.avatar ? (
+                         <img src={community.avatar} alt={community.name} className="w-full h-full object-cover" />
+                       ) : (
+                         <Users2 className="w-5 h-5" />
+                       )}
+                     </div>
+                     <div className="min-w-0">
+                       <div className="font-bold text-sm text-white group-hover:text-emerald-400 transition-colors truncate lowercase">
+                         {community.name}
+                       </div>
+                       <div className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">
+                         {community.memberCount || 0} Üye
+                       </div>
+                     </div>
+                   </Link>
+                 ))}
+                 {communities.length === 0 && (
+                   <div className="text-center py-4">
+                     <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest italic">Henüz bir topluluğa katılmadı</p>
+                   </div>
+                 )}
                </div>
             </div>
 

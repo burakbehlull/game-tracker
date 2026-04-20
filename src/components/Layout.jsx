@@ -3,8 +3,10 @@ import { Link, useLocation } from 'react-router-dom';
 import { useTheme } from '../contexts/ThemeContext';
 import { Button } from './ui/button';
 import { User, LogOut, Gamepad2, Globe, BarChart3, Download, Clock, 
-  Settings, ChevronDown, Library, Users, MessageSquare } from 'lucide-react';
+  Settings, ChevronDown, Library, Users, MessageSquare, Users2, Bell, Check, Trash2 } from 'lucide-react';
 import { cn } from '../lib/utils';
+import { api } from '../services/api';
+import { useWebSocket } from '../contexts/WebSocketContext';
 
 const DownloadURL = import.meta.env.VITE_DOWNLOAD_URL;
 
@@ -13,12 +15,58 @@ export default function Layout({ children, user, onLogout }) {
   const location = useLocation();
   const isWeb = !window.electronAPI;
   const [showMenu, setShowMenu] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [notifications, setNotifications] = useState([]);
   const menuRef = useRef(null);
+  const notifRef = useRef(null);
+  const { events } = useWebSocket();
+
+  useEffect(() => {
+    if (user) {
+      fetchNotifications();
+    }
+  }, [user]);
+
+  useEffect(() => {
+    if (events.notificationNew) {
+      setNotifications(prev => [events.notificationNew, ...prev]);
+    }
+  }, [events.notificationNew]);
+
+  const fetchNotifications = async () => {
+    try {
+      const data = await api.getNotifications();
+      setNotifications(data);
+    } catch (err) {
+      console.error('Failed to fetch notifications:', err);
+    }
+  };
+
+  const handleMarkRead = async (id) => {
+    try {
+      await api.markNotificationRead(id);
+      setNotifications(prev => prev.map(n => n._id === id ? { ...n, read: true } : n));
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleMarkAllRead = async () => {
+    try {
+      await api.markAllNotificationsRead();
+      setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   useEffect(() => {
     function handleClickOutside(event) {
       if (menuRef.current && !menuRef.current.contains(event.target)) {
         setShowMenu(false);
+      }
+      if (notifRef.current && !notifRef.current.contains(event.target)) {
+        setShowNotifications(false);
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
@@ -37,6 +85,7 @@ export default function Layout({ children, user, onLogout }) {
     { to: '/timer', icon: Clock, label: 'Zamanlayıcı', protected: true },
     { to: '/library', icon: Library, label: 'Kütüphane', protected: true },
     { to: '/friends', icon: Users, label: 'Arkadaşlar', protected: true },
+    { to: '/community', icon: Users2, label: 'Topluluk', protected: true },
     { to: '/chat', icon: MessageSquare, label: 'Sohbet', protected: true },
   ];
 
@@ -82,7 +131,75 @@ export default function Layout({ children, user, onLogout }) {
               )}
               
               {user ? (
-                <div className="relative" ref={menuRef}>
+                <div className="flex items-center gap-3">
+                  {/* Notifications */}
+                  <div className="relative" ref={notifRef}>
+                    <button 
+                      onClick={() => setShowNotifications(!showNotifications)}
+                      className="p-2 rounded-full hover:bg-secondary/80 transition-colors relative"
+                    >
+                      <Bell className="w-5 h-5 text-muted-foreground" />
+                      {notifications.filter(n => !n.read).length > 0 && (
+                        <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-primary rounded-full border-2 border-card" />
+                      )}
+                    </button>
+
+                    {showNotifications && (
+                      <div className="absolute right-0 mt-2 w-80 bg-[#0d1117] border border-white/5 rounded-[1.5rem] shadow-2xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-100 backdrop-blur-xl">
+                        <div className="px-4 py-3 border-b border-white/5 flex items-center justify-between bg-white/5">
+                          <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Bildirimler</span>
+                          {notifications.some(n => !n.read) && (
+                            <button 
+                              onClick={handleMarkAllRead}
+                              className="text-[9px] font-black uppercase tracking-widest text-primary hover:underline"
+                            >
+                              Tümünü Oku
+                            </button>
+                          )}
+                        </div>
+                        <div className="max-h-[400px] overflow-y-auto">
+                          {notifications.length === 0 ? (
+                            <div className="p-8 text-center text-xs text-muted-foreground font-bold uppercase tracking-widest">Bildirim yok</div>
+                          ) : (
+                            notifications.map(n => (
+                              <div 
+                                key={n._id} 
+                                onClick={() => handleMarkRead(n._id)}
+                                className={cn(
+                                  "px-4 py-3 border-b border-white/5 cursor-pointer transition-colors hover:bg-white/5",
+                                  !n.read && "bg-primary/5"
+                                )}
+                              >
+                                <div className="flex items-start gap-3">
+                                  <div className={cn(
+                                    "w-8 h-8 rounded-lg flex items-center justify-center shrink-0",
+                                    !n.read ? "bg-primary/20 text-primary" : "bg-white/5 text-muted-foreground"
+                                  )}>
+                                    <Bell className="w-4 h-4" />
+                                  </div>
+                                  <div className="min-w-0 flex-1">
+                                    <p className="text-xs font-bold text-white line-clamp-2">
+                                      {n.type === 'DISCUSSION_APPROVED' && `Tartışman "${n.data.title}" onaylandı!`}
+                                      {n.type === 'MEMBER_ACCEPTED' && `"${n.data.communityName}" topluluğuna kabul edildin!`}
+                                      {n.type === 'NEW_POST' && `"${n.data.communityName}" topluluğunda yeni bir konu: ${n.data.title}`}
+                                      {n.type === 'MEMBER_REQUEST' && `"${n.data.communityName}" topluluğuna yeni üyelik isteği var.`}
+                                      {n.type === 'ROLE_UPDATED' && `"${n.data.communityName}" topluluğunda rolün ${n.data.role} olarak güncellendi.`}
+                                    </p>
+                                    <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest mt-1 block">
+                                      {new Date(n.createdAt).toLocaleDateString('tr-TR')}
+                                    </span>
+                                  </div>
+                                  {!n.read && <div className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 shrink-0" />}
+                                </div>
+                              </div>
+                            ))
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="relative" ref={menuRef}>
                   <button 
                     onClick={() => setShowMenu(!showMenu)}
                     className="flex items-center gap-2 bg-secondary/50 hover:bg-secondary/80 p-1 pr-3 rounded-full border border-white/5 transition-colors"

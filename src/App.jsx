@@ -15,6 +15,11 @@ import Library from './pages/Library';
 import GameDetails from './pages/GameDetails';
 import Friends from './pages/Friends';
 import Chat from './pages/Chat';
+import CommunityList from './pages/Community/CommunityList';
+import CreateCommunity from './pages/Community/CreateCommunity';
+import CommunityDetail from './pages/Community/CommunityDetail';
+import CommunityManage from './pages/Community/CommunityManage';
+import DiscussionDetail from './pages/Community/DiscussionDetail';
 import AdminLogin from './pages/AdminLogin';
 import AdminDashboard from './pages/AdminDashboard';
 import Layout from './components/Layout';
@@ -262,6 +267,66 @@ function App() {
                     user ? (
                       <Layout user={user} onLogout={handleLogout}>
                         <Chat user={user} />
+                      </Layout>
+                    ) : (
+                      <Navigate to="/login" />
+                    )
+                  }
+                />
+                <Route
+                  path="/community"
+                  element={
+                    user ? (
+                      <Layout user={user} onLogout={handleLogout}>
+                        <CommunityList />
+                      </Layout>
+                    ) : (
+                      <Navigate to="/login" />
+                    )
+                  }
+                />
+                <Route
+                  path="/community/create"
+                  element={
+                    user ? (
+                      <Layout user={user} onLogout={handleLogout}>
+                        <CreateCommunity />
+                      </Layout>
+                    ) : (
+                      <Navigate to="/login" />
+                    )
+                  }
+                />
+                <Route
+                  path="/community/:slug"
+                  element={
+                    user ? (
+                      <Layout user={user} onLogout={handleLogout}>
+                        <CommunityDetail user={user} />
+                      </Layout>
+                    ) : (
+                      <Navigate to="/login" />
+                    )
+                  }
+                />
+                <Route
+                  path="/community/:slug/manage"
+                  element={
+                    user ? (
+                      <Layout user={user} onLogout={handleLogout}>
+                        <CommunityManage user={user} />
+                      </Layout>
+                    ) : (
+                      <Navigate to="/login" />
+                    )
+                  }
+                />
+                <Route
+                  path="/community/discussion/:id"
+                  element={
+                    user ? (
+                      <Layout user={user} onLogout={handleLogout}>
+                        <DiscussionDetail user={user} />
                       </Layout>
                     ) : (
                       <Navigate to="/login" />

@@ -14,7 +14,8 @@ export function WebSocketProvider({ token, children }) {
     friendRemoved: null,
     conversationUpdated: null,
     messageNew: null,
-    messageRead: null
+    messageRead: null,
+    notificationNew: null
   });
 
   useEffect(() => {
@@ -42,6 +43,7 @@ export function WebSocketProvider({ token, children }) {
     socket.on('conversation:updated', (payload) => setEvents((prev) => ({ ...prev, conversationUpdated: payload })));
     socket.on('message:new', (payload) => setEvents((prev) => ({ ...prev, messageNew: payload })));
     socket.on('message:read', (payload) => setEvents((prev) => ({ ...prev, messageRead: payload })));
+    socket.on('notification:new', (payload) => setEvents((prev) => ({ ...prev, notificationNew: payload })));
 
     return () => {
       socket.disconnect();

@@ -3,7 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { useTheme } from '../contexts/ThemeContext';
 import { Button } from './ui/button';
 import { User, LogOut, Gamepad2, Globe, BarChart3, Download, Clock, 
-  Settings, ChevronDown, Library, Users, MessageSquare, Users2, Bell, Check, Trash2 } from 'lucide-react';
+  Settings, ChevronDown, Library, Users, MessageSquare, Users2, Bell, Check, Trash2, Shield, X } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { api } from '../services/api';
 import { useWebSocket } from '../contexts/WebSocketContext';
@@ -17,6 +17,7 @@ export default function Layout({ children, user, onLogout }) {
   const [showMenu, setShowMenu] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [notifications, setNotifications] = useState([]);
+  const [activeToast, setActiveToast] = useState(null);
   const menuRef = useRef(null);
   const notifRef = useRef(null);
   const { events } = useWebSocket();
@@ -30,6 +31,12 @@ export default function Layout({ children, user, onLogout }) {
   useEffect(() => {
     if (events.notificationNew) {
       setNotifications(prev => [events.notificationNew, ...prev]);
+      
+      // Show toast if it's a message
+      if (events.notificationNew.type === 'NEW_MESSAGE') {
+        setActiveToast(events.notificationNew);
+        setTimeout(() => setActiveToast(null), 5000);
+      }
     }
   }, [events.notificationNew]);
 
@@ -161,38 +168,48 @@ export default function Layout({ children, user, onLogout }) {
                           {notifications.length === 0 ? (
                             <div className="p-8 text-center text-xs text-muted-foreground font-bold uppercase tracking-widest">Bildirim yok</div>
                           ) : (
-                            notifications.map(n => (
-                              <div 
-                                key={n._id} 
-                                onClick={() => handleMarkRead(n._id)}
-                                className={cn(
-                                  "px-4 py-3 border-b border-white/5 cursor-pointer transition-colors hover:bg-white/5",
-                                  !n.read && "bg-primary/5"
-                                )}
-                              >
-                                <div className="flex items-start gap-3">
-                                  <div className={cn(
-                                    "w-8 h-8 rounded-lg flex items-center justify-center shrink-0",
-                                    !n.read ? "bg-primary/20 text-primary" : "bg-white/5 text-muted-foreground"
-                                  )}>
-                                    <Bell className="w-4 h-4" />
+                            <>
+                              {notifications.map(n => (
+                                <div 
+                                  key={n._id} 
+                                  onClick={() => handleMarkRead(n._id)}
+                                  className={cn(
+                                    "px-4 py-3 border-b border-white/5 cursor-pointer transition-colors hover:bg-white/5",
+                                    !n.read && "bg-primary/5"
+                                  )}
+                                >
+                                  <div className="flex items-start gap-3">
+                                    <div className={cn(
+                                      "w-8 h-8 rounded-lg flex items-center justify-center shrink-0",
+                                      !n.read ? "bg-primary/20 text-primary" : "bg-white/5 text-muted-foreground"
+                                    )}>
+                                      <Bell className="w-4 h-4" />
+                                    </div>
+                                    <div className="min-w-0 flex-1">
+                                      <p className="text-xs font-bold text-white line-clamp-2">
+                                        {n.type === 'DISCUSSION_APPROVED' && `Tartışman "${n.data.title}" onaylandı!`}
+                                        {n.type === 'MEMBER_ACCEPTED' && `"${n.data.communityName}" topluluğuna kabul edildin!`}
+                                        {n.type === 'NEW_POST' && `"${n.data.communityName}" topluluğunda yeni bir konu: ${n.data.title}`}
+                                        {n.type === 'MEMBER_REQUEST' && `"${n.data.communityName}" topluluğuna yeni üyelik isteği var.`}
+                                        {n.type === 'ROLE_UPDATED' && `"${n.data.communityName}" topluluğunda rolün ${n.data.role} olarak güncellendi.`}
+                                        {n.type === 'NEW_MESSAGE' && `${n.data.senderName} size mesaj attı: ${n.data.messagePreview}`}
+                                      </p>
+                                      <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest mt-1 block">
+                                        {new Date(n.createdAt).toLocaleDateString('tr-TR')}
+                                      </span>
+                                    </div>
+                                    {!n.read && <div className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 shrink-0" />}
                                   </div>
-                                  <div className="min-w-0 flex-1">
-                                    <p className="text-xs font-bold text-white line-clamp-2">
-                                      {n.type === 'DISCUSSION_APPROVED' && `Tartışman "${n.data.title}" onaylandı!`}
-                                      {n.type === 'MEMBER_ACCEPTED' && `"${n.data.communityName}" topluluğuna kabul edildin!`}
-                                      {n.type === 'NEW_POST' && `"${n.data.communityName}" topluluğunda yeni bir konu: ${n.data.title}`}
-                                      {n.type === 'MEMBER_REQUEST' && `"${n.data.communityName}" topluluğuna yeni üyelik isteği var.`}
-                                      {n.type === 'ROLE_UPDATED' && `"${n.data.communityName}" topluluğunda rolün ${n.data.role} olarak güncellendi.`}
-                                    </p>
-                                    <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest mt-1 block">
-                                      {new Date(n.createdAt).toLocaleDateString('tr-TR')}
-                                    </span>
-                                  </div>
-                                  {!n.read && <div className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 shrink-0" />}
                                 </div>
-                              </div>
-                            ))
+                              ))}
+                              <Link 
+                                to="/notifications" 
+                                className="block w-full px-4 py-3 text-center text-[10px] font-black text-primary uppercase tracking-widest hover:bg-white/5 transition-colors"
+                                onClick={() => setShowNotifications(false)}
+                              >
+                                Tüm Bildirimleri Gör
+                              </Link>
+                            </>
                           )}
                         </div>
                       </div>
@@ -239,6 +256,19 @@ export default function Layout({ children, user, onLogout }) {
                           </div>
                           Ayarlar
                         </Link>
+
+                        {user?.roles?.includes('admin') && (
+                          <Link 
+                            to="/admin" 
+                            className="flex items-center gap-3 px-4 py-2.5 text-[10px] font-black text-red-500/70 uppercase tracking-widest hover:bg-red-500/10 hover:text-red-500 transition-all duration-200 group"
+                            onClick={() => setShowMenu(false)}
+                          >
+                            <div className="p-1.5 rounded-lg bg-red-500/10 group-hover:bg-red-500/20 transition-colors">
+                              <Shield className="w-3.5 h-3.5" />
+                            </div>
+                            Admin Paneli
+                          </Link>
+                        )}
 
                         <div className="h-[1px] bg-white/5 my-2 mx-4" />
                         
@@ -300,6 +330,27 @@ export default function Layout({ children, user, onLogout }) {
           );
         })}
       </div>
+
+      {/* Toast Notification */}
+      {activeToast && (
+        <div className="fixed bottom-20 right-4 z-[100] animate-in slide-in-from-right-full duration-300">
+          <div className="bg-[#0d1117] border border-primary/20 rounded-[1.5rem] p-4 shadow-2xl shadow-primary/20 backdrop-blur-xl min-w-[300px] flex items-start gap-4">
+            <div className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center shrink-0">
+              <MessageSquare className="w-5 h-5 text-primary" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-[10px] font-black text-primary uppercase tracking-[0.2em]">Yeni Mesaj</span>
+                <button onClick={() => setActiveToast(null)} className="text-muted-foreground hover:text-white transition-colors">
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              <p className="text-sm font-bold text-white mb-0.5">{activeToast.data.senderName}</p>
+              <p className="text-xs text-muted-foreground line-clamp-1">{activeToast.data.messagePreview}</p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

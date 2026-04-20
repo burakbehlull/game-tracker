@@ -60,7 +60,7 @@ router.post('/login', async (req, res) => {
     }
 
     // Check if user has admin role
-    if (user.role !== 'admin') {
+    if (!user.roles || !user.roles.includes('admin')) {
       await AdminLoginAttempt.create({
         username,
         ipAddress,
@@ -86,7 +86,7 @@ router.post('/login', async (req, res) => {
 
     // Generate token
     const token = jwt.sign(
-      { userId: user._id, tokenVersion: user.tokenVersion || 0, role: user.role },
+      { userId: user._id, tokenVersion: user.tokenVersion || 0, roles: user.roles },
       JWT_SECRET,
       { expiresIn: '7d' }
     );
@@ -97,7 +97,7 @@ router.post('/login', async (req, res) => {
         id: user._id,
         username: user.username,
         email: user.email,
-        role: user.role
+        roles: user.roles
       }
     });
   } catch (error) {
@@ -116,8 +116,8 @@ router.get('/stats', adminAuth, async (req, res) => {
       recentUsers,
       topGames
     ] = await Promise.all([
-      User.countDocuments({ role: 'user' }),
-      User.countDocuments({ role: 'admin' }),
+      User.countDocuments({ roles: 'user' }),
+      User.countDocuments({ roles: 'admin' }),
       GameSession.countDocuments(),
       User.find()
         .select('username email createdAt lastLogin level xp')
@@ -168,7 +168,7 @@ router.get('/users', adminAuth, async (req, res) => {
 
     const [users, total] = await Promise.all([
       User.find(query)
-        .select('username email role createdAt lastLogin level xp isVerified')
+        .select('username email roles createdAt lastLogin level xp isVerified')
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit),
@@ -212,26 +212,26 @@ router.get('/users/:userId', adminAuth, async (req, res) => {
 // Update user role
 router.put('/users/:userId/role', adminAuth, async (req, res) => {
   try {
-    const { role } = req.body;
+    const { roles } = req.body; // Expect an array of roles
     
-    if (!['user', 'admin'].includes(role)) {
-      return res.status(400).json({ error: 'Geçersiz rol' });
+    if (!Array.isArray(roles) || roles.some(r => !['user', 'admin', 'moderator'].includes(r))) {
+      return res.status(400).json({ error: 'Geçersiz roller' });
     }
 
     const user = await User.findByIdAndUpdate(
       req.params.userId,
-      { role },
+      { roles },
       { new: true }
-    ).select('username email role');
+    ).select('username email roles');
 
     if (!user) {
       return res.status(404).json({ error: 'Kullanıcı bulunamadı' });
     }
 
-    res.json({ user, message: 'Kullanıcı rolü güncellendi' });
+    res.json({ user, message: 'Kullanıcı rolleri güncellendi' });
   } catch (error) {
     console.error('[Admin Update Role Error]', error);
-    res.status(500).json({ error: 'Rol güncellenemedi' });
+    res.status(500).json({ error: 'Roller güncellenemedi' });
   }
 });
 

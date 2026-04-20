@@ -29,10 +29,10 @@ const userSchema = new mongoose.Schema({
     trim: true,
     lowercase: true
   },
-  role: {
-    type: String,
-    enum: ['user', 'admin'],
-    default: 'user'
+  roles: {
+    type: [String],
+    enum: ['user', 'admin', 'moderator'],
+    default: ['user']
   },
   isVerified: {
     type: Boolean,

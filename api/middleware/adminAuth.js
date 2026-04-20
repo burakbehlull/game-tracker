@@ -18,7 +18,7 @@ module.exports = async (req, res, next) => {
     const decoded = jwt.verify(token, JWT_SECRET);
     
     // Check token version and user existence
-    const user = await User.findById(decoded.userId).select('tokenVersion role');
+    const user = await User.findById(decoded.userId).select('tokenVersion roles');
     if (!user) return res.status(401).json({ error: 'User no longer exists' });
     
     if (decoded.tokenVersion !== undefined && user.tokenVersion !== decoded.tokenVersion) {
@@ -26,12 +26,12 @@ module.exports = async (req, res, next) => {
     }
 
     // Check if user has admin role
-    if (user.role !== 'admin') {
+    if (!user.roles || !user.roles.includes('admin')) {
       return res.status(403).json({ error: 'Access denied. Admin privileges required.' });
     }
 
     req.userId = decoded.userId;
-    req.userRole = user.role;
+    req.userRoles = user.roles;
     next();
   } catch (err) {
     res.status(401).json({ error: 'Invalid token' });

@@ -141,7 +141,7 @@ export default function DiscussionDetail({ user }) {
                       <span>•</span>
                       <span>{new Date(comment.createdAt).toLocaleString('tr-TR')}</span>
                     </div>
-                    {(user?._id === comment.authorId._id || user?.role === 'admin') && (
+                    {(user?._id === comment.authorId._id || user?.roles?.includes('admin')) && (
                       <Button 
                         variant="ghost" 
                         size="icon" 

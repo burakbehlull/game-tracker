@@ -24,11 +24,14 @@ const createAdmin = async (username, password, email) => {
     });
 
     if (existingUser) {
-      if (existingUser.role === 'admin') {
+      if (existingUser.roles && existingUser.roles.includes('admin')) {
         console.log(`✓ ${username} zaten admin rolüne sahip`);
       } else {
         // Mevcut kullanıcıyı admin yap
-        existingUser.role = 'admin';
+        if (!existingUser.roles) existingUser.roles = ['user'];
+        if (!existingUser.roles.includes('admin')) {
+          existingUser.roles.push('admin');
+        }
         await existingUser.save();
         console.log(`✓ ${username} kullanıcısı admin rolüne yükseltildi`);
       }
@@ -38,7 +41,7 @@ const createAdmin = async (username, password, email) => {
         username,
         password,
         email,
-        role: 'admin',
+        roles: ['user', 'admin'],
         isVerified: true
       });
       await admin.save();

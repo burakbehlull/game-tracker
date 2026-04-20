@@ -26,7 +26,7 @@ const FriendItem = memo(({ friend, presence, onRemove }) => {
   return (
     <div className="group flex items-center justify-between bg-secondary/10 hover:bg-secondary/20 border border-white/5 rounded-[1.5rem] p-4 transition-all duration-300">
       <div className="flex items-center gap-4 min-w-0">
-        <div className="relative shrink-0">
+        <Link to={`/profile/${friend.username}`} className="relative shrink-0">
           <div className={cn("w-14 h-14 rounded-2xl flex items-center justify-center font-black text-xl text-white shadow-lg", getAvatarColor(friend.username))}>
             {friend.username[0].toUpperCase()}
           </div>
@@ -34,9 +34,11 @@ const FriendItem = memo(({ friend, presence, onRemove }) => {
             "absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-4 border-[#0d1117]",
             isOnline ? "bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]" : "bg-gray-500"
           )} />
-        </div>
+        </Link>
         <div className="min-w-0">
-          <h3 className="font-bold text-white text-base truncate group-hover:text-primary transition-colors">{friend.username}</h3>
+          <Link to={`/profile/${friend.username}`}>
+            <h3 className="font-bold text-white text-base truncate group-hover:text-primary transition-colors">{friend.username}</h3>
+          </Link>
           <div className="flex items-center gap-2">
             <span className={cn(
               "text-[10px] font-black uppercase tracking-widest",
@@ -72,11 +74,15 @@ const FriendItem = memo(({ friend, presence, onRemove }) => {
 const RequestItem = memo(({ request, onAccept, onReject }) => (
   <div className="flex items-center justify-between bg-primary/5 border border-primary/10 rounded-[1.5rem] p-4">
     <div className="flex items-center gap-4">
-      <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center font-black text-white text-sm shadow-md", getAvatarColor(request.fromUserId?.username))}>
-        {request.fromUserId?.username?.[0].toUpperCase()}
-      </div>
+      <Link to={`/profile/${request.fromUserId?.username}`}>
+        <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center font-black text-white text-sm shadow-md hover:opacity-80 transition-opacity", getAvatarColor(request.fromUserId?.username))}>
+          {request.fromUserId?.username?.[0].toUpperCase()}
+        </div>
+      </Link>
       <div>
-        <div className="font-bold text-white text-sm">{request.fromUserId?.username}</div>
+        <Link to={`/profile/${request.fromUserId?.username}`}>
+          <div className="font-bold text-white text-sm hover:text-primary transition-colors">{request.fromUserId?.username}</div>
+        </Link>
         <div className="text-[9px] font-black text-primary uppercase tracking-[0.2em]">Arkadaşlık İsteği</div>
       </div>
     </div>
@@ -202,10 +208,14 @@ export default function Friends() {
               {searchResults.map((user) => (
                 <div key={user._id} className="flex items-center justify-between rounded-2xl bg-white/5 border border-white/5 p-4 group hover:bg-white/10 transition-all">
                   <div className="flex items-center gap-3 min-w-0">
-                    <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center font-black text-white text-sm shadow-md shrink-0", getAvatarColor(user.username))}>
-                      {user.username[0].toUpperCase()}
-                    </div>
-                    <span className="font-bold text-white truncate text-sm">{user.username}</span>
+                    <Link to={`/profile/${user.username}`}>
+                      <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center font-black text-white text-sm shadow-md shrink-0 hover:opacity-80 transition-opacity", getAvatarColor(user.username))}>
+                        {user.username[0].toUpperCase()}
+                      </div>
+                    </Link>
+                    <Link to={`/profile/${user.username}`}>
+                      <span className="font-bold text-white truncate text-sm hover:text-primary transition-colors">{user.username}</span>
+                    </Link>
                   </div>
                   <Button
                     size="sm"

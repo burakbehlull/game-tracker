@@ -15,6 +15,7 @@ import Library from './pages/Library';
 import GameDetails from './pages/GameDetails';
 import Friends from './pages/Friends';
 import Chat from './pages/Chat';
+import Notifications from './pages/Notifications';
 import CommunityList from './pages/Community/CommunityList';
 import CreateCommunity from './pages/Community/CreateCommunity';
 import CommunityDetail from './pages/Community/CommunityDetail';
@@ -274,11 +275,23 @@ function App() {
                   }
                 />
                 <Route
+                  path="/notifications"
+                  element={
+                    user ? (
+                      <Layout user={user} onLogout={handleLogout}>
+                        <Notifications />
+                      </Layout>
+                    ) : (
+                      <Navigate to="/login" />
+                    )
+                  }
+                />
+                <Route
                   path="/community"
                   element={
                     user ? (
                       <Layout user={user} onLogout={handleLogout}>
-                        <CommunityList />
+                        <CommunityList user={user} />
                       </Layout>
                     ) : (
                       <Navigate to="/login" />

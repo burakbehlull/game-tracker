@@ -131,6 +131,8 @@ router.get('/conversations/:id/messages', auth, async (req, res) => {
   }
 });
 
+const NotificationService = require('../services/notificationService');
+
 router.post('/conversations/:id/messages', auth, async (req, res) => {
   try {
     const conversationId = req.params.id;
@@ -169,8 +171,19 @@ router.post('/conversations/:id/messages', auth, async (req, res) => {
       messageId: message._id
     });
 
+    // Create notifications for other participants
+    const otherParticipants = conversation.participants.filter(p => p.toString() !== req.userId);
+    for (const participantId of otherParticipants) {
+      await NotificationService.createNotification(participantId, 'NEW_MESSAGE', {
+        senderName: payload.sender.username,
+        messagePreview: content.substring(0, 50),
+        conversationId: conversation._id
+      });
+    }
+
     res.status(201).json(payload);
   } catch (error) {
+    console.error('[Chat Message Error]', error);
     res.status(500).json({ error: 'Mesaj gönderilemedi' });
   }
 });

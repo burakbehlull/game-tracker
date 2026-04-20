@@ -120,6 +120,44 @@ class CommunityService {
 
     return community;
   }
+
+  static async kickMember(slug, targetUserId, requesterId) {
+    const community = await Community.findOne({ slug });
+    if (!community) throw new Error('Community not found');
+
+    // Prevent kicking the owner
+    if (community.ownerId.toString() === targetUserId.toString()) {
+      throw new Error('Topluluk kurucusu gruptan atılamaz');
+    }
+
+    // Check if requester is admin or owner
+    const isOwner = community.ownerId.toString() === requesterId.toString();
+    const isAdmin = community.admins.some(a => a.toString() === requesterId.toString());
+    
+    if (!isOwner && !isAdmin) {
+      throw new Error('Üye atmak için yetkiniz yok');
+    }
+
+    // If requester is admin, they cannot kick other admins (only owner can)
+    const targetIsAdmin = community.admins.some(a => a.toString() === targetUserId.toString());
+    if (isAdmin && !isOwner && targetIsAdmin) {
+      throw new Error('Yöneticiler diğer yöneticileri atamaz');
+    }
+
+    // Remove from members and any roles
+    community.members = community.members.filter(m => m.toString() !== targetUserId.toString());
+    community.admins = community.admins.filter(m => m.toString() !== targetUserId.toString());
+    community.moderators = community.moderators.filter(m => m.toString() !== targetUserId.toString());
+
+    await community.save();
+
+    await NotificationService.createNotification(targetUserId, 'MEMBER_KICKED', {
+      communityName: community.name,
+      communitySlug: community.slug
+    });
+
+    return community;
+  }
 }
 
 module.exports = CommunityService;

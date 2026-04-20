@@ -5,7 +5,6 @@ import { Button } from '../../components/ui/button';
 import { Card } from '../../components/ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '../../components/ui/tabs';
 import { Users2, MessageSquare, Calendar, Settings, Shield, Plus, Loader2, ArrowLeft, MoreVertical, Trash2, Check, Clock } from 'lucide-react';
-import { cn } from '../../lib/utils';
 
 import CommunityManage from './CommunityManage';
 

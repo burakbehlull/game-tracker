@@ -163,6 +163,16 @@ class CommunityController {
       res.status(400).json({ error: err.message });
     }
   }
+
+  static async kickMember(req, res) {
+    try {
+      const { userId } = req.body;
+      const community = await CommunityService.kickMember(req.params.slug, userId, req.userId);
+      res.json(community);
+    } catch (err) {
+      res.status(400).json({ error: err.message });
+    }
+  }
 }
 
 module.exports = CommunityController;

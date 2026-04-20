@@ -118,6 +118,20 @@ export default function CommunityManage({ user, communityData, onUpdate }) {
     }
   };
 
+  const handleKickMember = async (userId) => {
+    if (!window.confirm('Bu üyeyi topluluktan atmak istediğine emin misin?')) return;
+    try {
+      await api.kickMember(slug, userId);
+      setCommunity(prev => ({
+        ...prev,
+        members: prev.members.filter(m => m._id !== userId)
+      }));
+      alert('Üye topluluktan atıldı.');
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+
   const handleApproveDiscussion = async (id) => {
     try {
       await api.approveDiscussion(id);
@@ -175,10 +189,14 @@ export default function CommunityManage({ user, communityData, onUpdate }) {
       </div>
 
       <Tabs defaultValue="settings" className="space-y-6">
-        <TabsList className="bg-card/50 border border-white/5 p-1 rounded-2xl h-auto grid grid-cols-3 gap-1">
+        <TabsList className="bg-card/50 border border-white/5 p-1 rounded-2xl h-auto grid grid-cols-4 gap-1">
           <TabsTrigger value="settings" className="rounded-xl py-2.5 font-bold data-[state=active]:bg-primary">
             <Settings className="w-4 h-4 mr-2" />
             Genel Ayarlar
+          </TabsTrigger>
+          <TabsTrigger value="members" className="rounded-xl py-2.5 font-bold data-[state=active]:bg-primary">
+            <Users2 className="w-4 h-4 mr-2" />
+            Üyeler
           </TabsTrigger>
           <TabsTrigger value="approvals" className="rounded-xl py-2.5 font-bold data-[state=active]:bg-primary relative">
             <Shield className="w-4 h-4 mr-2" />
@@ -283,6 +301,53 @@ export default function CommunityManage({ user, communityData, onUpdate }) {
               {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Değişiklikleri Kaydet'}
             </Button>
           </form>
+        </TabsContent>
+
+        <TabsContent value="members" className="space-y-6">
+          <Card className="p-6 bg-card/50 border-white/5 space-y-6">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-black tracking-tight flex items-center gap-2 uppercase">
+                <Users2 className="w-5 h-5 text-primary" />
+                Üye Listesi ({community.members.length})
+              </h3>
+            </div>
+            
+            <div className="space-y-3">
+              {community.members.map(m => {
+                const isMemberOwner = m._id === community.ownerId._id;
+                const isMemberAdmin = community.admins.some(a => (a._id || a) === m._id);
+                
+                return (
+                  <div key={m._id} className="flex items-center justify-between p-3 rounded-2xl bg-secondary/20 border border-white/5 group hover:border-primary/20 transition-colors">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center font-bold text-primary overflow-hidden">
+                        {m.avatar ? <img src={m.avatar} className="w-full h-full object-cover" /> : m.username[0].toUpperCase()}
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="font-bold text-sm text-white">{m.username}</span>
+                        <div className="flex gap-1">
+                          {isMemberOwner && <span className="text-[9px] font-black uppercase tracking-widest text-primary">Kurucu</span>}
+                          {isMemberAdmin && !isMemberOwner && <span className="text-[9px] font-black uppercase tracking-widest text-amber-500">Yönetici</span>}
+                        </div>
+                      </div>
+                    </div>
+
+                    {!isMemberOwner && (isOwner || !isMemberAdmin) && (
+                      <Button 
+                        size="sm" 
+                        variant="ghost" 
+                        className="text-red-500 hover:bg-red-500/10 rounded-xl font-bold opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={() => handleKickMember(m._id)}
+                      >
+                        <Trash2 className="w-4 h-4 mr-2" />
+                        At
+                      </Button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </Card>
         </TabsContent>
 
         <TabsContent value="approvals" className="space-y-8">

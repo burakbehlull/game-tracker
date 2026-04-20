@@ -21,6 +21,7 @@ router.post('/:slug/leave', auth, CommunityController.leave);
 router.get('/:slug/pending-members', auth, checkCommunityRole(['admin']), CommunityController.getPendingMembers);
 router.post('/:slug/approve-member', auth, checkCommunityRole(['admin']), CommunityController.approveMember);
 router.post('/:slug/reject-member', auth, checkCommunityRole(['admin']), CommunityController.rejectMember);
+router.post('/:slug/kick-member', auth, checkCommunityRole(['admin']), CommunityController.kickMember);
 router.put('/:slug/settings', auth, checkCommunityRole(['admin']), CommunityController.updateSettings);
 router.delete('/:slug', auth, checkCommunityRole(['owner']), CommunityController.deleteCommunity);
 

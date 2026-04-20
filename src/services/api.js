@@ -345,6 +345,14 @@ export const api = {
     });
   },
 
+  kickMember: async (slug, userId) => {
+    return request(`${API_URL}/community/${slug}/kick-member`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify({ userId })
+    });
+  },
+
   // Notifications
   getNotifications: async () => {
     return request(`${API_URL}/notifications`, { headers: getHeaders() });

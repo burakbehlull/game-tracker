@@ -59,12 +59,8 @@ router.post('/conversations', auth, async (req, res) => {
       });
       if (existing) return res.json(existing);
 
-      const areFriends = await Friendship.findOne({
-        userA: ids[0],
-        userB: ids[1],
-        deletedAt: null
-      });
-      if (!areFriends) return res.status(403).json({ error: 'Sadece arkadaşlarınla DM başlatabilirsin' });
+      // DM creation is allowed between any users to support matchmaking and discovery
+      // The friendship check is removed to allow users to chat before becoming friends
     }
 
     const conversation = await Conversation.create({

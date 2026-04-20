@@ -102,11 +102,11 @@ export default function Matchmaking({ user }) {
   const loadMiniChat = async (targetUserId) => {
      setLoadingChat(true);
      try {
-       const conv = await api.getOrCreateConversation(targetUserId);
-       setConversation(conv);
-       const msgs = await api.getConversationMessages(conv._id);
-       setMessages(msgs.messages || []);
-     } catch (err) {
+      const conv = await api.getOrCreateConversation(targetUserId);
+      setConversation(conv);
+      const msgs = await api.getConversationMessages(conv._id);
+      setMessages(Array.isArray(msgs) ? msgs : (msgs.messages || []));
+    } catch (err) {
        console.error('Chat yükleme hatası:', err);
      } finally {
        setLoadingChat(false);

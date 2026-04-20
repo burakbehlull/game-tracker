@@ -7,7 +7,7 @@ const Community = require('../models/Community');
 const checkCommunityRole = (roles) => {
   return async (req, res, next) => {
     try {
-      const { slug } = req.params;
+      const slug = req.params.slug?.toLowerCase();
       const userId = req.userId;
 
       const community = await Community.findOne({ slug });

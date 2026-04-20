@@ -8,7 +8,7 @@ class CommunityController {
       const communities = await Community.find().select('name slug description avatar members').lean();
       const communitiesWithCount = communities.map(c => ({
         ...c,
-        memberCount: c.members.length
+        memberCount: (c.members || []).length
       }));
       res.json(communitiesWithCount);
     } catch (err) {
@@ -18,11 +18,13 @@ class CommunityController {
 
   static async getBySlug(req, res) {
     try {
-      const community = await Community.findOne({ slug: req.params.slug })
+      const slug = req.params.slug?.toLowerCase();
+      const community = await Community.findOne({ slug })
         .populate('ownerId', 'username avatar')
         .populate('admins', 'username avatar')
         .populate('moderators', 'username avatar')
         .populate('members', 'username avatar')
+        .populate('pendingMembers', 'username avatar')
         .lean();
       
       if (!community) return res.status(404).json({ error: 'Community not found' });
@@ -48,7 +50,8 @@ class CommunityController {
 
   static async join(req, res) {
     try {
-      const result = await CommunityService.joinCommunity(req.params.slug, req.userId);
+      const slug = req.params.slug?.toLowerCase();
+      const result = await CommunityService.joinCommunity(slug, req.userId);
       res.json(result);
     } catch (err) {
       res.status(400).json({ error: err.message });
@@ -57,7 +60,8 @@ class CommunityController {
 
   static async leave(req, res) {
     try {
-      const result = await CommunityService.leaveCommunity(req.params.slug, req.userId);
+      const slug = req.params.slug?.toLowerCase();
+      const result = await CommunityService.leaveCommunity(slug, req.userId);
       res.json(result);
     } catch (err) {
       res.status(400).json({ error: err.message });
@@ -107,7 +111,7 @@ class CommunityController {
 
   static async updateSettings(req, res) {
     try {
-      const { slug } = req.params;
+      const slug = req.params.slug?.toLowerCase();
       const community = await Community.findOneAndUpdate(
         { slug },
         { $set: { settings: req.body.settings, description: req.body.description, avatar: req.body.avatar, banner: req.body.banner } },
@@ -135,7 +139,8 @@ class CommunityController {
 
   static async getPendingMembers(req, res) {
     try {
-      const community = await Community.findOne({ slug: req.params.slug })
+      const slug = req.params.slug?.toLowerCase();
+      const community = await Community.findOne({ slug })
         .populate('pendingMembers', 'username avatar')
         .lean();
       res.json(community.pendingMembers);

@@ -289,19 +289,26 @@ export const api = {
     return request(`${API_URL}/community/user/${userId}`, { headers: getHeaders() });
   },
 
-  getDiscussions: async (communityId) => {
-    return request(`${API_URL}/community/discussions/list?communityId=${communityId}`, { headers: getHeaders() });
+  getDiscussions: async (slug) => {
+    return request(`${API_URL}/community/${slug}/discussions`, { headers: getHeaders() });
   },
 
   getDiscussionById: async (id) => {
     return request(`${API_URL}/community/discussions/${id}`, { headers: getHeaders() });
   },
 
-  createDiscussion: async (data) => {
-    return request(`${API_URL}/community/discussions`, {
+  createDiscussion: async (slug, data) => {
+    return request(`${API_URL}/community/${slug}/discussions`, {
       method: 'POST',
       headers: getHeaders(),
       body: JSON.stringify(data)
+    });
+  },
+
+  deleteDiscussion: async (slug, id) => {
+    return request(`${API_URL}/community/${slug}/discussions/${id}`, {
+      method: 'DELETE',
+      headers: getHeaders()
     });
   },
 
@@ -372,39 +379,32 @@ export const api = {
     });
   },
 
-  getEvents: async (communityId) => {
-    return request(`${API_URL}/community/events/list?communityId=${communityId}`, { headers: getHeaders() });
+  getEvents: async (slug) => {
+    return request(`${API_URL}/community/${slug}/events`, { headers: getHeaders() });
   },
 
-  createEvent: async (data) => {
-    return request(`${API_URL}/community/events`, {
+  createEvent: async (slug, data) => {
+    return request(`${API_URL}/community/${slug}/events`, {
       method: 'POST',
       headers: getHeaders(),
       body: JSON.stringify(data)
     });
   },
 
-  deleteEvent: async (id) => {
-    return request(`${API_URL}/community/events/${id}`, {
+  deleteEvent: async (slug, id) => {
+    return request(`${API_URL}/community/${slug}/events/${id}`, {
       method: 'DELETE',
       headers: getHeaders()
     });
   },
 
-  getPendingDiscussions: async (communityId) => {
-    return request(`${API_URL}/community/discussions/pending?communityId=${communityId}`, { headers: getHeaders() });
+  getPendingDiscussions: async (slug) => {
+    return request(`${API_URL}/community/${slug}/discussions/pending`, { headers: getHeaders() });
   },
 
   approveDiscussion: async (discussionId) => {
     return request(`${API_URL}/community/discussions/${discussionId}/approve`, {
       method: 'POST',
-      headers: getHeaders()
-    });
-  },
-
-  deleteDiscussion: async (discussionId) => {
-    return request(`${API_URL}/community/discussions/${discussionId}`, {
-      method: 'DELETE',
       headers: getHeaders()
     });
   },

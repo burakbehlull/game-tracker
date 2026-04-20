@@ -18,6 +18,7 @@ class DiscussionService {
     });
 
     await discussion.save();
+    const populatedDiscussion = await Discussion.findById(discussion._id).populate('authorId', 'username avatar');
 
     if (isApproved) {
       // Notify all members about new post
@@ -36,7 +37,7 @@ class DiscussionService {
       });
     }
 
-    return discussion;
+    return populatedDiscussion;
   }
 
   static async approveDiscussion(discussionId) {

@@ -30,8 +30,8 @@ export default function CommunityList() {
     }
   };
 
-  const filteredCommunities = communities.filter(c => 
-    c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+  const filteredCommunities = (communities || []).filter(c => 
+    c.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     c.description?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -77,7 +77,7 @@ export default function CommunityList() {
               <Card key={post._id} className="p-6 bg-card/50 border-white/5 hover:border-primary/20 transition-all group">
                 <div className="flex items-start gap-4">
                   <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
-                    {post.communityId.avatar ? (
+                    {post.communityId?.avatar ? (
                       <img src={post.communityId.avatar} alt={post.communityId.name} className="w-full h-full object-cover rounded-xl" />
                     ) : (
                       <Users2 className="w-5 h-5 text-primary" />
@@ -85,9 +85,13 @@ export default function CommunityList() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">
-                      <Link to={`/community/${post.communityId.slug}`} className="text-primary hover:underline">
-                        {post.communityId.name}
-                      </Link>
+                      {post.communityId ? (
+                        <Link to={`/community/${post.communityId.slug}`} className="text-primary hover:underline">
+                          {post.communityId.name}
+                        </Link>
+                      ) : (
+                        <span className="text-gray-500">Bilinmeyen Topluluk</span>
+                      )}
                       <span>•</span>
                       <span>{new Date(post.createdAt).toLocaleDateString('tr-TR')}</span>
                     </div>

@@ -26,12 +26,12 @@ router.put('/:slug/settings', auth, checkCommunityRole(['admin']), CommunityCont
 router.delete('/:slug', auth, checkCommunityRole(['owner']), CommunityController.deleteCommunity);
 
 // Discussion Routes
-router.get('/discussions/list', DiscussionController.getByCommunity);
-router.get('/discussions/pending', auth, DiscussionController.getPending);
+router.get('/:slug/discussions', DiscussionController.getByCommunity);
+router.get('/:slug/discussions/pending', auth, checkCommunityRole(['moderator']), DiscussionController.getPending);
 router.get('/discussions/:id', DiscussionController.getById);
-router.post('/discussions', auth, DiscussionController.create);
+router.post('/:slug/discussions', auth, checkCommunityRole(['member']), DiscussionController.create);
 router.post('/discussions/:id/approve', auth, DiscussionController.approve);
-router.delete('/discussions/:id', auth, DiscussionController.delete);
+router.delete('/:slug/discussions/:id', auth, checkCommunityRole(['member']), DiscussionController.delete);
 
 // Comment Routes
 router.get('/discussions/:discussionId/comments', DiscussionController.getComments);
@@ -39,8 +39,8 @@ router.post('/discussions/:discussionId/comments', auth, DiscussionController.cr
 router.delete('/comments/:id', auth, DiscussionController.deleteComment);
 
 // Event Routes
-router.get('/events/list', EventController.getByCommunity);
-router.post('/events', auth, checkCommunityRole(['admin']), EventController.create);
-router.delete('/events/:id', auth, checkCommunityRole(['admin']), EventController.delete);
+router.get('/:slug/events', EventController.getByCommunity);
+router.post('/:slug/events', auth, checkCommunityRole(['moderator', 'admin']), EventController.create);
+router.delete('/:slug/events/:id', auth, checkCommunityRole(['moderator', 'admin']), EventController.delete);
 
 module.exports = router;

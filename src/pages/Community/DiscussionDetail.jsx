@@ -4,6 +4,7 @@ import { api } from '../../services/api';
 import { Button } from '../../components/ui/button';
 import { Card } from '../../components/ui/card';
 import { Loader2, ArrowLeft, Send, Trash2, MessageSquare } from 'lucide-react';
+import { renderMarkdown } from '../../lib/utils';
 
 export default function DiscussionDetail({ user }) {
   const { id } = useParams();
@@ -89,20 +90,20 @@ export default function DiscussionDetail({ user }) {
       <Card className="p-8 bg-card/50 border-white/5 space-y-6">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center text-xs font-bold overflow-hidden shrink-0">
-            {discussion.authorId.avatar ? <img src={discussion.authorId.avatar} className="w-full h-full object-cover" /> : discussion.authorId.username[0].toUpperCase()}
+            {discussion.authorId?.avatar ? <img src={discussion.authorId.avatar} className="w-full h-full object-cover" /> : (discussion.authorId?.username?.[0] || '?').toUpperCase()}
           </div>
           <div>
             <h1 className="text-2xl font-black tracking-tighter text-white">{discussion.title}</h1>
             <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
-              {discussion.authorId.username} tarafından {new Date(discussion.createdAt).toLocaleDateString('tr-TR')} tarihinde paylaşıldı
+              {discussion.authorId?.username || 'Bilinmeyen'} tarafından {new Date(discussion.createdAt).toLocaleDateString('tr-TR')} tarihinde paylaşıldı
             </p>
           </div>
         </div>
 
         <div className="h-[1px] bg-white/5" />
 
-        <div className="text-gray-300 leading-relaxed whitespace-pre-wrap font-medium">
-          {discussion.content}
+        <div className="text-gray-300 leading-relaxed font-medium prose prose-invert max-w-none">
+          {renderMarkdown(discussion.content)}
         </div>
       </Card>
 
@@ -132,12 +133,12 @@ export default function DiscussionDetail({ user }) {
             <Card key={comment._id} className="p-5 bg-card/30 border-white/5 group relative">
               <div className="flex gap-4">
                 <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center text-[10px] font-bold overflow-hidden shrink-0">
-                  {comment.authorId.avatar ? <img src={comment.authorId.avatar} className="w-full h-full object-cover" /> : comment.authorId.username[0].toUpperCase()}
+                  {comment.authorId?.avatar ? <img src={comment.authorId.avatar} className="w-full h-full object-cover" /> : (comment.authorId?.username?.[0] || '?').toUpperCase()}
                 </div>
                 <div className="flex-1 space-y-2">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-muted-foreground">
-                      <span className="text-primary">{comment.authorId.username}</span>
+                      <span className="text-primary">{comment.authorId?.username || 'Bilinmeyen'}</span>
                       <span>•</span>
                       <span>{new Date(comment.createdAt).toLocaleString('tr-TR')}</span>
                     </div>

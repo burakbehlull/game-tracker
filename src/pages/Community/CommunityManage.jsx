@@ -48,7 +48,7 @@ export default function CommunityManage({ user, communityData, onUpdate }) {
       fetchData();
     } else {
       // Still need to fetch pending items even if communityData is provided
-      fetchPendingItems(communityData._id);
+      fetchPendingItems(slug);
     }
   }, [slug, communityData]);
 
@@ -63,7 +63,7 @@ export default function CommunityManage({ user, communityData, onUpdate }) {
         banner: commData.banner || '',
         settings: commData.settings
       });
-      await fetchPendingItems(commData._id);
+      await fetchPendingItems(slug);
     } catch (err) {
       console.error('Fetch error:', err);
       setError('Veriler yüklenirken bir hata oluştu.');
@@ -72,11 +72,11 @@ export default function CommunityManage({ user, communityData, onUpdate }) {
     }
   };
 
-  const fetchPendingItems = async (communityId) => {
+  const fetchPendingItems = async (slug) => {
     try {
       const [members, discussions] = await Promise.all([
         api.getPendingMembers(slug),
-        api.getPendingDiscussions(communityId)
+        api.getPendingDiscussions(slug)
       ]);
       setPendingMembers(members);
       setPendingDiscussions(discussions);

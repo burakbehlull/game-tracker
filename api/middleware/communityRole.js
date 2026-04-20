@@ -17,13 +17,18 @@ const checkCommunityRole = (roles) => {
 
       let userRole = null;
 
+      const isMatch = (array, id) => {
+        if (!Array.isArray(array)) return false;
+        return array.some(item => item.toString() === id.toString());
+      };
+
       if (community.ownerId.toString() === userId) {
         userRole = 'owner';
-      } else if (community.admins.includes(userId)) {
+      } else if (isMatch(community.admins, userId)) {
         userRole = 'admin';
-      } else if (community.moderators.includes(userId)) {
+      } else if (isMatch(community.moderators, userId)) {
         userRole = 'moderator';
-      } else if (community.members.includes(userId)) {
+      } else if (isMatch(community.members, userId)) {
         userRole = 'member';
       }
 

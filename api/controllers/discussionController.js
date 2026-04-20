@@ -88,8 +88,25 @@ class DiscussionController {
   static async approve(req, res) {
     try {
       const { id } = req.params;
-      const discussion = await DiscussionService.approveDiscussion(id);
-      res.json(discussion);
+      const discussion = await Discussion.findById(id).populate('communityId');
+      if (!discussion) return res.status(404).json({ error: 'Discussion not found' });
+
+      // Permission check: (Admin/Mod/Owner of community)
+      // Since this route isn't using checkCommunityRole directly (slug is missing),
+      // we need to check permissions manually
+      const community = discussion.communityId;
+      const userId = req.userId;
+      
+      const isStaff = community.ownerId.toString() === userId || 
+                      community.admins.some(a => a.toString() === userId) ||
+                      community.moderators.some(m => m.toString() === userId);
+
+      if (!isStaff) {
+        return res.status(403).json({ error: 'You do not have permission to approve this discussion' });
+      }
+
+      await DiscussionService.approveDiscussion(id);
+      res.json({ message: 'Discussion approved' });
     } catch (err) {
       res.status(400).json({ error: err.message });
     }
@@ -98,13 +115,17 @@ class DiscussionController {
   static async delete(req, res) {
     try {
       const { id } = req.params;
-      const discussion = await Discussion.findById(id);
+      const discussion = await Discussion.findById(id).populate('communityId');
       if (!discussion) return res.status(404).json({ error: 'Discussion not found' });
 
       // Permission check: Author OR (Admin/Mod/Owner of community)
-      // Note: req.community and req.userRole are set by checkCommunityRole middleware
       const isAuthor = discussion.authorId.toString() === req.userId;
-      const isStaff = ['owner', 'admin', 'moderator'].includes(req.userRole);
+      
+      const community = discussion.communityId;
+      const userId = req.userId;
+      const isStaff = community.ownerId.toString() === userId || 
+                      community.admins.some(a => a.toString() === userId) ||
+                      community.moderators.some(m => m.toString() === userId);
 
       if (!isAuthor && !isStaff) {
         return res.status(403).json({ error: 'You do not have permission to delete this discussion' });
@@ -150,6 +171,25 @@ class DiscussionController {
   static async deleteComment(req, res) {
     try {
       const { id } = req.params;
+      const comment = await Comment.findById(id).populate({
+        path: 'discussionId',
+        populate: { path: 'communityId' }
+      });
+      if (!comment) return res.status(404).json({ error: 'Comment not found' });
+
+      const discussion = comment.discussionId;
+      const community = discussion.communityId;
+      const userId = req.userId;
+
+      const isAuthor = comment.authorId.toString() === userId;
+      const isStaff = community.ownerId.toString() === userId || 
+                      community.admins.some(a => a.toString() === userId) ||
+                      community.moderators.some(m => m.toString() === userId);
+
+      if (!isAuthor && !isStaff) {
+        return res.status(403).json({ error: 'You do not have permission to delete this comment' });
+      }
+
       await Comment.findByIdAndDelete(id);
       res.json({ message: 'Comment deleted' });
     } catch (err) {

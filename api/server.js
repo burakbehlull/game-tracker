@@ -34,7 +34,7 @@ const allowedOrigins = process.env.CORS_ORIGINS
 // Global rate limiting
 const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 1000, // Limit each IP to 1000 requests per window
+  max: 300, // Limit each IP to 300 requests per window (reduced from 1000)
   message: { error: 'Too many requests from this IP, please try again after 15 minutes' },
   standardHeaders: true,
   legacyHeaders: false,

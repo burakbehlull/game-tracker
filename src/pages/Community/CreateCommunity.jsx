@@ -7,6 +7,8 @@ import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
 import { Switch } from '../../components/ui/switch';
 import { ArrowLeft, Users2, Image as ImageIcon, Loader2 } from 'lucide-react';
+import { cn } from '../../lib/utils';
+
 
 export default function CreateCommunity() {
   const navigate = useNavigate();

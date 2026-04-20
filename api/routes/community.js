@@ -25,9 +25,9 @@ router.delete('/:slug', auth, checkCommunityRole(['owner']), CommunityController
 
 // Discussion Routes
 router.get('/discussions/list', DiscussionController.getByCommunity);
+router.get('/discussions/pending', auth, DiscussionController.getPending);
 router.get('/discussions/:id', DiscussionController.getById);
 router.post('/discussions', auth, DiscussionController.create);
-router.get('/discussions/pending', auth, DiscussionController.getPending);
 router.post('/discussions/:id/approve', auth, DiscussionController.approve);
 router.delete('/discussions/:id', auth, DiscussionController.delete);
 

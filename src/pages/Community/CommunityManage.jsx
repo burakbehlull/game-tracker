@@ -20,6 +20,7 @@ import {
   AlertTriangle,
   Image as ImageIcon
 } from 'lucide-react';
+import { cn } from '../../lib/utils';
 
 export default function CommunityManage({ user, communityData, onUpdate }) {
   const { slug: urlSlug } = useParams();

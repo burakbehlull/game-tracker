@@ -4,7 +4,6 @@ import { api } from '../../services/api';
 import { Button } from '../../components/ui/button';
 import { Card } from '../../components/ui/card';
 import { Users2, Plus, MessageSquare, ArrowRight, Loader2, Search } from 'lucide-react';
-import { cn } from '../../lib/utils';
 
 export default function CommunityList() {
   const [communities, setCommunities] = useState([]);

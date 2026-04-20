@@ -4,6 +4,7 @@ import { Download, RefreshCw, X, CheckCircle2, AlertCircle } from 'lucide-react'
 const UpdateNotification = () => {
   const [updateInfo, setUpdateInfo] = useState(null);
   const [status, setStatus] = useState('IDLE'); // IDLE, AVAILABLE, DOWNLOADING, DOWNLOADED, ERROR
+  const [errorPayload, setErrorPayload] = useState('');
   const [progress, setProgress] = useState(0);
   const [isVisible, setIsVisible] = useState(false);
 
@@ -28,6 +29,7 @@ const UpdateNotification = () => {
             break;
           case 'UPDATE_ERROR':
             setStatus('ERROR');
+            setErrorPayload(payload);
             console.error('Update error:', payload);
             break;
           case 'UPDATE_NOT_AVAILABLE':
@@ -128,9 +130,16 @@ const UpdateNotification = () => {
               <div className="flex justify-center text-destructive">
                 <AlertCircle className="w-8 h-8" />
               </div>
-              <p className="text-sm text-destructive font-medium">
-                Güncelleme sırasında bir hata oluştu.
-              </p>
+              <div className="space-y-1">
+                <p className="text-sm text-destructive font-medium">
+                  Güncelleme sırasında bir hata oluştu.
+                </p>
+                {errorPayload && (
+                  <p className="text-[10px] text-muted-foreground break-all max-h-20 overflow-y-auto px-2">
+                    Hata: {errorPayload}
+                  </p>
+                )}
+              </div>
               <button 
                 onClick={() => setIsVisible(false)}
                 className="w-full rounded-lg bg-white/5 px-4 py-2 text-sm font-medium text-foreground hover:bg-white/10 transition-colors"

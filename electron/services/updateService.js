@@ -11,7 +11,14 @@ class UpdateService {
     this.mainWindow = mainWindow;
     // Otomatik indirmeyi kapatıyoruz (User chooses to download)
     autoUpdater.autoDownload = false;
+    autoUpdater.allowPrerelease = true; // Allow pre-releases if needed
     autoUpdater.logger = log;
+    
+    // GitHub için ek konfigürasyon (Cache sorunlarını önlemek için)
+    autoUpdater.requestHeaders = {
+      'Cache-Control': 'no-cache'
+    };
+    
     this.setupListeners();
   }
 
@@ -33,7 +40,8 @@ class UpdateService {
 
     autoUpdater.on('error', (err) => {
       log.error('[Update] Update error:', err);
-      this.sendStatusToWindow('UPDATE_ERROR', err.message);
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      this.sendStatusToWindow('UPDATE_ERROR', errorMessage);
     });
 
     autoUpdater.on('download-progress', (progressObj) => {

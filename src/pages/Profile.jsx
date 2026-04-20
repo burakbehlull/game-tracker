@@ -78,6 +78,7 @@ export default function Profile({ user: currentUser }) {
         api.getAllBadges(),
         api.getUserCommunities(userData._id || userData.id)
       ]);
+      console.log('User Communities:', commsRes);
       setAllBadges(badgesRes || []);
       setCommunities(commsRes || []);
     } catch (err) {

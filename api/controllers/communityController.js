@@ -82,13 +82,16 @@ class CommunityController {
     try {
       const { userId } = req.params;
       const communities = await Community.find({ 
-        members: userId 
+        $or: [
+          { members: userId },
+          { ownerId: userId }
+        ]
       }).select('name slug avatar members').lean();
       
       const result = communities.map(c => ({
         ...c,
-        memberCount: c.members?.length || 0,
-        members: undefined // remove the full member list from response
+        memberCount: (c.members?.length || 0),
+        members: undefined 
       }));
 
       res.json(result);

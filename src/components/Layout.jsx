@@ -200,59 +200,60 @@ export default function Layout({ children, user, onLogout }) {
                   </div>
 
                   <div className="relative" ref={menuRef}>
-                  <button 
-                    onClick={() => setShowMenu(!showMenu)}
-                    className="flex items-center gap-2 bg-secondary/50 hover:bg-secondary/80 p-1 pr-3 rounded-full border border-white/5 transition-colors"
-                  >
-                    <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center border border-primary/20">
-                      <User className="w-4 h-4 text-primary" />
-                    </div>
-                    <span className="text-sm font-bold text-white hidden md:inline">{user?.username}</span>
-                    <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform duration-200 ${showMenu ? 'rotate-180' : ''}`} />
-                  </button>
-
-                  {showMenu && (
-                    <div className="absolute right-0 mt-2 w-60 bg-[#0d1117] border border-white/5 rounded-[1.5rem] shadow-2xl z-50 py-3 animate-in fade-in zoom-in-95 duration-100 backdrop-blur-xl">
-                      <div className="px-4 py-2 border-b border-white/5 mb-2">
-                        <div className="text-[9px] font-black text-gray-500 uppercase tracking-[0.2em] mb-0.5">Kullanıcı Hesabı</div>
-                        <div className="text-sm font-bold text-white truncate lowercase">{user?.globalName || user?.username}</div>
+                    <button 
+                      onClick={() => setShowMenu(!showMenu)}
+                      className="flex items-center gap-2 bg-secondary/50 hover:bg-secondary/80 p-1 pr-3 rounded-full border border-white/5 transition-colors"
+                    >
+                      <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center border border-primary/20">
+                        <User className="w-4 h-4 text-primary" />
                       </div>
-                      
-                      <Link 
-                        to={`/profile/${user?.username}`} 
-                        className="flex items-center gap-3 px-4 py-2.5 text-[10px] font-black text-gray-400 uppercase tracking-widest hover:bg-primary/10 hover:text-primary transition-all duration-200 group"
-                        onClick={() => setShowMenu(false)}
-                      >
-                        <div className="p-1.5 rounded-lg bg-white/5 group-hover:bg-primary/20 transition-colors">
-                          <User className="w-3.5 h-3.5" />
-                        </div>
-                        Profilim
-                      </Link>
-                      
-                      <Link 
-                        to="/settings" 
-                        className="flex items-center gap-3 px-4 py-2.5 text-[10px] font-black text-gray-400 uppercase tracking-widest hover:bg-primary/10 hover:text-primary transition-all duration-200 group"
-                        onClick={() => setShowMenu(false)}
-                      >
-                        <div className="p-1.5 rounded-lg bg-white/5 group-hover:bg-primary/20 transition-colors">
-                          <Settings className="w-3.5 h-3.5" />
-                        </div>
-                        Ayarlar
-                      </Link>
+                      <span className="text-sm font-bold text-white hidden md:inline">{user?.username}</span>
+                      <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform duration-200 ${showMenu ? 'rotate-180' : ''}`} />
+                    </button>
 
-                      <div className="h-[1px] bg-white/5 my-2 mx-4" />
-                      
-                      <button 
-                        onClick={handleLogout}
-                        className="w-full flex items-center gap-3 px-4 py-2.5 text-[10px] font-black text-red-500/70 uppercase tracking-widest hover:bg-red-500/10 hover:text-red-500 transition-all duration-200 group"
-                      >
-                        <div className="p-1.5 rounded-lg bg-red-500/10 group-hover:bg-red-500/20 transition-colors">
-                          <LogOut className="w-3.5 h-3.5" />
+                    {showMenu && (
+                      <div className="absolute right-0 mt-2 w-60 bg-[#0d1117] border border-white/5 rounded-[1.5rem] shadow-2xl z-50 py-3 animate-in fade-in zoom-in-95 duration-100 backdrop-blur-xl">
+                        <div className="px-4 py-2 border-b border-white/5 mb-2">
+                          <div className="text-[9px] font-black text-gray-500 uppercase tracking-[0.2em] mb-0.5">Kullanıcı Hesabı</div>
+                          <div className="text-sm font-bold text-white truncate lowercase">{user?.globalName || user?.username}</div>
                         </div>
-                        Çıkış Yap
-                      </button>
-                    </div>
-                  )}
+                        
+                        <Link 
+                          to={`/profile/${user?.username}`} 
+                          className="flex items-center gap-3 px-4 py-2.5 text-[10px] font-black text-gray-400 uppercase tracking-widest hover:bg-primary/10 hover:text-primary transition-all duration-200 group"
+                          onClick={() => setShowMenu(false)}
+                        >
+                          <div className="p-1.5 rounded-lg bg-white/5 group-hover:bg-primary/20 transition-colors">
+                            <User className="w-3.5 h-3.5" />
+                          </div>
+                          Profilim
+                        </Link>
+                        
+                        <Link 
+                          to="/settings" 
+                          className="flex items-center gap-3 px-4 py-2.5 text-[10px] font-black text-gray-400 uppercase tracking-widest hover:bg-primary/10 hover:text-primary transition-all duration-200 group"
+                          onClick={() => setShowMenu(false)}
+                        >
+                          <div className="p-1.5 rounded-lg bg-white/5 group-hover:bg-primary/20 transition-colors">
+                            <Settings className="w-3.5 h-3.5" />
+                          </div>
+                          Ayarlar
+                        </Link>
+
+                        <div className="h-[1px] bg-white/5 my-2 mx-4" />
+                        
+                        <button 
+                          onClick={handleLogout}
+                          className="w-full flex items-center gap-3 px-4 py-2.5 text-[10px] font-black text-red-500/70 uppercase tracking-widest hover:bg-red-500/10 hover:text-red-500 transition-all duration-200 group"
+                        >
+                          <div className="p-1.5 rounded-lg bg-red-500/10 group-hover:bg-red-500/20 transition-colors">
+                            <LogOut className="w-3.5 h-3.5" />
+                          </div>
+                          Çıkış Yap
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
               ) : (
                 <div className="flex items-center gap-2">

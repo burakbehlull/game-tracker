@@ -198,26 +198,55 @@ export const api = {
   },
 
   // Chat
+  createConversation: async ({ type, participantIds, title }) => {
+    return request(`${API_URL}/chat/conversations`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify({ type, participantIds, title })
+    });
+  },
+
   getConversations: async () => {
     return request(`${API_URL}/chat/conversations`, { headers: getHeaders() });
   },
 
-  getMessages: async (conversationId) => {
-    return request(`${API_URL}/chat/messages/${conversationId}`, { headers: getHeaders() });
+  getConversationMessages: async (conversationId, cursor = null, limit = 30) => {
+    const qs = new URLSearchParams();
+    if (cursor) qs.set('cursor', cursor);
+    if (limit) qs.set('limit', String(limit));
+    return request(`${API_URL}/chat/conversations/${conversationId}/messages?${qs.toString()}`, {
+      headers: getHeaders()
+    });
   },
 
-  sendMessage: async (conversationId, text) => {
-    return request(`${API_URL}/chat/messages/${conversationId}`, {
+  sendMessage: async (conversationId, content) => {
+    return request(`${API_URL}/chat/conversations/${conversationId}/messages`, {
       method: 'POST',
       headers: getHeaders(),
-      body: JSON.stringify({ text })
+      body: JSON.stringify({ content })
+    });
+  },
+
+  deleteMessage: async (conversationId, messageId) => {
+    return request(`${API_URL}/chat/conversations/${conversationId}/messages/${messageId}`, {
+      method: 'DELETE',
+      headers: getHeaders()
+    });
+  },
+
+  markConversationRead: async (conversationId) => {
+    return request(`${API_URL}/chat/conversations/${conversationId}/read`, {
+      method: 'POST',
+      headers: getHeaders()
     });
   },
 
   getOrCreateConversation: async (participantId) => {
-    return request(`${API_URL}/chat/conversations/${participantId}`, {
+    // This seems to be a DM-specific shorthand
+    return request(`${API_URL}/chat/conversations`, {
       method: 'POST',
-      headers: getHeaders()
+      headers: getHeaders(),
+      body: JSON.stringify({ type: 'dm', participantIds: [participantId] })
     });
   },
 
@@ -367,49 +396,6 @@ export const api = {
   deleteCommunity: async (slug) => {
     return request(`${API_URL}/community/${slug}`, {
       method: 'DELETE',
-      headers: getHeaders()
-    });
-  }
-};
-  createConversation: async ({ type, participantIds, title }) => {
-    return request(`${API_URL}/chat/conversations`, {
-      method: 'POST',
-      headers: getHeaders(),
-      body: JSON.stringify({ type, participantIds, title })
-    });
-  },
-
-  getConversations: async () => {
-    return request(`${API_URL}/chat/conversations`, { headers: getHeaders() });
-  },
-
-  getConversationMessages: async (conversationId, cursor = null, limit = 30) => {
-    const qs = new URLSearchParams();
-    if (cursor) qs.set('cursor', cursor);
-    if (limit) qs.set('limit', String(limit));
-    return request(`${API_URL}/chat/conversations/${conversationId}/messages?${qs.toString()}`, {
-      headers: getHeaders()
-    });
-  },
-
-  sendMessage: async (conversationId, content) => {
-    return request(`${API_URL}/chat/conversations/${conversationId}/messages`, {
-      method: 'POST',
-      headers: getHeaders(),
-      body: JSON.stringify({ content })
-    });
-  },
-
-  deleteMessage: async (conversationId, messageId) => {
-    return request(`${API_URL}/chat/conversations/${conversationId}/messages/${messageId}`, {
-      method: 'DELETE',
-      headers: getHeaders()
-    });
-  },
-
-  markConversationRead: async (conversationId) => {
-    return request(`${API_URL}/chat/conversations/${conversationId}/read`, {
-      method: 'POST',
       headers: getHeaders()
     });
   },

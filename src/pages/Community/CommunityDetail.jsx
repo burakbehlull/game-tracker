@@ -7,6 +7,8 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '../../components/ui/ta
 import { Users2, MessageSquare, Calendar, Settings, Shield, Plus, Loader2, ArrowLeft, MoreVertical, Trash2 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 
+import CommunityManage from './CommunityManage';
+
 export default function CommunityDetail({ user }) {
   const { slug } = useParams();
   const navigate = useNavigate();
@@ -141,25 +143,33 @@ export default function CommunityDetail({ user }) {
           <div className="absolute inset-0 bg-gradient-to-t from-background via-background/20 to-transparent" />
         </div>
 
-        <div className="absolute -bottom-6 left-8 flex items-end gap-6">
-          <div className="w-24 h-24 md:w-32 md:h-32 rounded-[2rem] bg-card border-4 border-background shadow-2xl flex items-center justify-center overflow-hidden shrink-0">
+        <div className="absolute -bottom-8 left-8 flex items-end gap-6 w-[calc(100%-4rem)]">
+          <div className="w-24 h-24 md:w-32 md:h-32 rounded-[2rem] bg-card border-4 border-background shadow-2xl flex items-center justify-center overflow-hidden shrink-0 z-10">
             {community.avatar ? (
               <img src={community.avatar} alt={community.name} className="w-full h-full object-cover" />
             ) : (
               <Users2 className="w-12 h-12 text-primary" />
             )}
           </div>
-          <div className="pb-4 space-y-1">
-            <h1 className="text-2xl md:text-4xl font-black tracking-tighter text-white drop-shadow-md">
-              {community.name}
-            </h1>
-            <div className="flex items-center gap-3 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">
-              <span className="flex items-center gap-1.5 text-primary bg-primary/10 px-2 py-0.5 rounded-full border border-primary/20">
+          <div className="pb-2 flex-1 min-w-0 relative">
+            <div className="flex items-center gap-4 mb-1">
+              <h1 className="text-2xl md:text-4xl font-black tracking-tighter text-white drop-shadow-md truncate">
+                {community.name}
+              </h1>
+            </div>
+            
+            <div className="flex items-center gap-3 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground relative">
+              {/* The requested design line */}
+              <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-[1px] bg-white/10 -z-10" />
+              
+              <span className="flex items-center gap-1.5 text-primary bg-[#0d1117] px-3 py-1 rounded-full border border-primary/20 z-10">
                 <Users2 className="w-3 h-3" />
                 {community.members.length} Üye
               </span>
-              <span>•</span>
-              <span>Kurucu: {community.ownerId.username}</span>
+              <span className="bg-[#0d1117] px-2 z-10">•</span>
+              <span className="bg-[#0d1117] pr-3 py-1 z-10 text-gray-400">
+                Kurucu: <span className="text-white">{community.ownerId.username}</span>
+              </span>
             </div>
           </div>
         </div>
@@ -167,14 +177,12 @@ export default function CommunityDetail({ user }) {
         <div className="absolute bottom-4 right-8 flex items-center gap-3">
           {isMember ? (
             <>
-              <Button variant="secondary" className="rounded-xl font-bold" onClick={handleLeave}>Ayrıl</Button>
-              {isAdmin && (
-                <Link to={`/community/${slug}/manage`}>
-                  <Button variant="default" className="rounded-xl font-bold gap-2">
-                    <Settings className="w-4 h-4" />
-                    Yönet
-                  </Button>
-                </Link>
+              <Button variant="secondary" className="rounded-xl font-bold bg-emerald-500/10 text-emerald-500 border-emerald-500/20 hover:bg-emerald-500/20 cursor-default">
+                <Check className="w-4 h-4 mr-2" />
+                Katıldın
+              </Button>
+              {!isOwner && (
+                <Button variant="ghost" className="rounded-xl font-bold text-muted-foreground hover:text-red-500 hover:bg-red-500/10" onClick={handleLeave}>Ayrıl</Button>
               )}
             </>
           ) : (
@@ -232,6 +240,12 @@ export default function CommunityDetail({ user }) {
                 <Users2 className="w-4 h-4 mr-2 hidden md:inline" />
                 Üyeler
               </TabsTrigger>
+              {isAdmin && (
+                <TabsTrigger value="manage" className="rounded-xl py-2.5 font-bold data-[state=active]:bg-primary">
+                  <Settings className="w-4 h-4 mr-2 hidden md:inline" />
+                  Yönetim
+                </TabsTrigger>
+              )}
             </TabsList>
 
             <TabsContent value="discussions" className="space-y-4 focus-visible:outline-none">
@@ -333,6 +347,12 @@ export default function CommunityDetail({ user }) {
                   ))}
                </div>
             </TabsContent>
+
+            {isAdmin && (
+              <TabsContent value="manage" className="focus-visible:outline-none">
+                <CommunityManage user={user} communityData={community} onUpdate={fetchCommunity} />
+              </TabsContent>
+            )}
           </Tabs>
         </div>
       </div>

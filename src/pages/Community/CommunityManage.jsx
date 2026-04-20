@@ -21,41 +21,40 @@ import {
   Image as ImageIcon
 } from 'lucide-react';
 
-export default function CommunityManage({ user }) {
-  const { slug } = useParams();
+export default function CommunityManage({ user, communityData, onUpdate }) {
+  const { slug: urlSlug } = useParams();
+  const slug = urlSlug || communityData?.slug;
   const navigate = useNavigate();
-  const [community, setCommunity] = useState(null);
+  const [community, setCommunity] = useState(communityData || null);
   const [pendingMembers, setPendingMembers] = useState([]);
   const [pendingDiscussions, setPendingDiscussions] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!communityData);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   
   const [formData, setFormData] = useState({
-    description: '',
-    avatar: '',
-    banner: '',
-    settings: {
+    description: communityData?.description || '',
+    avatar: communityData?.avatar || '',
+    banner: communityData?.banner || '',
+    settings: communityData?.settings || {
       requireApprovalForPosts: false,
       requireApprovalForMembers: false
     }
   });
 
   useEffect(() => {
-    fetchData();
-  }, [slug]);
+    if (!communityData || slug !== communityData.slug) {
+      fetchData();
+    } else {
+      // Still need to fetch pending items even if communityData is provided
+      fetchPendingItems(communityData._id);
+    }
+  }, [slug, communityData]);
 
   const fetchData = async () => {
     try {
+      setLoading(true);
       const commData = await api.getCommunityBySlug(slug);
-      
-      // Check if user is admin/owner
-      const isAdmin = commData.ownerId._id === user?._id || commData.admins.includes(user?._id);
-      if (!isAdmin) {
-        navigate(`/community/${slug}`);
-        return;
-      }
-
       setCommunity(commData);
       setFormData({
         description: commData.description || '',
@@ -63,19 +62,25 @@ export default function CommunityManage({ user }) {
         banner: commData.banner || '',
         settings: commData.settings
       });
-
-      const [members, discussions] = await Promise.all([
-        api.getPendingMembers(slug),
-        api.getPendingDiscussions(commData._id)
-      ]);
-
-      setPendingMembers(members);
-      setPendingDiscussions(discussions);
+      await fetchPendingItems(commData._id);
     } catch (err) {
       console.error('Fetch error:', err);
       setError('Veriler yüklenirken bir hata oluştu.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchPendingItems = async (communityId) => {
+    try {
+      const [members, discussions] = await Promise.all([
+        api.getPendingMembers(slug),
+        api.getPendingDiscussions(communityId)
+      ]);
+      setPendingMembers(members);
+      setPendingDiscussions(discussions);
+    } catch (err) {
+      console.error('Pending items fetch error:', err);
     }
   };
 
@@ -85,6 +90,7 @@ export default function CommunityManage({ user }) {
     setError('');
     try {
       await api.updateCommunitySettings(slug, formData);
+      if (onUpdate) onUpdate();
       alert('Ayarlar başarıyla güncellendi.');
     } catch (err) {
       setError(err.message);
@@ -184,9 +190,19 @@ export default function CommunityManage({ user }) {
             <Card className="p-6 bg-card/50 border-white/5 space-y-6">
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label className="text-xs font-black uppercase tracking-widest text-muted-foreground">Açıklama</Label>
+                  <div className="flex justify-between items-center">
+                    <Label className="text-xs font-black uppercase tracking-widest text-muted-foreground">Açıklama</Label>
+                    <span className={cn(
+                      "text-[10px] font-bold uppercase tracking-widest",
+                      formData.description.length > 500 ? "text-red-500" : "text-muted-foreground"
+                    )}>
+                      {formData.description.length} / 500
+                    </span>
+                  </div>
                   <textarea 
-                    className="w-full min-h-[100px] bg-secondary/30 border border-white/5 rounded-xl p-4 text-sm focus:outline-none focus:border-primary/50 transition-colors font-medium"
+                    maxLength={500}
+                    className="w-full min-h-[100px] bg-secondary/30 border border-white/5 rounded-xl p-4 text-sm focus:outline-none focus:border-primary/50 transition-colors font-medium resize-none"
+                    placeholder="Topluluk hakkında bilgi ver..."
                     value={formData.description}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   />

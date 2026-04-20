@@ -70,10 +70,20 @@ export default function CreateCommunity() {
             </div>
 
             <div className="space-y-2">
-              <Label className="text-xs font-black uppercase tracking-widest text-muted-foreground">Açıklama</Label>
+              <div className="flex justify-between items-center">
+                <Label className="text-xs font-black uppercase tracking-widest text-muted-foreground">Açıklama</Label>
+                <span className={cn(
+                  "text-[10px] font-bold uppercase tracking-widest",
+                  formData.description.length > 500 ? "text-red-500" : "text-muted-foreground"
+                )}>
+                  {formData.description.length} / 500
+                </span>
+              </div>
               <textarea 
+                required
+                maxLength={500}
                 placeholder="Topluluğun hakkında kısa bir bilgi ver..."
-                className="w-full min-h-[100px] bg-secondary/50 border border-white/5 rounded-xl p-4 text-sm focus:outline-none focus:border-primary/50 transition-colors font-medium"
+                className="w-full min-h-[100px] bg-secondary/50 border border-white/5 rounded-xl p-4 text-sm focus:outline-none focus:border-primary/50 transition-colors font-medium resize-none"
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               />

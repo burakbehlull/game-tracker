@@ -153,8 +153,8 @@ router.get('/profile/:username', async (req, res) => {
     ]);
 
     const responseUser = updatedUser.toObject();
-    delete responseUser._id;
-
+    // Keep _id as it's needed for community/profile lookups
+    
     res.json({ user: responseUser, stats });
   } catch (err) {
     console.error('[Profile API Error]', err);

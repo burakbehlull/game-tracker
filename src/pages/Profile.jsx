@@ -74,9 +74,10 @@ export default function Profile({ user: currentUser }) {
       const total = userStats.reduce((acc, curr) => acc + curr.totalTime, 0);
       setTotalTime(total);
 
+      const userId = userData._id || userData.id;
       const [badgesRes, commsRes] = await Promise.all([
         api.getAllBadges(),
-        api.getUserCommunities(userData._id || userData.id)
+        userId ? api.getUserCommunities(userId) : Promise.resolve([])
       ]);
       console.log('User Communities:', commsRes);
       setAllBadges(badgesRes || []);

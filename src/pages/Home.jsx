@@ -46,11 +46,20 @@ export default function Home({ user }) {
     fetchData();
   }, []);
 
-  const formatDuration = (minutes) => {
-    if (minutes < 60) return `${Math.round(minutes)} dk`;
-    const hours = Math.floor(minutes / 60);
-    const mins = Math.round(minutes % 60);
-    return mins > 0 ? `${hours} sa ${mins} dk` : `${hours} sa`;
+  const formatDuration = (seconds) => {
+    if (!seconds && seconds !== 0) return '0 sn';
+    
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    const s = Math.floor(seconds % 60);
+
+    if (h > 0) {
+      return `${h} sa ${m} dk ${s} sn`;
+    } else if (m > 0) {
+      return `${m} dk ${s} sn`;
+    } else {
+      return `${s} sn`;
+    }
   };
 
   return (
@@ -202,7 +211,7 @@ export default function Home({ user }) {
                       </div>
                     </div>
                     <div className="text-right">
-                      <p className="text-lg font-black text-primary">{game.totalHours} SA</p>
+                      <p className="text-lg font-black text-primary">{formatDuration(game.totalDuration)}</p>
                     </div>
                   </div>
                 ))}
@@ -240,7 +249,7 @@ export default function Home({ user }) {
                       </Link>
                     </div>
                     <div className="text-right">
-                      <p className="text-lg font-black text-green-400">{u.totalHours} SA</p>
+                      <p className="text-lg font-black text-green-400">{formatDuration(u.totalDuration)}</p>
                     </div>
                   </div>
                 ))}

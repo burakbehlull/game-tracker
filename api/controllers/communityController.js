@@ -81,6 +81,11 @@ class CommunityController {
   static async getUserCommunities(req, res) {
     try {
       const { userId } = req.params;
+      
+      if (!userId || userId === 'undefined') {
+        return res.json([]);
+      }
+
       const communities = await Community.find({ 
         $or: [
           { members: userId },

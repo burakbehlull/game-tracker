@@ -277,7 +277,11 @@ export default function Chat({ user }) {
   
   useEffect(() => { 
     if (events.messageNew && String(events.messageNew.conversationId) === String(conversationId)) {
-      setMessages(p => [...p, events.messageNew]); 
+      setMessages(p => {
+        // Çift eklemeyi önlemek için ID kontrolü yap
+        if (p.some(m => String(m._id) === String(events.messageNew._id))) return p;
+        return [...p, events.messageNew];
+      }); 
     }
   }, [events.messageNew, conversationId]);
 
@@ -298,8 +302,16 @@ export default function Chat({ user }) {
 
   const handleSend = useCallback(async (content) => {
     if (!content || !conversationId) return;
-    const sent = await api.sendMessage(conversationId, content);
-    setMessages(p => [...p, sent]);
+    try {
+      const sent = await api.sendMessage(conversationId, content);
+      setMessages(p => {
+        // WebSocket üzerinden de gelebilir, ID kontrolü yap
+        if (p.some(m => String(m._id) === String(sent._id))) return p;
+        return [...p, sent];
+      });
+    } catch (err) {
+      console.error('Mesaj gönderilemedi', err);
+    }
   }, [conversationId]);
 
   const handleCreateGroup = useCallback(async (title, participantIds) => {

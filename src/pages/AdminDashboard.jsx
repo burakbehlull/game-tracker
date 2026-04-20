@@ -14,7 +14,11 @@ import {
   UserCog,
   Clock,
   Mail,
-  Calendar
+  Calendar,
+  X,
+  Edit,
+  CheckCircle,
+  AlertCircle
 } from 'lucide-react';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
@@ -28,6 +32,15 @@ export default function AdminDashboard({ adminUser, onLogout }) {
   const [currentPage, setCurrentPage] = useState(1);
   const [pagination, setPagination] = useState(null);
   const [activeTab, setActiveTab] = useState('overview');
+  const [editingUser, setEditingUser] = useState(null);
+  const [editFormData, setEditFormData] = useState({
+    username: '',
+    email: '',
+    level: 1,
+    xp: 0,
+    isVerified: true
+  });
+  const [isUpdating, setIsUpdating] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -46,6 +59,46 @@ export default function AdminDashboard({ adminUser, onLogout }) {
     'Content-Type': 'application/json',
     'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
   });
+
+  const handleEditClick = (user) => {
+    setEditingUser(user);
+    setEditFormData({
+      username: user.username,
+      email: user.email,
+      level: user.level || 1,
+      xp: user.xp || 0,
+      isVerified: user.isVerified !== false
+    });
+  };
+
+  const handleUpdateUser = async (e) => {
+    e.preventDefault();
+    if (!editingUser) return;
+    
+    setIsUpdating(true);
+    try {
+      const res = await fetch(`${API_URL}/admin/users/${editingUser._id}`, {
+        method: 'PUT',
+        headers: getHeaders(),
+        body: JSON.stringify(editFormData)
+      });
+      
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || 'Güncelleme başarısız');
+      }
+      
+      setEditingUser(null);
+      loadUsers(currentPage, searchQuery);
+      loadDashboardData();
+      alert('Kullanıcı başarıyla güncellendi');
+    } catch (error) {
+      console.error('Error updating user:', error);
+      alert(error.message);
+    } finally {
+      setIsUpdating(false);
+    }
+  };
 
   const loadDashboardData = async () => {
     try {
@@ -401,6 +454,14 @@ export default function AdminDashboard({ adminUser, onLogout }) {
                               <Button 
                                 variant="ghost" 
                                 size="sm"
+                                onClick={() => handleEditClick(user)}
+                                title="Kullanıcıyı Düzenle"
+                              >
+                                <Edit className="h-4 w-4 text-primary" />
+                              </Button>
+                              <Button 
+                                variant="ghost" 
+                                size="sm"
                                 onClick={() => handleToggleRole(user._id, user.role)}
                                 title={user.role?.includes('admin') ? "Admin Yetkisini Kaldır" : "Admin Yap"}
                               >
@@ -527,6 +588,101 @@ export default function AdminDashboard({ adminUser, onLogout }) {
           </div>
         )}
       </div>
+
+      {/* Edit User Modal */}
+      {editingUser && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm">
+          <Card className="w-full max-w-lg shadow-2xl border-primary/20 animate-in zoom-in-95 duration-200">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+              <div>
+                <CardTitle className="text-xl font-bold">Kullanıcıyı Düzenle</CardTitle>
+                <CardDescription>{editingUser.username} bilgilerini güncelleyin</CardDescription>
+              </div>
+              <Button variant="ghost" size="icon" onClick={() => setEditingUser(null)} className="rounded-full">
+                <X className="h-4 w-4" />
+              </Button>
+            </CardHeader>
+            <form onSubmit={handleUpdateUser}>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Kullanıcı Adı</label>
+                    <Input 
+                      value={editFormData.username}
+                      onChange={(e) => setEditFormData({...editFormData, username: e.target.value})}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">E-posta</label>
+                    <Input 
+                      type="email"
+                      value={editFormData.email}
+                      onChange={(e) => setEditFormData({...editFormData, email: e.target.value})}
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Level</label>
+                    <Input 
+                      type="number"
+                      min="1"
+                      value={editFormData.level}
+                      onChange={(e) => setEditFormData({...editFormData, level: e.target.value})}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">XP</label>
+                    <Input 
+                      type="number"
+                      min="0"
+                      value={editFormData.xp}
+                      onChange={(e) => setEditFormData({...editFormData, xp: e.target.value})}
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+                  <div className="flex items-center gap-2">
+                    {editFormData.isVerified ? (
+                      <CheckCircle className="h-4 w-4 text-green-500" />
+                    ) : (
+                      <AlertCircle className="h-4 w-4 text-yellow-500" />
+                    )}
+                    <span className="text-sm font-medium">Hesap Durumu</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-muted-foreground">
+                      {editFormData.isVerified ? 'Doğrulanmış' : 'Doğrulanmamış'}
+                    </span>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setEditFormData({...editFormData, isVerified: !editFormData.isVerified})}
+                    >
+                      Değiştir
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+              <CardFooter className="flex justify-end gap-2 pt-2">
+                <Button type="button" variant="outline" onClick={() => setEditingUser(null)}>
+                  İptal
+                </Button>
+                <Button type="submit" disabled={isUpdating}>
+                  {isUpdating ? 'Güncelleniyor...' : 'Değişiklikleri Kaydet'}
+                </Button>
+              </CardFooter>
+            </form>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }

@@ -250,6 +250,39 @@ router.put('/users/:userId/role', adminAuth, async (req, res) => {
   }
 });
 
+// Update user details (admin)
+router.put('/users/:userId', adminAuth, async (req, res) => {
+  try {
+    const { username, email, level, xp, role, isVerified } = req.body;
+    
+    const updateData = {};
+    if (username !== undefined) updateData.username = username;
+    if (email !== undefined) updateData.email = email;
+    if (level !== undefined) updateData.level = Number(level);
+    if (xp !== undefined) updateData.xp = Number(xp);
+    if (role !== undefined && Array.isArray(role)) updateData.role = role;
+    if (isVerified !== undefined) updateData.isVerified = isVerified;
+
+    const user = await User.findByIdAndUpdate(
+      req.params.userId,
+      { $set: updateData },
+      { new: true }
+    ).select('-password');
+
+    if (!user) {
+      return res.status(404).json({ error: 'Kullanıcı bulunamadı' });
+    }
+
+    res.json({ user, message: 'Kullanıcı başarıyla güncellendi' });
+  } catch (error) {
+    console.error('[Admin Update User Error]', error);
+    if (error.code === 11000) {
+      return res.status(400).json({ error: 'Kullanıcı adı veya e-posta zaten kullanımda' });
+    }
+    res.status(500).json({ error: 'Kullanıcı güncellenemedi' });
+  }
+});
+
 // Delete user
 router.delete('/users/:userId', adminAuth, async (req, res) => {
   try {

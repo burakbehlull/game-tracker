@@ -3,7 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { useTheme } from '../contexts/ThemeContext';
 import { Button } from './ui/button';
 import { User, LogOut, Gamepad2, Globe, BarChart3, Download, Clock, 
-  Settings, ChevronDown, Library, Users, MessageSquare, Users2, Bell, Check, Trash2, Shield, X } from 'lucide-react';
+  Settings, ChevronDown, Library, Users, MessageSquare, Users2, Bell, Check, Trash2, Shield, X, Sparkles } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { api } from '../services/api';
 import { useWebSocket } from '../contexts/WebSocketContext';
@@ -91,6 +91,7 @@ export default function Layout({ children, user, onLogout }) {
     { to: '/dashboard', icon: BarChart3, label: 'Panel', protected: true },
     { to: '/timer', icon: Clock, label: 'Zamanlayıcı', protected: true },
     { to: '/library', icon: Library, label: 'Kütüphane', protected: true },
+    { to: '/matchmaking', icon: Sparkles, label: 'Eşleşme', protected: true },
     { to: '/friends', icon: Users, label: 'Arkadaşlar', protected: true },
     { to: '/community', icon: Users2, label: 'Topluluk', protected: true },
     { to: '/chat', icon: MessageSquare, label: 'Sohbet', protected: true },

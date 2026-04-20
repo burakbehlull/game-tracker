@@ -466,5 +466,11 @@ export const api = {
         'Authorization': `Bearer ${token}`
       }
     });
+  },
+
+  // Matchmaking
+  getMatches: async (gameName = '') => {
+    const qs = gameName ? `?gameName=${encodeURIComponent(gameName)}` : '';
+    return request(`${API_URL}/matchmaking/match${qs}`, { headers: getHeaders() });
   }
 };

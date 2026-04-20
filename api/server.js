@@ -81,6 +81,7 @@ const adminRoutes = require('./routes/admin');
 const statsRoutes = require('./routes/stats');
 const communityRoutes = require('./routes/community');
 const notificationRoutes = require('./routes/notifications');
+const matchmakingRoutes = require('./routes/matchmaking');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/games', gameRoutes);
@@ -92,6 +93,7 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/stats', statsRoutes);
 app.use('/api/community', communityRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/matchmaking', matchmakingRoutes);
 
 // Global Error Handler
 app.use((err, req, res, next) => {

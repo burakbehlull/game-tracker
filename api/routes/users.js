@@ -153,9 +153,52 @@ router.get('/profile/:username', async (req, res) => {
     ]);
 
     const responseUser = updatedUser.toObject();
-    // Keep _id as it's needed for community/profile lookups
     
-    res.json({ user: responseUser, stats });
+    // Check friendship status if user is logged in
+    let friendshipStatus = 'none'; // none, pending, accepted
+    const authHeader = req.headers.authorization;
+    if (authHeader) {
+      try {
+        const jwt = require('jsonwebtoken');
+        const token = authHeader.split(' ')[1];
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const currentUserId = decoded.userId;
+
+        if (currentUserId && String(currentUserId) !== String(updatedUser._id)) {
+          const Friendship = require('../models/Friendship');
+          const FriendRequest = require('../models/FriendRequest');
+
+          // Check if already friends
+          const ids = [String(currentUserId), String(updatedUser._id)].sort();
+          const friendship = await Friendship.findOne({
+            userA: ids[0],
+            userB: ids[1],
+            deletedAt: null
+          });
+
+          if (friendship) {
+            friendshipStatus = 'accepted';
+          } else {
+            // Check for pending request
+            const request = await FriendRequest.findOne({
+              $or: [
+                { fromUserId: currentUserId, toUserId: updatedUser._id },
+                { fromUserId: updatedUser._id, toUserId: currentUserId }
+              ],
+              status: 'pending'
+            });
+
+            if (request) {
+              friendshipStatus = 'pending';
+            }
+          }
+        }
+      } catch (err) {
+        // Token invalid, ignore friendship check
+      }
+    }
+    
+    res.json({ user: responseUser, stats, friendshipStatus });
   } catch (err) {
     console.error('[Profile API Error]', err);
     res.status(500).json({ error: 'Profil bilgileri alınamadı' });

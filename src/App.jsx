@@ -21,6 +21,7 @@ import CreateCommunity from './pages/Community/CreateCommunity';
 import CommunityDetail from './pages/Community/CommunityDetail';
 import CommunityManage from './pages/Community/CommunityManage';
 import DiscussionDetail from './pages/Community/DiscussionDetail';
+import Matchmaking from './pages/Community/Matchmaking';
 import AdminLogin from './pages/AdminLogin';
 import AdminDashboard from './pages/AdminDashboard';
 import Layout from './components/Layout';
@@ -340,6 +341,18 @@ function App() {
                     user ? (
                       <Layout user={user} onLogout={handleLogout}>
                         <DiscussionDetail user={user} />
+                      </Layout>
+                    ) : (
+                      <Navigate to="/login" />
+                    )
+                  }
+                />
+                <Route
+                  path="/matchmaking"
+                  element={
+                    user ? (
+                      <Layout user={user} onLogout={handleLogout}>
+                        <Matchmaking user={user} />
                       </Layout>
                     ) : (
                       <Navigate to="/login" />

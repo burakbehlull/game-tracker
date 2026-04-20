@@ -1,6 +1,6 @@
 {
   "name": "game-time-tracker",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "description": "Oyun süre takip uygulaması",
   "author": "Burak Behlül",
   "main": "electron/main.js",

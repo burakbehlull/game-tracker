@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Settings, Monitor, Clock, Trophy, Zap, Eye, EyeOff, LibraryBig, Archive, 
-  Heart, Flame, Gamepad2, Swords, TrendingUp, Crown, ShieldCheck, Rocket, Users2 } from 'lucide-react';
+  Heart, Flame, Gamepad2, Swords, TrendingUp, Crown, ShieldCheck, Rocket, Users2, UserPlus, MessageSquare } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { Button } from '../components/ui/button';
 import { api } from '../services/api';
@@ -20,7 +20,9 @@ export default function Profile({ user: currentUser }) {
   const [allBadges, setAllBadges] = useState([]);
   const [totalTime, setTotalTime] = useState(0);
   const [communities, setCommunities] = useState([]);
+  const [friendshipStatus, setFriendshipStatus] = useState('none'); // none, pending, accepted
   const [loading, setLoading] = useState(true);
+  const [requestLoading, setRequestLoading] = useState(false);
   
   // Edit Modal State
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -54,6 +56,19 @@ export default function Profile({ user: currentUser }) {
     }
   };
 
+  const handleSendFriendRequest = async () => {
+    if (!profileUser || requestLoading) return;
+    setRequestLoading(true);
+    try {
+      await api.sendFriendRequest({ targetUserId: profileUser._id, username: profileUser.username });
+      setFriendshipStatus('pending');
+    } catch (err) {
+      alert(err.message || 'İstek gönderilemedi');
+    } finally {
+      setRequestLoading(false);
+    }
+  };
+
   // If we have a username in URL, we are viewing someone else.
   // If no username (or it matches current), we are viewing ours.
 
@@ -70,6 +85,7 @@ export default function Profile({ user: currentUser }) {
       
       setProfileUser(userData);
       setStats((userStats || []).sort((a, b) => new Date(b.lastPlayed || 0) - new Date(a.lastPlayed || 0)));
+      setFriendshipStatus(userRes.friendshipStatus || 'none');
       
       const total = userStats.reduce((acc, curr) => acc + curr.totalTime, 0);
       setTotalTime(total);
@@ -254,7 +270,7 @@ export default function Profile({ user: currentUser }) {
 
                 
               <div className="flex gap-3 mt-4 md:mt-0">
-                {isOwnProfile && (
+                {isOwnProfile ? (
                   <>
                     <Button 
                       onClick={() => setIsEditModalOpen(true)}
@@ -318,11 +334,36 @@ export default function Profile({ user: currentUser }) {
                       </div>
                     )}
                   </>
+                ) : (
+                  <>
+                    {friendshipStatus === 'accepted' ? (
+                      <Button className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold gap-2 h-11 px-6 rounded-xl transition-all cursor-default">
+                        <ShieldCheck className="w-4 h-4" />
+                        Arkadaş Ekli
+                      </Button>
+                    ) : friendshipStatus === 'pending' ? (
+                      <Button className="bg-amber-600 hover:bg-amber-700 text-white font-bold gap-2 h-11 px-6 rounded-xl transition-all cursor-default">
+                        <Clock className="w-4 h-4" />
+                        İstek Atıldı
+                      </Button>
+                    ) : (
+                      <Button 
+                        onClick={handleSendFriendRequest}
+                        disabled={requestLoading}
+                        className="bg-primary hover:bg-primary/90 text-white font-bold shadow-lg shadow-primary/20 gap-2 h-11 px-6 rounded-xl transition-all"
+                      >
+                        {requestLoading ? <Rocket className="w-4 h-4 animate-spin" /> : <UserPlus className="w-4 h-4" />}
+                        Arkadaş Ekle
+                      </Button>
+                    )}
+                    <Link to={`/chat`}>
+                      <Button variant="outline" className="bg-white/5 border-white/10 hover:bg-white/10 gap-2 h-11 px-6 rounded-xl">
+                        <MessageSquare className="w-4 h-4" />
+                        Mesaj
+                      </Button>
+                    </Link>
+                  </>
                 )}
-                {/*<Button className="bg-blue-600 hover:bg-blue-500 text-white font-bold shadow-lg shadow-blue-500/20 gap-2 h-11 px-6 rounded-xl transition-all">
-                  <MessageSquare className="w-4 h-4" />
-                  Mesaj
-                </Button>*/}
               </div>
             </div>
           </div>

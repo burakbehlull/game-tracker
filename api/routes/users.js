@@ -4,6 +4,7 @@ const User = require('../models/User');
 const GameSession = require('../models/GameSession');
 const auth = require('../middleware/auth');
 const BadgeService = require('../services/badgeService');
+const ImageUploadService = require('../services/imageUploadService');
 
 const ChallengeService = require('../services/challengeService');
 
@@ -45,11 +46,24 @@ router.get('/challenges', auth, async (req, res) => {
 
 // Update
 router.put('/me', auth, async (req, res) => {
-  const { username, globalName, email, password, settings } = req.body;
+  const { username, globalName, email, password, avatar, settings } = req.body;
 
   try {
     const user = await User.findById(req.userId);
     if (!user) return res.status(404).json({ error: 'Kullanıcı bulunamadı' });
+
+    // Profile Avatar Upload
+    if (avatar && avatar.startsWith('data:image')) {
+      try {
+        const imageUrl = await ImageUploadService.uploadImage(avatar);
+        user.avatar = imageUrl;
+      } catch (uploadError) {
+        console.error('[Avatar Upload Error]', uploadError);
+        return res.status(500).json({ error: 'Profil fotoğrafı yüklenemedi: ' + uploadError.message });
+      }
+    } else if (avatar === null) {
+      user.avatar = undefined;
+    }
 
     if (username !== undefined) {
       if (typeof username !== 'string' || username.length < 3) return res.status(400).json({ error: 'Kullanıcı adı en az 3 karakter olmalı' });

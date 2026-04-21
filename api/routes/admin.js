@@ -5,8 +5,31 @@ const User = require('../models/User');
 const AdminLoginAttempt = require('../models/AdminLoginAttempt');
 const GameSession = require('../models/GameSession');
 const adminAuth = require('../middleware/adminAuth');
+const ImageUploadService = require('../services/imageUploadService');
+const SystemConfig = require('../models/SystemConfig');
 
 const JWT_SECRET = process.env.JWT_SECRET;
+
+// CDN Status
+router.get('/cdn-status', adminAuth, async (req, res) => {
+  try {
+    const status = await ImageUploadService.getCDNsStatus();
+    res.json(status);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Reset CDN
+router.post('/cdn-reset', adminAuth, async (req, res) => {
+  try {
+    await SystemConfig.deleteOne({ key: 'full_cdns' });
+    await ImageUploadService.setActiveCDNIndex(0);
+    res.json({ message: 'CDN kotaları ve aktif seçim sıfırlandı.' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
 
 // Admin Login with attempt tracking
 router.post('/login', async (req, res) => {

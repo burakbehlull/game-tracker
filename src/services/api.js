@@ -457,6 +457,21 @@ export const api = {
     });
   },
 
+  getCDNStatus: async () => {
+    const token = localStorage.getItem('adminToken');
+    return request(`${API_URL}/admin/cdn-status`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+  },
+
+  resetCDNStatus: async () => {
+    const token = localStorage.getItem('adminToken');
+    return request(`${API_URL}/admin/cdn-reset`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+  },
+
   deleteUser: async (userId) => {
     const token = localStorage.getItem('adminToken');
     return request(`${API_URL}/admin/users/${userId}`, {

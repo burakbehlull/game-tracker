@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Settings, Monitor, Clock, Trophy, Zap, Eye, EyeOff, LibraryBig, Archive, 
-  Heart, Flame, Gamepad2, Swords, TrendingUp, Crown, ShieldCheck, Rocket, Users2, UserPlus, MessageSquare } from 'lucide-react';
+  Heart, Flame, Gamepad2, Swords, TrendingUp, Crown, ShieldCheck, Rocket, Users2, UserPlus, MessageSquare, Camera, Trash2, Loader2 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { Button } from '../components/ui/button';
 import { useToast } from '../components/ui/toaster';
@@ -25,6 +25,42 @@ export default function Profile({ user: currentUser }) {
   const [friendshipStatus, setFriendshipStatus] = useState('none'); // none, pending, accepted
   const [loading, setLoading] = useState(true);
   const [requestLoading, setRequestLoading] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+
+  const fileInputRef = useRef(null);
+
+  const handleAvatarClick = () => {
+    if (isOwnProfile && fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  };
+
+  const handleFileChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Check size (max 2MB)
+    if (file.size > 2 * 1024 * 1024) {
+      toast({ title: 'Hata', description: 'Resim boyutu 2MB\'dan küçük olmalıdır.' });
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onloadend = async () => {
+      const base64Data = reader.result;
+      setUploadingAvatar(true);
+      try {
+        const updatedUser = await api.updateProfile({ avatar: base64Data });
+        setProfileUser(updatedUser);
+        toast({ title: 'Başarılı', description: 'Profil yüklendi.' });
+      } catch (err) {
+        toast({ title: 'Hata', description: err.message || 'Yükleme başarısız oldu.' });
+      } finally {
+        setUploadingAvatar(false);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
   
   // Edit Modal State
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -235,39 +271,69 @@ export default function Profile({ user: currentUser }) {
             <div className="flex flex-col md:flex-row items-start md:items-end -mt-12 gap-6 relative">
               
               {/* Avatar */}
-              <div className="relative shrink-0">
-                <div className="w-32 h-32 rounded-2xl p-1 bg-black/50 border border-white/10 shadow-xl">
-                  <img 
-                    src="https://placehold.co/128x128/2a2a2a/FFF?text=Avatar" 
-                    alt="Avatar" 
-                    className="w-full h-full object-cover rounded-xl"
-                    loading="lazy"
-                  />
+              <div 
+                className={cn(
+                  "relative shrink-0 group",
+                  isOwnProfile && "cursor-pointer"
+                )}
+                onClick={handleAvatarClick}
+              >
+                <div className="w-32 h-32 rounded-2xl p-1 bg-black/50 border border-white/10 shadow-xl overflow-hidden">
+                  {uploadingAvatar ? (
+                    <div className="absolute inset-0 bg-black/60 flex items-center justify-center z-20 rounded-xl">
+                      <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                    </div>
+                  ) : profileUser?.avatar ? (
+                    <img 
+                      src={profileUser.avatar} 
+                      alt="Avatar" 
+                      className="w-full h-full object-cover rounded-xl"
+                    />
+                  ) : (
+                    <img 
+                      src="https://placehold.co/128x128/2a2a2a/FFF?text=Avatar" 
+                      alt="Avatar" 
+                      className="w-full h-full object-cover rounded-xl"
+                      loading="lazy"
+                    />
+                  )}
                 </div>
+
+                {isOwnProfile && (
+                  <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/40 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity m-1">
+                    <Camera className="w-8 h-8 text-white" />
+                  </div>
+                )}
+
                 {/* Level Badge */}
                 <div className="absolute -bottom-3 -right-3 w-10 h-10 rounded-full bg-gradient-to-br from-yellow-500 to-amber-600 border-2 border-background shadow-lg flex items-center justify-center font-bold text-white text-sm">
                   {profileUser?.level || 1}
                 </div>
+
+                <input 
+                  type="file" 
+                  ref={fileInputRef} 
+                  onChange={handleFileChange} 
+                  className="hidden" 
+                  accept="image/*" 
+                />
               </div>
 
               {/* User Info */}
               <div className="flex-1 min-w-0 pb-1">
                 <div className="flex items-center gap-3 mb-1">
-                  <h1 className="text-4xl font-black text-foreground tracking-tight lowercase">{profileUser?.globalName || profileUser?.username}</h1>
-                 {/* <span className="px-2 py-0.5 rounded text-[10px] font-black bg-blue-500/20 text-blue-400 border border-blue-500/20 uppercase tracking-widest">
-                    PRO
-                  </span>*/}
+                  <h1 className="text-4xl font-black text-foreground tracking-tight lowercase">
+                    {profileUser?.globalName || profileUser?.username}
+                  </h1>
+                  {profileUser?.role === 'admin' && (
+                    <div className="px-2 py-0.5 bg-red-500/20 text-red-500 border border-red-500/20 rounded text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5">
+                      <ShieldCheck className="w-3 h-3" />
+                      ADMIN
+                    </div>
+                  )}
                 </div>
                 <div className="flex flex-wrap items-center gap-4 text-xs font-bold text-muted-foreground uppercase tracking-widest">
-                  {/*<span className="flex items-center gap-2">
-                    <Monitor className="w-4 h-4" />
-                    PC Gamer
-                  </span>
-                  */}
-                  {/*<span className="w-1 h-1 rounded-full bg-white/20" />*/}
                   <span className="lowercase">@{profileUser?.username}</span>
-                  {/*<span className="w-1 h-1 rounded-full bg-white/20" />
-                  <span className="text-blue-500/80">User ID: {profileUser?.id}</span>*/}
                 </div>
               </div>
 

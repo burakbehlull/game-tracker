@@ -4,6 +4,8 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { useToast } from '../components/ui/toaster';
+import { api } from '../services/api';
+import { cn } from '../lib/utils';
 import { 
   Users, 
   Shield, 
@@ -33,6 +35,7 @@ export default function AdminDashboard({ adminUser, onLogout }) {
   const [currentPage, setCurrentPage] = useState(1);
   const [pagination, setPagination] = useState(null);
   const [activeTab, setActiveTab] = useState('overview');
+  const [cdnStatus, setCdnStatus] = useState([]);
   const [editingUser, setEditingUser] = useState(null);
   const [editFormData, setEditFormData] = useState({
     username: '',
@@ -53,8 +56,19 @@ export default function AdminDashboard({ adminUser, onLogout }) {
       loadUsers(currentPage, searchQuery);
     } else if (activeTab === 'sessions') {
       loadSessions(currentPage);
+    } else if (activeTab === 'cdn') {
+      loadCDNStatus();
     }
   }, [activeTab, currentPage, searchQuery]);
+
+  const loadCDNStatus = async () => {
+    try {
+      const data = await api.getCDNStatus();
+      setCdnStatus(data);
+    } catch (error) {
+      console.error('Error loading CDN status:', error);
+    }
+  };
 
   const getHeaders = () => ({
     'Content-Type': 'application/json',
@@ -262,7 +276,93 @@ export default function AdminDashboard({ adminUser, onLogout }) {
           >
             Oyun Oturumları
           </button>
+          <button
+            onClick={() => setActiveTab('cdn')}
+            className={`px-4 py-2 font-medium transition-colors ${
+              activeTab === 'cdn'
+                ? 'text-primary border-b-2 border-primary'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            CDN Yönetimi
+          </button>
         </div>
+
+        {/* CDN Tab */}
+        {activeTab === 'cdn' && (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-bold">CDN Durum Paneli</h2>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={async () => {
+                  try {
+                    await api.resetCDNStatus();
+                    loadCDNStatus();
+                    toast({ title: 'Sıfırlandı', description: 'CDN kotaları ve seçimler sıfırlandı.' });
+                  } catch (err) {
+                    toast({ title: 'Hata', description: err.message });
+                  }
+                }}
+              >
+                Kotaları Sıfırla
+              </Button>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {cdnStatus.map((cdn) => (
+                <Card key={cdn.id} className={cn(
+                  "relative overflow-hidden border-2 transition-all",
+                  cdn.isActive ? "border-primary/50 bg-primary/5 shadow-lg shadow-primary/5" : "border-white/5",
+                  cdn.isFull && "border-red-500/50 bg-red-500/5"
+                )}>
+                  <CardHeader className="pb-2">
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-lg font-black tracking-tight">{cdn.name}</CardTitle>
+                      <div className={cn(
+                        "px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-widest",
+                        cdn.isFull ? "bg-red-500 text-white" : (cdn.isActive ? "bg-primary text-white" : "bg-muted text-muted-foreground")
+                      )}>
+                        {cdn.isFull ? 'KOTA DOLU' : (cdn.isActive ? 'AKTİF' : 'SIRADA')}
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between text-xs font-bold text-muted-foreground uppercase tracking-widest">
+                        <span>Öncelik Sırası</span>
+                        <span className="text-foreground">{cdn.priority}</span>
+                      </div>
+                      <div className="w-full bg-white/5 h-2 rounded-full overflow-hidden">
+                        <div className={cn(
+                          "h-full transition-all duration-1000",
+                          cdn.isFull ? "w-full bg-red-500" : (cdn.isActive ? "w-1/2 bg-primary animate-pulse" : "w-0 bg-muted")
+                        )} />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+
+            <Card className="bg-blue-500/5 border-blue-500/20">
+              <CardHeader className="pb-2">
+                <div className="flex items-center gap-2 text-blue-400">
+                  <AlertCircle className="w-5 h-5" />
+                  <CardTitle className="text-sm font-bold uppercase tracking-widest">Sistem Bilgisi</CardTitle>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <p className="text-xs text-blue-400/80 font-medium leading-relaxed">
+                  Görsel yükleme sistemi "Zincirleme Geçiş" (Sequential Failover) mantığıyla çalışır. 
+                  Bir CDN servisinin kotası dolduğunda veya hata verdiğinde, sistem otomatik olarak bir sonraki servise kalıcı olarak geçer. 
+                  Yukarıdaki panelden anlık durumu takip edebilir ve gerektiğinde kotaları manuel olarak sıfırlayabilirsiniz.
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+        )}
 
         {/* Overview Tab */}
         {activeTab === 'overview' && stats && (

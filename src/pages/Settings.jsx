@@ -1,22 +1,72 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { User, Monitor, Bell, Check, X, AlertCircle, Shield, Lock, ChevronRight, 
-  Eye, EyeOff, ShieldAlert, Fingerprint, Search, Moon, Sun } from 'lucide-react';
+  Eye, EyeOff, ShieldAlert, Fingerprint, Search, Moon, Sun, Camera, Trash2, Loader2 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Switch } from '../components/ui/switch';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
+import { useToast } from '../components/ui/toaster';
 import { api } from '../services/api';
 import { cn } from '../lib/utils';
 import { useTheme } from '../contexts/ThemeContext';
 
 export default function SettingsPage({ user: currentUser }) {
   const { theme, setTheme } = useTheme();
+  const { toast } = useToast();
   const isLight = theme === 'light';
   const [activeTab, setActiveTab] = useState('profile');
   const [user, setUser] = useState(currentUser);
   const [loading, setLoading] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+
+  const fileInputRef = useRef(null);
+
+  const handleAvatarClick = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  };
+
+  const handleFileChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 2 * 1024 * 1024) {
+      toast({ title: 'Hata', description: 'Resim boyutu 2MB\'dan küçük olmalıdır.' });
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onloadend = async () => {
+      const base64Data = reader.result;
+      setUploadingAvatar(true);
+      try {
+        const updatedUser = await api.updateProfile({ avatar: base64Data });
+        setUser(updatedUser);
+        toast({ title: 'Başarılı', description: 'Profil yüklendi.' });
+      } catch (err) {
+        toast({ title: 'Hata', description: err.message || 'Yükleme başarısız oldu.' });
+      } finally {
+        setUploadingAvatar(false);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleRemoveAvatar = async () => {
+    setUploadingAvatar(true);
+    try {
+      const updatedUser = await api.updateProfile({ avatar: null });
+      setUser(updatedUser);
+      toast({ title: 'Başarılı', description: 'Profil fotoğrafı kaldırıldı.' });
+    } catch (err) {
+      toast({ title: 'Hata', description: err.message || 'İşlem başarısız oldu.' });
+    } finally {
+      setUploadingAvatar(false);
+    }
+  };
 
   // Form states
   const [editField, setEditField] = useState(null); 
@@ -301,16 +351,51 @@ export default function SettingsPage({ user: currentUser }) {
                 </div>
                 <div className="px-8 pb-8">
                   <div className="flex flex-col md:flex-row items-start md:items-end -mt-10 gap-6 mb-8">
-                    <div className="w-24 h-24 rounded-3xl p-1 bg-[#0d1117] border border-white/10 shadow-2xl">
-                        <div className="w-full h-full rounded-2xl bg-primary/10 flex items-center justify-center border border-primary/20">
-                            <User className="w-10 h-10 text-primary" />
-                        </div>
+                    <div className="relative group cursor-pointer" onClick={handleAvatarClick}>
+                      <div className="w-24 h-24 rounded-3xl p-1 bg-[#0d1117] border border-white/10 shadow-2xl overflow-hidden relative">
+                          {uploadingAvatar ? (
+                            <div className="absolute inset-0 bg-black/60 flex items-center justify-center z-20">
+                              <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                            </div>
+                          ) : user?.avatar ? (
+                            <img src={user.avatar} alt="Avatar" className="w-full h-full object-cover rounded-2xl" />
+                          ) : (
+                            <div className="w-full h-full rounded-2xl bg-primary/10 flex items-center justify-center border border-primary/20">
+                                <User className="w-10 h-10 text-primary" />
+                            </div>
+                          )}
+                      </div>
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/40 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity m-1">
+                        <Camera className="w-6 h-6 text-white" />
+                      </div>
+                      <input 
+                        type="file" 
+                        ref={fileInputRef} 
+                        onChange={handleFileChange} 
+                        className="hidden" 
+                        accept="image/*" 
+                      />
                     </div>
-                    <div className="pb-2">
-                        <h2 className="text-3xl font-black text-white tracking-tighter lowercase">{user?.globalName || user?.username}</h2>
-                        <div className="flex items-center gap-2 mt-1">
-                            <span className="text-[10px] font-black text-blue-400 bg-blue-400/10 px-2 py-0.5 rounded uppercase tracking-widest">Gamer</span>
-                            <span className="text-xs text-gray-500 font-bold tracking-tight lowercase">@{user?.username}</span>
+                    <div className="pb-2 flex-1">
+                        <div className="flex items-center justify-between gap-4">
+                          <div>
+                            <h2 className="text-3xl font-black text-white tracking-tighter lowercase">{user?.globalName || user?.username}</h2>
+                            <div className="flex items-center gap-2 mt-1">
+                                <span className="text-[10px] font-black text-blue-400 bg-blue-400/10 px-2 py-0.5 rounded uppercase tracking-widest">Gamer</span>
+                                <span className="text-xs text-gray-500 font-bold tracking-tight lowercase">@{user?.username}</span>
+                            </div>
+                          </div>
+                          {user?.avatar && (
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              onClick={handleRemoveAvatar}
+                              className="text-red-500 hover:text-red-400 hover:bg-red-500/10 gap-2 font-bold uppercase text-[10px] tracking-widest"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                              Fotoğrafı Kaldır
+                            </Button>
+                          )}
                         </div>
                     </div>
                   </div>

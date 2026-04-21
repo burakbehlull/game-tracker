@@ -47,25 +47,26 @@ router.get('/instant/status', auth, async (req, res) => {
     // 2. Eğer zaten eşleşmişsem (Biri beni bulmuş)
     if (myRecord.matchedWith && myRecord.conversationId) {
       console.log(`[MATCH_SUCCESS] User ${userId} was matched by someone else.`);
+      
       const otherUser = await User.findById(myRecord.matchedWith).select('username avatar level globalName xp library');
       const conversationId = myRecord.conversationId;
       
-      // Bilgileri alıp kaydı siliyoruz
+      // Kaydı poll tarafında siliyoruz
       await MatchQueue.deleteOne({ _id: myRecord._id });
       
       return res.json({ 
         matched: true, 
-        otherUser: {
+        otherUser: otherUser ? {
           ...otherUser.toObject(),
-          commonGames: [] // Polling tarafında ortak oyun hesaplaması backend'de yapılabilir ama şimdilik boş
-        }, 
+          commonGames: []
+        } : null, 
         conversationId 
       });
     }
 
     // 3. Ben birini bulmaya çalışayım (Agresif Arama)
     const me = await User.findById(userId).select('blockedUsers');
-    const myBlocks = (me.blockedUsers || []).map(id => id.toString());
+    const myBlocks = (me?.blockedUsers || []).map(id => id.toString());
     const whoBlockedMe = (await User.find({ blockedUsers: userId }).select('_id')).map(u => u._id.toString());
     const excludeIds = [...new Set([userId.toString(), ...myBlocks, ...whoBlockedMe])];
 
@@ -113,10 +114,10 @@ router.get('/instant/status', auth, async (req, res) => {
 
       return res.json({ 
         matched: true, 
-        otherUser: {
+        otherUser: otherUser ? {
           ...otherUser.toObject(),
           commonGames: partner.gameName ? [partner.gameName] : []
-        }, 
+        } : null, 
         conversationId: conversation._id 
       });
     }

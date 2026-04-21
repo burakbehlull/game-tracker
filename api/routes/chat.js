@@ -180,7 +180,7 @@ router.post('/conversations/:id/messages', auth, async (req, res) => {
       .lean();
 
     const payload = toPublicMessage(populatedMessage);
-    emitToConversation(conversation._id, 'message:new', payload);
+    emitToConversation(conversation._id, 'message:new', { message: payload });
     emitToUsers(conversation.participants, 'conversation:updated', {
       type: 'message',
       conversationId: conversation._id,

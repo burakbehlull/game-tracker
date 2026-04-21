@@ -310,8 +310,13 @@ export default function Chat({ user }) {
     if (events.messageNew) {
       console.log('New message event received:', events.messageNew);
       
-      // WebSocket payload might be { message: { ... } } or { ... }
+      // WebSocket payload should be { message: { ... } }
       const payload = events.messageNew?.message || events.messageNew;
+      
+      if (!payload || !payload._id) {
+        console.error('Invalid message payload:', events.messageNew);
+        return;
+      }
       
       const eventConvId = String(payload.conversationId?._id || payload.conversationId);
       const activeConvId = String(conversationId);

@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const mongoose = require('mongoose');
 const auth = require('../middleware/auth');
 const User = require('../models/User');
 const Friendship = require('../models/Friendship');
@@ -99,7 +100,8 @@ router.get('/instant/status', auth, async (req, res) => {
       if (!conversation) {
         conversation = await Conversation.create({
           type: 'dm',
-          participants: [userId, partner.userId]
+          participants: [userId, partner.userId],
+          createdBy: userId
         });
       }
 

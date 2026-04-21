@@ -12,38 +12,53 @@ router.post('/instant/join', auth, async (req, res) => {
   try {
     const { gameName } = req.body;
     const userId = req.userId;
+    const cleanGameName = (gameName || '').trim().toLowerCase();
 
-    // Remove if already in queue
-    await MatchQueue.findOneAndDelete({ userId });
+    // 1. Önce zaten bir eşleşmemiz var mı kontrol et (belki biri biz "join" derken bizi buldu)
+    const existingMatch = await MatchQueue.findOne({ userId, matchedWith: { $ne: null } });
+    if (existingMatch) {
+      const otherUser = await User.findById(existingMatch.matchedWith).select('username avatar level');
+      const conversationId = existingMatch.conversationId;
+      await MatchQueue.findByIdAndDelete(existingMatch._id);
+      return res.json({ matched: true, otherUser, conversationId });
+    }
 
-    // Try to find a match in the queue
-    const match = await MatchQueue.findOne({
-      userId: { $ne: userId },
-      gameName: gameName || '',
-      matchedWith: null
-    }).sort({ createdAt: 1 });
+    // 2. Eski (eşleşmemiş) sıramızı temizle
+    await MatchQueue.deleteMany({ userId });
 
-    if (match) {
-      // Create a DM conversation for the matched users
+    // 3. Uygun bir eş adayını ara (başka birinin sırası)
+    const potentialMatch = await MatchQueue.findOneAndUpdate(
+      { 
+        userId: { $ne: userId }, 
+        gameName: cleanGameName,
+        matchedWith: null 
+      },
+      { 
+        matchedWith: userId 
+      },
+      { new: true, sort: { createdAt: 1 } }
+    );
+
+    if (potentialMatch) {
+      // Birini bulduk! Konuşma oluştur
       let conversation = await Conversation.findOne({
         type: 'dm',
-        participants: { $all: [userId, match.userId], $size: 2 }
+        participants: { $all: [userId, potentialMatch.userId], $size: 2 }
       });
 
       if (!conversation) {
         conversation = await Conversation.create({
           type: 'dm',
-          participants: [userId, match.userId]
+          participants: [userId, potentialMatch.userId]
         });
       }
 
-      // Update the match in the queue
-      match.matchedWith = userId;
-      match.conversationId = conversation._id;
-      await match.save();
+      // Bulduğumuz kişinin kaydını güncelle ki o da poll yapınca görsün
+      potentialMatch.conversationId = conversation._id;
+      await potentialMatch.save();
 
-      // Return match info
-      const otherUser = await User.findById(match.userId).select('username avatar level');
+      // Kendimize sonucu dönelim
+      const otherUser = await User.findById(potentialMatch.userId).select('username avatar level');
       return res.json({ 
         matched: true, 
         otherUser, 
@@ -51,10 +66,10 @@ router.post('/instant/join', auth, async (req, res) => {
       });
     }
 
-    // No match found, add to queue
+    // 4. Kimse yoksa biz sıraya girelim
     await MatchQueue.create({
       userId,
-      gameName: gameName || ''
+      gameName: cleanGameName
     });
 
     res.json({ matched: false, message: 'Sıraya girildi, eşleşme bekleniyor...' });
@@ -68,13 +83,14 @@ router.post('/instant/join', auth, async (req, res) => {
 router.get('/instant/status', auth, async (req, res) => {
   try {
     const userId = req.userId;
-    const myQueueEntry = await MatchQueue.findOne({ userId });
+    // matchedWith ve conversationId ikisi de dolu olmalı
+    const myQueueEntry = await MatchQueue.findOne({ 
+      userId, 
+      matchedWith: { $ne: null },
+      conversationId: { $ne: null }
+    });
 
-    if (!myQueueEntry) {
-      return res.status(404).json({ error: 'Sırada değilsiniz' });
-    }
-
-    if (myQueueEntry.matchedWith) {
+    if (myQueueEntry) {
       const otherUser = await User.findById(myQueueEntry.matchedWith).select('username avatar level');
       const conversationId = myQueueEntry.conversationId;
       
@@ -86,6 +102,13 @@ router.get('/instant/status', auth, async (req, res) => {
         otherUser, 
         conversationId 
       });
+    }
+
+    // Eğer hala sıradaysak ama henüz eşleşmediysek
+    const stillInQueue = await MatchQueue.findOne({ userId, matchedWith: null });
+    if (!stillInQueue) {
+       // Sıradan bir şekilde düşmüşüz (timeout veya manuel çıkış)
+       return res.status(404).json({ error: 'Sırada değilsiniz' });
     }
 
     res.json({ matched: false });

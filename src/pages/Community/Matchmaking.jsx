@@ -122,9 +122,13 @@ export default function Matchmaking({ user }) {
             clearInterval(interval);
           }
         } catch (err) {
+          // Eğer 404 dönerse (sıradan düşmüşsek), aramayı durdur
+          if (err.status === 404) {
+            stopInstantSearch();
+          }
           console.error('Durum kontrol hatası:', err);
         }
-      }, 3000);
+      }, 2000); // 2 saniyeye düşürüldü daha hızlı tepki için
     }
     return () => {
       clearInterval(interval);

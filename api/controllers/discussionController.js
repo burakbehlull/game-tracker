@@ -162,6 +162,19 @@ class DiscussionController {
       });
       await comment.save();
       const populated = await comment.populate('authorId', 'username avatar');
+
+      // Bildirim gönder (Konu sahibine)
+      const discussion = await Discussion.findById(discussionId).populate('communityId');
+      if (discussion && discussion.authorId.toString() !== req.userId) {
+        const NotificationService = require('../services/notificationService');
+        await NotificationService.createNotification(discussion.authorId, 'NEW_COMMENT', {
+          senderName: populated.authorId.username,
+          discussionTitle: discussion.title,
+          discussionId: discussion._id,
+          communitySlug: discussion.communityId?.slug
+        });
+      }
+
       res.status(201).json(populated);
     } catch (err) {
       res.status(400).json({ error: err.message });

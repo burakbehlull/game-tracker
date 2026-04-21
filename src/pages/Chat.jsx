@@ -253,6 +253,13 @@ export default function Chat({ user }) {
   const [presence, setPresence] = useState({});
   const [isGroupModalOpen, setIsGroupModalOpen] = useState(false);
   const [blocking, setBlocking] = useState(false);
+  const [localBlockedUsers, setLocalBlockedUsers] = useState([]);
+
+  useEffect(() => {
+    if (user?.blockedUsers) {
+      setLocalBlockedUsers(user.blockedUsers.map(id => String(id)));
+    }
+  }, [user]);
 
   const activeConversation = useMemo(() => conversations.find((c) => String(c._id) === String(conversationId)) || null, [conversations, conversationId]);
 
@@ -262,9 +269,10 @@ export default function Chat({ user }) {
   }, [activeConversation, user]);
 
   const isBlocked = useMemo(() => {
-    if (!otherParticipant || !user) return false;
-    return user.blockedUsers?.includes(String(otherParticipant._id || otherParticipant));
-  }, [otherParticipant, user]);
+    if (!otherParticipant) return false;
+    const targetId = String(otherParticipant._id || otherParticipant);
+    return localBlockedUsers.includes(targetId);
+  }, [otherParticipant, localBlockedUsers]);
 
   const activePresence = useMemo(() => {
     if (!otherParticipant) return null;
@@ -394,17 +402,17 @@ export default function Chat({ user }) {
     try {
       if (isBlocked) {
         await api.unblockUser(targetId);
-        // Update user state locally
-        user.blockedUsers = user.blockedUsers.filter(id => id !== targetId);
+        setLocalBlockedUsers(p => p.filter(id => id !== targetId));
+        toast({ title: "Bilgi", description: "Kullanıcının engeli kaldırıldı." });
       } else {
         await api.blockUser(targetId);
-        // Update user state locally
-        user.blockedUsers = [...(user.blockedUsers || []), targetId];
+        setLocalBlockedUsers(p => [...p, targetId]);
+        toast({ title: "Bilgi", description: "Kullanıcı engellendi." });
       }
-      // Reload conversations to reflect changes
       loadConversations();
     } catch (err) {
       console.error('Engelleme işlemi başarısız', err);
+      toast({ variant: "destructive", title: "Hata", description: "İşlem gerçekleştirilemedi." });
     } finally {
       setBlocking(false);
     }

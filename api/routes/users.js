@@ -249,7 +249,8 @@ router.get('/search', async (req, res) => {
     const users = await User.find(filter)
       .select('-_id username globalName avatar createdAt level xp badges')
       .sort({ xp: -1 })
-      .limit(20);
+      .limit(20)
+      .lean();
     res.json(users);
   } catch (error) {
     console.error('[Users API Error]', error);

@@ -26,20 +26,6 @@ export default function TimerPage({ user }) {
     return () => clearInterval(interval);
   }, []);
 
-  useEffect(() => {
-    let timer;
-    if (currentGame?.startTime) {
-      const start = new Date(currentGame.startTime).getTime();
-      setLiveDuration(Math.floor((Date.now() - start) / 1000));
-
-      timer = setInterval(() => {
-        setLiveDuration(Math.floor((Date.now() - Date.now(start)) / 1000));
-        // Note: the above was a typo in my thought process, fix below
-      }, 1000);
-    }
-    return () => clearInterval(timer);
-  }, [currentGame]);
-
   // Fixed live duration effect
   useEffect(() => {
     let timer;

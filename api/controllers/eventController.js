@@ -31,6 +31,16 @@ class EventController {
       });
       await event.save();
       const populated = await event.populate('createdBy', 'username avatar');
+
+      // Topluluk üyelerine bildirim gönder
+      const NotificationService = require('../services/notificationService');
+      await NotificationService.notifyCommunityMembers(communityId, 'NEW_EVENT', {
+        communityName: community.name,
+        communitySlug: community.slug,
+        eventTitle: title,
+        eventId: event._id
+      }, req.userId);
+
       res.status(201).json(populated);
     } catch (err) {
       res.status(400).json({ error: err.message });

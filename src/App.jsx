@@ -59,6 +59,22 @@ function NotificationHandler() {
           title = 'Topluluk Kabulü';
           description = `${n.data.communityName} topluluğuna kabul edildin!`;
           break;
+        case 'MEMBER_REJECTED':
+          title = 'Topluluk Reddi';
+          description = `${n.data.communityName} topluluğuna katılım isteğin reddedildi.`;
+          break;
+        case 'MEMBER_REQUEST':
+          title = 'Yeni Katılım İsteği';
+          description = `${n.data.communityName} topluluğuna yeni bir katılım isteği var.`;
+          break;
+        case 'MEMBER_KICKED':
+          title = 'Topluluktan Uzaklaştırılma';
+          description = `${n.data.communityName} topluluğundan çıkarıldın.`;
+          break;
+        case 'ROLE_UPDATED':
+          title = 'Rolün Güncellendi';
+          description = `${n.data.communityName} topluluğundaki yeni rolün: ${n.data.role}`;
+          break;
         case 'NEW_MESSAGE':
           title = 'Yeni Mesaj';
           description = `${n.data.senderName}: ${n.data.messagePreview}`;
@@ -66,6 +82,14 @@ function NotificationHandler() {
         case 'NEW_POST':
           title = 'Yeni Paylaşım';
           description = `${n.data.communityName} topluluğunda yeni konu açıldı.`;
+          break;
+        case 'NEW_COMMENT':
+          title = 'Yeni Yorum';
+          description = `${n.data.senderName}, "${n.data.discussionTitle}" konuna yorum yaptı.`;
+          break;
+        case 'NEW_EVENT':
+          title = 'Yeni Etkinlik';
+          description = `${n.data.communityName} topluluğunda "${n.data.eventTitle}" etkinliği oluşturuldu!`;
           break;
         default:
           description = 'Yeni bir aktivite var.';

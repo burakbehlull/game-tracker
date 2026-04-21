@@ -11,15 +11,15 @@ router.get('/friends', auth, async (req, res) => {
     const friendships = await Friendship.find({
       users: req.userId,
       deletedAt: null
-    }).select('users');
+    }).select('users').lean();
 
     const friendIds = friendships
       .map((entry) => entry.users.find((id) => String(id) !== String(req.userId)))
       .filter(Boolean);
 
-    const statuses = await Presence.find({ userId: { $in: friendIds } }).select(
-      'userId isOnline isPlaying currentGame lastSeen'
-    );
+    const statuses = await Presence.find({ userId: { $in: friendIds } })
+      .select('userId isOnline isPlaying currentGame lastSeen')
+      .lean();
 
     const byUserId = new Map(statuses.map((s) => [String(s.userId), s]));
     const payload = friendIds.map((id) => {

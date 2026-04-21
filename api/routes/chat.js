@@ -129,7 +129,7 @@ router.get('/conversations/:id/messages', auth, async (req, res) => {
   }
 });
 
-// const NotificationService = require('../services/notificationService');
+const NotificationService = require('../services/notificationService');
 
 router.post('/conversations/:id/messages', auth, async (req, res) => {
   try {
@@ -190,15 +190,15 @@ router.post('/conversations/:id/messages', auth, async (req, res) => {
       messageId: message._id
     });
 
-    // Create notifications for other participants (temporarily disabled)
-    // const otherParticipants = conversation.participants.filter(p => p.toString() !== req.userId);
-    // for (const participantId of otherParticipants) {
-    //   await NotificationService.createNotification(participantId, 'NEW_MESSAGE', {
-    //     senderName: payload.sender.username,
-    //     messagePreview: content.substring(0, 50),
-    //     conversationId: conversation._id
-    //   });
-    // }
+    // Diğer katılımcılar için bildirim oluştur
+    const otherParticipants = conversation.participants.filter(p => p.toString() !== req.userId);
+    for (const participantId of otherParticipants) {
+      await NotificationService.createNotification(participantId, 'NEW_MESSAGE', {
+        senderName: payload.sender?.username || 'Biri',
+        messagePreview: content.substring(0, 50),
+        conversationId: conversation._id
+      });
+    }
 
     res.status(201).json(payload);
   } catch (error) {

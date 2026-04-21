@@ -196,7 +196,7 @@ router.get('/match', auth, async (req, res) => {
     const blockedByUserIds = (userWithBlocks.blockedUsers || []).map(id => String(id));
     
     // Find users who have blocked the current user
-    const usersWhoBlockedMe = await User.find({ blockedUsers: userId }).select('_id');
+    const usersWhoBlockedMe = await User.find({ blockedUsers: userId }).select('_id').lean();
     const whoBlockedMeIds = usersWhoBlockedMe.map(u => String(u._id));
 
     const finalExcludeIds = [...new Set([...excludeIds, ...blockedByUserIds, ...whoBlockedMeIds])];

@@ -152,10 +152,13 @@ router.post('/conversations/:id/messages', auth, async (req, res) => {
           User.findById(otherParticipantId).select('blockedUsers')
         ]);
 
-        if (me && me.blockedUsers.includes(otherParticipantId)) {
+        const myBlocks = (me?.blockedUsers || []).map(id => id.toString());
+        const otherBlocks = (other?.blockedUsers || []).map(id => id.toString());
+
+        if (myBlocks.includes(otherParticipantId.toString())) {
           return res.status(403).json({ error: 'Bu kullanıcıyı engellediğiniz için mesaj gönderemezsiniz.' });
         }
-        if (other && other.blockedUsers.includes(req.userId)) {
+        if (otherBlocks.includes(req.userId.toString())) {
           return res.status(403).json({ error: 'Bu kullanıcı sizi engellediği için mesaj gönderemezsiniz.' });
         }
       }

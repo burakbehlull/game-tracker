@@ -25,7 +25,7 @@ router.get('/me', auth, async (req, res) => {
     await BadgeService.checkBadges(req.userId);
 
     const user = await User.findById(req.userId)
-      .select('username email globalName role avatar createdAt level xp settings dailyChallenges lastChallengeReset library badges stats');
+      .select('username email globalName role avatar createdAt level xp settings dailyChallenges lastChallengeReset library badges stats blockedUsers');
 
     res.json(user);
   } catch (err) {

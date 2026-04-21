@@ -127,12 +127,12 @@ const userSchema = new mongoose.Schema({
         type: Boolean,
         default: true
       }
-    },
-    blockedUsers: {
-      type: [mongoose.Schema.Types.ObjectId],
-      ref: 'User',
-      default: []
     }
+  },
+  blockedUsers: {
+    type: [mongoose.Schema.Types.ObjectId],
+    ref: 'User',
+    default: []
   },
   // Oyun Kütüphanesi
   library: [

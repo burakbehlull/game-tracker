@@ -70,8 +70,10 @@ router.get('/instant/status', auth, async (req, res) => {
     const whoBlockedMe = (await User.find({ blockedUsers: userId }).select('_id')).map(u => u._id.toString());
     const excludeIds = [...new Set([userId.toString(), ...myBlocks, ...whoBlockedMe])];
 
+    const validExcludeIds = excludeIds.filter(id => mongoose.Types.ObjectId.isValid(id)).map(id => new mongoose.Types.ObjectId(id));
+
     let matchQuery = {
-      userId: { $nin: excludeIds.map(id => mongoose.Types.ObjectId(id)) },
+      userId: { $nin: validExcludeIds },
       matchedWith: null
     };
 
@@ -82,7 +84,7 @@ router.get('/instant/status', auth, async (req, res) => {
     // Atomik rezerve
     const partner = await MatchQueue.findOneAndUpdate(
       matchQuery,
-      { matchedWith: mongoose.Types.ObjectId(userId) },
+      { matchedWith: new mongoose.Types.ObjectId(userId) },
       { new: true, sort: { createdAt: 1 } }
     );
 
@@ -92,14 +94,14 @@ router.get('/instant/status', auth, async (req, res) => {
       try {
         let conversation = await Conversation.findOne({
           type: 'dm',
-          participants: { $all: [mongoose.Types.ObjectId(userId), partner.userId], $size: 2 }
+          participants: { $all: [new mongoose.Types.ObjectId(userId), partner.userId], $size: 2 }
         });
 
         if (!conversation) {
           conversation = await Conversation.create({
             type: 'dm',
-            participants: [mongoose.Types.ObjectId(userId), partner.userId],
-            createdBy: mongoose.Types.ObjectId(userId)
+            participants: [new mongoose.Types.ObjectId(userId), partner.userId],
+            createdBy: new mongoose.Types.ObjectId(userId)
           });
         }
 

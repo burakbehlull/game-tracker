@@ -40,18 +40,45 @@ if (isDev) {
   }
 }
 
-// Global Error Handling to prevent crash popups in production
+// 2. Global Error Handling - Show dialog in production
 process.on('uncaughtException', (error) => {
-  log.error('Uncaught Exception:', error);
+  log.error('CRITICAL: Uncaught Exception:', error);
+  if (app.isPackaged) {
+    dialog.showErrorBox('Uygulama Hatası', error.message || 'Bilinmeyen bir hata oluştu.');
+  }
 });
 
 process.on('unhandledRejection', (reason, promise) => {
-  log.error('Unhandled Rejection at:', promise, 'reason:', reason);
+  log.error('CRITICAL: Unhandled Rejection at:', promise, 'reason:', reason);
 });
 
-const GameTracker = require('./services/gameTracker');
-const UpdateService = require('./services/updateService');
-const startServer = require('../api/server');
+// Single Instance Lock - Check this early
+const gotTheLock = app.requestSingleInstanceLock();
+if (!gotTheLock) {
+  log.info('Another instance is already running, quitting...');
+  app.quit();
+  process.exit(0);
+}
+
+// Lazy load services to prevent startup crashes
+let GameTracker, UpdateService, startServer;
+
+function loadServices() {
+  try {
+    log.info('Loading services...');
+    GameTracker = require('./services/gameTracker');
+    UpdateService = require('./services/updateService');
+    startServer = require('../api/server');
+    log.info('Services loaded successfully');
+    return true;
+  } catch (err) {
+    log.error('FAILED to load services:', err);
+    if (app.isPackaged) {
+      dialog.showErrorBox('Servis Hatası', 'Uygulama servisleri başlatılamadı: ' + err.message);
+    }
+    return false;
+  }
+}
 
 // Configure Logger
 log.transports.file.level = 'info';
@@ -216,6 +243,11 @@ const getIconPath = () => {
 const iconPath = getIconPath();
 
 function createWindow() {
+  if (mainWindow) {
+    mainWindow.show();
+    return;
+  }
+
   log.info('Creating window...');
   try {
     mainWindow = new BrowserWindow({
@@ -231,28 +263,42 @@ function createWindow() {
         contextIsolation: true,
         preload: path.join(__dirname, 'preload.js')
       },
-      show: false // Don't show until ready
+      show: true // Force show in production to debug if it's not showing
     });
+
+    // Fallback to show window if ready-to-show never fires
+    const showTimeout = setTimeout(() => {
+      if (mainWindow && !mainWindow.isVisible()) {
+        log.warn('ready-to-show timeout, forcing show');
+        mainWindow.show();
+      }
+    }, 5000);
 
     if (isDev) {
       mainWindow.loadURL('http://localhost:5173');
-      // mainWindow.webContents.openDevTools({ mode: 'detach' });
     } else {
       const indexPath = path.join(__dirname, '../dist/index.html');
       log.info('Loading production file from:', indexPath);
+      
       if (fs.existsSync(indexPath)) {
-        mainWindow.loadFile(indexPath);
+        mainWindow.loadFile(indexPath).catch(err => {
+          log.error('Failed to load file:', err);
+          mainWindow.show();
+        });
       } else {
         log.error('Production index.html NOT FOUND at:', indexPath);
-        // Try a fallback path just in case
         const fallbackPath = path.join(process.resourcesPath, 'app/dist/index.html');
         if (fs.existsSync(fallbackPath)) {
            mainWindow.loadFile(fallbackPath);
+        } else {
+          dialog.showErrorBox('Dosya Hatası', 'Uygulama dosyaları (index.html) bulunamadı.');
         }
       }
     }
 
     mainWindow.once('ready-to-show', () => {
+      clearTimeout(showTimeout);
+      log.info('Window ready-to-show');
       mainWindow.show();
       mainWindow.focus();
     });
@@ -277,75 +323,52 @@ function createWindow() {
   }
 }
 
-// Single Instance Lock - Check this as early as possible
-const gotTheLock = app.requestSingleInstanceLock();
-if (!gotTheLock) {
-  log.info('Another instance is already running, quitting...');
-  app.quit();
-  return; // Exit script execution
-}
+app.whenReady().then(() => {
+  log.info('App Ready');
+  
+  // 1. Create window and tray as soon as possible
+  createWindow();
+  createTray();
+
+  // 2. Load services and start backend (delayed to keep UI responsive)
+  setTimeout(() => {
+    if (loadServices()) {
+      try {
+        gameTracker = new GameTracker();
+        gameTracker.start();
+        if (gameTracker.discordService) {
+          gameTracker.discordService.connect();
+        }
+        
+        startBackend();
+        
+        if (mainWindow) {
+          updateService = new UpdateService(mainWindow);
+          setTimeout(() => {
+            updateService.checkForUpdates();
+          }, 5000);
+        }
+        log.info('Background services started successfully');
+      } catch (err) {
+        log.error('Error starting GameTracker:', err);
+      }
+    }
+  }, 500);
+});
 
 app.on('second-instance', () => {
+  log.info('Second instance detected');
   if (mainWindow) {
     if (mainWindow.isMinimized()) mainWindow.restore();
     mainWindow.show();
     mainWindow.focus();
+  } else {
+    createWindow();
   }
 });
 
-app.whenReady().then(() => {
-  log.info('App Ready');
-  
-  // Initialize services
-  try {
-    gameTracker = new GameTracker();
-  } catch (err) {
-    log.error('Failed to initialize GameTracker:', err);
-  }
-
-  // Start window and tray immediately
-  createWindow();
-  createTray();
-
-  // Start backend in parallel
-  setTimeout(() => {
-    startBackend();
-  }, 100);
-
-  // Apply auto-launch setting on startup
-  if (app.isPackaged) {
-    app.setLoginItemSettings({
-      openAtLogin: backgroundSettings.launchOnStartup,
-      path: app.getPath('exe')
-    });
-  }
-  
-  try {
-    gameTracker?.start();
-    if (gameTracker?.discordService) {
-      gameTracker.discordService.connect();
-    }
-    log.info('GameTracker service started.');
-  } catch (e) {
-    log.error('Error starting GameTracker:', e);
-  }
-  
-  // Update control
-  if (mainWindow) {
-    try {
-      updateService = new UpdateService(mainWindow);
-      // Check for updates after 5 seconds
-      setTimeout(() => {
-        updateService.checkForUpdates();
-      }, 5000);
-    } catch (err) {
-      log.error('Failed to initialize UpdateService:', err);
-    }
-  }
-
-  app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) createWindow();
-  });
+app.on('activate', () => {
+  if (BrowserWindow.getAllWindows().length === 0) createWindow();
 });
 
 app.on('window-all-closed', () => {

@@ -238,6 +238,37 @@ export default function SettingsPage({ user: currentUser }) {
     }
   };
 
+  const handleTogglePassiveMatchmaking = async (enabled) => {
+    // Optimistic Update
+    const previousUser = { ...user };
+    setUser(prev => ({
+      ...prev,
+      settings: { 
+        ...prev.settings, 
+        privacy: { 
+          ...(prev.settings?.privacy || {}), 
+          passiveMatchmakingEnabled: enabled 
+        } 
+      }
+    }));
+
+    try {
+      const updatedUser = await api.updateProfile({ 
+        settings: { 
+          privacy: { 
+            ...(user.settings?.privacy || {}), 
+            passiveMatchmakingEnabled: enabled 
+          } 
+        } 
+      });
+      setUser(updatedUser);
+    } catch (err) {
+      console.error('Eşleştirme ayarı güncellenemedi:', err);
+      setError('Ayar güncellenirken hata oluştu');
+      setUser(previousUser);
+    }
+  };
+
   const menuItems = [
     { id: 'profile', icon: User, label: 'Kullanıcı Ayarları', sublabel: 'Profil ve Güvenlik' },
     { id: 'app', icon: Monitor, label: 'Uygulama Ayarları', sublabel: 'Discord ve Bildirimler' },
@@ -659,6 +690,25 @@ export default function SettingsPage({ user: currentUser }) {
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+                      {/* Passive Matchmaking Switch */}
+                      <div className="col-span-full mb-4 flex items-center justify-between p-6 bg-primary/5 border border-primary/20 rounded-[2rem] hover:border-primary/30 transition-colors">
+                        <div className="flex gap-4 items-center">
+                            <div className="p-3 rounded-2xl bg-primary/10 text-primary">
+                                 <Users className="w-6 h-6" />
+                            </div>
+                            <div>
+                              <div className="text-base font-black text-white tracking-tight">Pasif Eşleştirme</div>
+                              <p className="text-xs text-gray-500 font-medium">Kapalı olursa eşleştirme listelerinde görünmezsin.</p>
+                            </div>
+                        </div>
+                        <Switch 
+                          id="passive-matchmaking"
+                          checked={user?.settings?.privacy?.passiveMatchmakingEnabled !== false} 
+                          onCheckedChange={(checked) => handleTogglePassiveMatchmaking(checked)}
+                          className="data-[state=checked]:bg-primary"
+                        />
+                      </div>
+
                       {filteredGames.length > 0 ? (
                         filteredGames.map((game) => {
                           const isDisabled = user?.settings?.privacy?.disabledTrackingGames?.includes(game);

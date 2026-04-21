@@ -43,8 +43,19 @@ router.get('/match', auth, async (req, res) => {
 
     const excludeIds = [String(userId), ...friendIds, ...pendingUserIds];
 
+    // Get current user's blocked list and who blocked the current user
+    const userWithBlocks = await User.findById(userId).select('blockedUsers');
+    const blockedByUserIds = (userWithBlocks.blockedUsers || []).map(id => String(id));
+    
+    // Find users who have blocked the current user
+    const usersWhoBlockedMe = await User.find({ blockedUsers: userId }).select('_id');
+    const whoBlockedMeIds = usersWhoBlockedMe.map(u => String(u._id));
+
+    const finalExcludeIds = [...new Set([...excludeIds, ...blockedByUserIds, ...whoBlockedMeIds])];
+
     let query = {
-      _id: { $nin: excludeIds }
+      _id: { $nin: finalExcludeIds },
+      'settings.privacy.passiveMatchmakingEnabled': { $ne: false } // Only users who have passive matchmaking enabled
     };
 
     if (gameName) {

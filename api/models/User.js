@@ -122,7 +122,16 @@ const userSchema = new mongoose.Schema({
       hiddenGames: {
         type: [String],
         default: []
+      },
+      passiveMatchmakingEnabled: {
+        type: Boolean,
+        default: true
       }
+    },
+    blockedUsers: {
+      type: [mongoose.Schema.Types.ObjectId],
+      ref: 'User',
+      default: []
     }
   },
   // Oyun Kütüphanesi

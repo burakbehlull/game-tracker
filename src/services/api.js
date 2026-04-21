@@ -487,5 +487,20 @@ export const api = {
   getMatches: async (gameName = '') => {
     const qs = gameName ? `?gameName=${encodeURIComponent(gameName)}` : '';
     return request(`${API_URL}/matchmaking/match${qs}`, { headers: getHeaders() });
+  },
+
+  // User Blocking
+  blockUser: async (userId) => {
+    return request(`${API_URL}/users/block/${userId}`, {
+      method: 'POST',
+      headers: getHeaders()
+    });
+  },
+
+  unblockUser: async (userId) => {
+    return request(`${API_URL}/users/unblock/${userId}`, {
+      method: 'POST',
+      headers: getHeaders()
+    });
   }
 };

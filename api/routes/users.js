@@ -309,4 +309,59 @@ router.delete('/library/:gameName', auth, async (req, res) => {
   }
 });
 
+// User Blocking
+router.post('/block/:userId', auth, async (req, res) => {
+  try {
+    const targetUserId = req.params.userId;
+    if (!mongoose.Types.ObjectId.isValid(targetUserId)) {
+      return res.status(400).json({ error: 'Geçersiz kullanıcı ID' });
+    }
+
+    if (String(targetUserId) === String(req.userId)) {
+      return res.status(400).json({ error: 'Kendinizi engelleyemezsiniz' });
+    }
+
+    const user = await User.findById(req.userId);
+    if (!user) return res.status(404).json({ error: 'Kullanıcı bulunamadı' });
+
+    if (!user.blockedUsers.includes(targetUserId)) {
+      user.blockedUsers.push(targetUserId);
+      await user.save();
+    }
+
+    // Arkadaşlığı da bitir (varsa)
+    const Friendship = require('../models/Friendship');
+    const ids = [String(req.userId), String(targetUserId)].sort();
+    await Friendship.findOneAndUpdate(
+      { userA: ids[0], userB: ids[1] },
+      { deletedAt: new Date() }
+    );
+
+    res.json({ message: 'Kullanıcı engellendi' });
+  } catch (error) {
+    console.error('[Block User Error]', error);
+    res.status(500).json({ error: 'Kullanıcı engellenemedi' });
+  }
+});
+
+router.post('/unblock/:userId', auth, async (req, res) => {
+  try {
+    const targetUserId = req.params.userId;
+    if (!mongoose.Types.ObjectId.isValid(targetUserId)) {
+      return res.status(400).json({ error: 'Geçersiz kullanıcı ID' });
+    }
+
+    const user = await User.findById(req.userId);
+    if (!user) return res.status(404).json({ error: 'Kullanıcı bulunamadı' });
+
+    user.blockedUsers = user.blockedUsers.filter(id => String(id) !== String(targetUserId));
+    await user.save();
+
+    res.json({ message: 'Engelleme kaldırıldı' });
+  } catch (error) {
+    console.error('[Unblock User Error]', error);
+    res.status(500).json({ error: 'Engelleme kaldırılamadı' });
+  }
+});
+
 module.exports = router;

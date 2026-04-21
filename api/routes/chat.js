@@ -8,6 +8,8 @@ const { emitToConversation, emitToUsers } = require('../services/realtime');
 
 const router = express.Router();
 
+const User = require('../models/User');
+
 const MAX_PAGE_SIZE = 50;
 
 function toPublicMessage(message) {
@@ -140,6 +142,24 @@ router.post('/conversations/:id/messages', auth, async (req, res) => {
     
     const conversation = await ensureParticipant(conversationId, req.userId);
     if (!conversation) return res.status(404).json({ error: 'Konuşma bulunamadı' });
+
+    // Check if current user is blocked by any participant or has blocked any participant
+    if (conversation.type === 'dm') {
+      const otherParticipantId = conversation.participants.find(p => p.toString() !== req.userId);
+      if (otherParticipantId) {
+        const [me, other] = await Promise.all([
+          User.findById(req.userId).select('blockedUsers'),
+          User.findById(otherParticipantId).select('blockedUsers')
+        ]);
+
+        if (me && me.blockedUsers.includes(otherParticipantId)) {
+          return res.status(403).json({ error: 'Bu kullanıcıyı engellediğiniz için mesaj gönderemezsiniz.' });
+        }
+        if (other && other.blockedUsers.includes(req.userId)) {
+          return res.status(403).json({ error: 'Bu kullanıcı sizi engellediği için mesaj gönderemezsiniz.' });
+        }
+      }
+    }
 
     const content = (req.body?.content || '').trim();
     if (!content) return res.status(400).json({ error: 'Mesaj boş olamaz' });

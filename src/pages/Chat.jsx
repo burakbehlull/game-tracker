@@ -5,7 +5,7 @@ import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { api } from '../services/api';
 import { useWebSocket } from '../contexts/WebSocketContext';
-import { Send, PlusCircle, MessageSquare, AtSign, X, Check, Users, Trash2 } from 'lucide-react';
+import { Send, PlusCircle, MessageSquare, AtSign, X, Check, Users, Trash2, ShieldAlert, ShieldCheck } from 'lucide-react';
 import { cn } from '../lib/utils';
 
 // --- YARDIMCI FONKSİYONLAR ---
@@ -232,6 +232,12 @@ export default function Chat({ user }) {
   const [loading, setLoading] = useState(false);
   const [presence, setPresence] = useState({});
   const [isGroupModalOpen, setIsGroupModalOpen] = useState(false);
+  const [blocking, setBlocking] = useState(false);
+
+  const isBlocked = useMemo(() => {
+    if (!otherParticipant || !user) return false;
+    return user.blockedUsers?.includes(String(otherParticipant._id || otherParticipant));
+  }, [otherParticipant, user]);
 
   const activeConversation = useMemo(() => conversations.find((c) => String(c._id) === String(conversationId)) || null, [conversations, conversationId]);
 
@@ -323,12 +329,35 @@ export default function Chat({ user }) {
   }, [loadConversations, navigate]);
 
   const getMessageSenderName = useCallback((m) => {
-    if (m.sender?.username) return m.sender.username;
-    const s = activeConversation?.participants?.find(p => String(p._id || p) === String(m.senderId));
-    if (s?.username) return s.username;
-    if (user && String(m.senderId) === String(user.id || user._id)) return user.username;
-    return 'Bilinmeyen Kullanıcı';
-  }, [activeConversation, user]);
+      if (m.sender?.username) return m.sender.username;
+      const s = activeConversation?.participants?.find(p => String(p._id || p) === String(m.senderId));
+      if (s?.username) return s.username;
+      if (user && String(m.senderId) === String(user.id || user._id)) return user.username;
+      return 'Bilinmeyen Kullanıcı';
+    }, [activeConversation, user]);
+
+  const handleToggleBlock = async () => {
+    if (!otherParticipant || blocking) return;
+    setBlocking(true);
+    const targetId = String(otherParticipant._id || otherParticipant);
+    try {
+      if (isBlocked) {
+        await api.unblockUser(targetId);
+        // Update user state locally
+        user.blockedUsers = user.blockedUsers.filter(id => id !== targetId);
+      } else {
+        await api.blockUser(targetId);
+        // Update user state locally
+        user.blockedUsers = [...(user.blockedUsers || []), targetId];
+      }
+      // Reload conversations to reflect changes
+      loadConversations();
+    } catch (err) {
+      console.error('Engelleme işlemi başarısız', err);
+    } finally {
+      setBlocking(false);
+    }
+  };
 
   return (
     <div className="flex h-[calc(100vh-140px)] gap-6 overflow-hidden relative">
@@ -364,10 +393,35 @@ export default function Chat({ user }) {
                 </div>
               </div>
             </div>
+            {otherParticipant && activeConversation?.type === 'dm' && (
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={handleToggleBlock}
+                disabled={blocking}
+                className={cn(
+                  "rounded-xl gap-2 font-black text-[10px] uppercase tracking-widest transition-all",
+                  isBlocked ? "text-emerald-500 hover:bg-emerald-500/10" : "text-red-500 hover:bg-red-500/10"
+                )}
+              >
+                {isBlocked ? (
+                  <><ShieldCheck className="w-4 h-4" /> ENGELİ KALDIR</>
+                ) : (
+                  <><ShieldAlert className="w-4 h-4" /> ENGELLE</>
+                )}
+              </Button>
+            )}
           </div>
           <MessageList messages={messages} loading={loading} getMessageSenderName={getMessageSenderName} currentUser={user} onDeleteMessage={handleDeleteMessage} />
           <div className="p-8 shrink-0 bg-gradient-to-t from-black/10 to-transparent">
-            <MessageInput onSend={handleSend} disabled={!conversationId} placeholder={`${getConversationName(activeConversation, user?.username)} kanalına fısılda...`} />
+            {isBlocked ? (
+              <div className="bg-red-500/10 border border-red-500/20 rounded-2xl p-4 text-center">
+                <p className="text-xs font-black text-red-500 uppercase tracking-widest">BU KULLANICIYI ENGELLEDİNİZ</p>
+                <p className="text-[10px] text-red-500/60 font-bold uppercase mt-1">Mesaj göndermek için engeli kaldırmalısınız.</p>
+              </div>
+            ) : (
+              <MessageInput onSend={handleSend} disabled={!conversationId} placeholder={`${getConversationName(activeConversation, user?.username)} kanalına fısılda...`} />
+            )}
           </div>
         </Card>
       </div>

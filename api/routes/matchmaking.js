@@ -14,74 +14,8 @@ router.post('/instant/join', auth, async (req, res) => {
     const userId = req.userId;
     const cleanGameName = (gameName || '').trim().toLowerCase();
 
-    console.log(`[MATCH_JOIN] User ${userId} starting search for: "${cleanGameName}"`);
-
-    // 1. Her ihtimale karşı eski kayıtları temizle
+    // Sadece sıraya gir, eşleşmeyi polling'e bırak (Daha sağlam)
     await MatchQueue.deleteMany({ userId });
-
-    // 2. Blok listesi hazırlığı
-    const me = await User.findById(userId).select('blockedUsers');
-    const myBlocks = (me.blockedUsers || []).map(id => id.toString());
-    const whoBlockedMe = (await User.find({ blockedUsers: userId }).select('_id')).map(u => u._id.toString());
-    const excludeIds = [...new Set([userId.toString(), ...myBlocks, ...whoBlockedMe])];
-
-    // 3. Eş Arama (Sırada bekleyen birini bul)
-    // Mantık: Oyun ismi tam eşleşmeli VEYA biri "genel" arıyor olmalı
-    let matchQuery = {
-      userId: { $nin: excludeIds },
-      matchedWith: null
-    };
-
-    if (cleanGameName) {
-      // Ben oyun seçtim, o zaman ya aynı oyunu arayanı ya da "herkesle eşleşirim" diyeni bul
-      matchQuery.$or = [{ gameName: cleanGameName }, { gameName: '' }];
-    }
-    // Eğer ben genel seçtiysem (cleanGameName === ''), matchQuery zaten herkesi bulur
-
-    const partnerRecord = await MatchQueue.findOneAndUpdate(
-      matchQuery,
-      { matchedWith: userId },
-      { new: true, sort: { createdAt: 1 } }
-    );
-
-    if (partnerRecord) {
-      console.log(`[MATCH_FOUND] User ${userId} found partner ${partnerRecord.userId}`);
-      
-      // Konuşma odası kur
-      let conversation = await Conversation.findOne({
-        type: 'dm',
-        participants: { $all: [userId, partnerRecord.userId], $size: 2 }
-      });
-
-      if (!conversation) {
-        conversation = await Conversation.create({
-          type: 'dm',
-          participants: [userId, partnerRecord.userId]
-        });
-      }
-
-      // Partnerin kaydına conversationId ekle ki o da polling yapınca görsün
-      partnerRecord.conversationId = conversation._id;
-      await partnerRecord.save();
-
-      // Kendisi için de geçici bir "eşleşti" kaydı oluştur (Join anında sonuç dönebilmek için)
-      await MatchQueue.create({
-        userId,
-        gameName: cleanGameName,
-        matchedWith: partnerRecord.userId,
-        conversationId: conversation._id
-      });
-
-      const otherUser = await User.findById(partnerRecord.userId).select('username avatar level');
-      return res.json({ 
-        matched: true, 
-        otherUser, 
-        conversationId: conversation._id 
-      });
-    }
-
-    // 4. Kimse yoksa sıraya gir ve bekle
-    console.log(`[MATCH_QUEUE] User ${userId} added to queue.`);
     await MatchQueue.create({
       userId,
       gameName: cleanGameName,
@@ -89,7 +23,8 @@ router.post('/instant/join', auth, async (req, res) => {
       conversationId: null
     });
 
-    res.json({ matched: false });
+    console.log(`[MATCH_JOIN] User ${userId} added to queue for: "${cleanGameName}"`);
+    res.json({ matched: false, message: 'Searching...' });
   } catch (error) {
     console.error('[MATCH_JOIN_ERROR]', error);
     res.status(500).json({ error: 'Eşleştirme başlatılamadı' });
@@ -101,36 +36,77 @@ router.get('/instant/status', auth, async (req, res) => {
   try {
     const userId = req.userId;
     
-    // Benim kaydım ne durumda?
+    // 1. Zaten birisi beni bulmuş mu?
     const myRecord = await MatchQueue.findOne({ userId });
+    if (!myRecord) return res.status(404).json({ error: 'Not in queue' });
 
-    if (!myRecord) {
-      console.log(`[MATCH_STATUS] No record for ${userId} (timeout or manual leave)`);
-      return res.status(404).json({ error: 'Sırada değilsiniz' });
-    }
-
-    // Eşleşme sağlandı mı?
     if (myRecord.matchedWith && myRecord.conversationId) {
-      console.log(`[MATCH_SUCCESS] User ${userId} matched with ${myRecord.matchedWith}`);
-      
+      console.log(`[MATCH_SUCCESS] User ${userId} was matched with ${myRecord.matchedWith}`);
       const otherUser = await User.findById(myRecord.matchedWith).select('username avatar level');
       const conversationId = myRecord.conversationId;
-      
-      // Kaydı sil (eşleşme tamamlandı)
       await MatchQueue.deleteOne({ _id: myRecord._id });
-      
-      return res.json({ 
-        matched: true, 
-        otherUser, 
-        conversationId 
-      });
+      return res.json({ matched: true, otherUser, conversationId });
     }
 
-    // Hala aranıyor
+    // 2. Ben birini bulmaya çalışayım
+    const me = await User.findById(userId).select('blockedUsers');
+    const myBlocks = (me.blockedUsers || []).map(id => id.toString());
+    const whoBlockedMe = (await User.find({ blockedUsers: userId }).select('_id')).map(u => u._id.toString());
+    const excludeIds = [...new Set([userId.toString(), ...myBlocks, ...whoBlockedMe])];
+
+    let matchQuery = {
+      userId: { $nin: excludeIds },
+      matchedWith: null
+    };
+
+    if (myRecord.gameName) {
+      matchQuery.$or = [{ gameName: myRecord.gameName }, { gameName: '' }];
+    }
+
+    // Atomik olarak partneri rezerve et
+    const partner = await MatchQueue.findOneAndUpdate(
+      matchQuery,
+      { matchedWith: userId },
+      { new: true, sort: { createdAt: 1 } }
+    );
+
+    if (partner) {
+      console.log(`[MATCH_FOUND] User ${userId} found partner ${partner.userId}`);
+      
+      let conversation = await Conversation.findOne({
+        type: 'dm',
+        participants: { $all: [userId, partner.userId], $size: 2 }
+      });
+
+      if (!conversation) {
+        conversation = await Conversation.create({
+          type: 'dm',
+          participants: [userId, partner.userId]
+        });
+      }
+
+      // Partneri güncelle
+      partner.conversationId = conversation._id;
+      await partner.save();
+
+      // Kendimi güncelle
+      myRecord.matchedWith = partner.userId;
+      myRecord.conversationId = conversation._id;
+      await myRecord.save();
+
+      const otherUser = await User.findById(partner.userId).select('username avatar level');
+      
+      // Kaydı silmiyoruz, bir sonraki poll'da partner de sonucu alsın diye 
+      // (Aslında burada silebiliriz çünkü kendi sonucumuzu hemen dönüyoruz)
+      await MatchQueue.deleteOne({ _id: myRecord._id });
+
+      return res.json({ matched: true, otherUser, conversationId: conversation._id });
+    }
+
     res.json({ matched: false });
   } catch (error) {
     console.error('[MATCH_STATUS_ERROR]', error);
-    res.status(500).json({ error: 'Durum kontrol hatası' });
+    res.status(500).json({ error: 'Status error' });
   }
 });
 

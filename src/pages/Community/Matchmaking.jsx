@@ -75,21 +75,16 @@ export default function Matchmaking({ user }) {
   const startInstantSearch = async () => {
     setInstantStatus('searching');
     
-    // 30 saniye sonra hala eşleşme yoksa timeout'a düşür
+    // 60 saniye timeout (daha esnek)
     if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
     searchTimerRef.current = setTimeout(() => {
       setInstantStatus('timeout');
       api.leaveInstantQueue().catch(console.error);
-    }, 30000);
+    }, 60000);
 
     try {
-      const result = await api.joinInstantQueue(selectedGame);
-      if (result.matched) {
-        if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
-        setMatchedUser(result.otherUser);
-        setMatchedConversationId(result.conversationId);
-        setInstantStatus('matched');
-      }
+      // Sadece sıraya gir
+      await api.joinInstantQueue(selectedGame);
     } catch (err) {
       console.error('Anlık eşleşme başlatılamadı:', err);
       if (searchTimerRef.current) clearTimeout(searchTimerRef.current);

@@ -85,7 +85,7 @@ export default function Home({ user }) {
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
               </span>
-               NEO-TRACKER SYSTEM ACTIVE
+               GAME TRACKER
             </div>
             
             <div className="space-y-4">
@@ -144,7 +144,7 @@ export default function Home({ user }) {
               </div>
               <div>
                 <p className="text-slate-500 font-bold uppercase tracking-widest text-[10px] mb-0.5">Oynanan Oyun</p>
-                <h4 className="text-3xl font-black text-white">{stats?.totalSessionsCount || '---'}</h4>
+                <h4 className="text-3xl font-black text-white">{stats?.totalUniqueGames || '---'}</h4>
               </div>
             </CardContent>
           </Card>

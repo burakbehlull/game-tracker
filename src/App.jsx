@@ -30,6 +30,54 @@ import { api } from './services/api';
 import TitleBar from './components/TitleBar';
 import UpdateNotification from './components/UpdateNotification';
 import { WebSocketProvider } from './contexts/WebSocketContext';
+import { ToastProvider, useToast } from './components/ui/toaster';
+import { useWebSocket } from './contexts/WebSocketContext';
+
+function NotificationHandler() {
+  const { events } = useWebSocket();
+  const { toast } = useToast();
+
+  useEffect(() => {
+    if (events.notificationNew) {
+      const n = events.notificationNew;
+      let title = 'Yeni Bildirim';
+      let description = '';
+
+      switch (n.type) {
+        case 'FRIEND_REQUEST':
+          title = 'Arkadaş İsteği';
+          description = `${n.data.senderName} size arkadaşlık isteği gönderdi.`;
+          break;
+        case 'FRIEND_ACCEPTED':
+          title = 'İstek Kabul Edildi';
+          description = `${n.data.username} arkadaşlık isteğini kabul etti!`;
+          break;
+        case 'MEMBER_ACCEPTED':
+          title = 'Topluluk Kabulü';
+          description = `${n.data.communityName} topluluğuna kabul edildin!`;
+          break;
+        case 'NEW_MESSAGE':
+          title = 'Yeni Mesaj';
+          description = `${n.data.senderName}: ${n.data.messagePreview}`;
+          break;
+        case 'NEW_POST':
+          title = 'Yeni Paylaşım';
+          description = `${n.data.communityName} topluluğunda yeni konu açıldı.`;
+          break;
+        default:
+          description = 'Yeni bir aktivite var.';
+      }
+
+      toast({
+        title,
+        description,
+        duration: 5000,
+      });
+    }
+  }, [events.notificationNew, toast]);
+
+  return null;
+}
 
 function App() {
   const [user, setUser] = useState(null);
@@ -107,8 +155,9 @@ function App() {
   const authToken = localStorage.getItem('token');
 
   return (
-    <ThemeProvider>
-      {loading ? (
+    <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
+      <ToastProvider>
+        {loading ? (
         isElectron ? (
           <div className="fixed inset-0 bg-background text-foreground flex flex-col items-center justify-center z-[9999]">
             <div className="flex flex-col items-center gap-6 animate-in fade-in zoom-in duration-500">
@@ -137,8 +186,9 @@ function App() {
         ) : null
       ) : (
         <WebSocketProvider token={authToken}>
+          <NotificationHandler />
           <div className="flex flex-col h-screen overflow-hidden bg-background text-foreground">
-            <TitleBar />
+            <TitleBar user={user} />
             <UpdateNotification />
             <div className="flex-1 overflow-auto">
               <Router>
@@ -364,8 +414,9 @@ function App() {
               </Router>
             </div>
           </div>
-        </WebSocketProvider>
-      )}
+          </WebSocketProvider>
+        )}
+      </ToastProvider>
     </ThemeProvider>
   );
 }

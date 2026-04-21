@@ -24,14 +24,11 @@ router.get('/global', async (req, res) => {
     // Total users
     const totalUsers = await User.countDocuments();
     
-    // Total unique games played
+    // Total unique games played across all users
     const uniqueGames = await GameSession.distinct('gameName');
     const totalUniqueGames = uniqueGames.length;
 
-    // Total sessions (games played count, including repeats)
-    const totalSessionsCount = await GameSession.countDocuments();
-    
-    // Total play time (in minutes)
+    // Total play time (in minutes) - summing up all durations
     const totalPlayTime = await GameSession.aggregate([
       {
         $group: {
@@ -42,16 +39,13 @@ router.get('/global', async (req, res) => {
     ]);
     
     const totalMinutes = totalPlayTime.length > 0 ? totalPlayTime[0].totalDuration : 0;
-    const totalHours = Math.round(totalMinutes / 60);
-    const totalDays = Math.round(totalHours / 24);
+    const totalHours = Math.floor(totalMinutes / 60); // Use floor for cleaner hour count
     
     res.json({
       totalUsers,
       totalUniqueGames,
-      totalSessionsCount,
       totalPlayMinutes: totalMinutes,
-      totalPlayHours: totalHours,
-      totalPlayDays: totalDays
+      totalPlayHours: totalHours
     });
   } catch (error) {
     console.error('[Stats API Error]', error);

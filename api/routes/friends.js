@@ -65,6 +65,13 @@ router.post('/request', auth, async (req, res) => {
       status: 'pending'
     });
 
+    const currentUser = await User.findById(req.userId).select('username');
+    const NotificationService = require('../services/notificationService');
+    await NotificationService.createNotification(target._id, 'FRIEND_REQUEST', {
+      senderName: currentUser.username,
+      requestId: request._id
+    });
+
     emitToUsers([target._id], 'friend:request:new', { requestId: request._id, fromUserId: req.userId });
     res.status(201).json(request);
   } catch (error) {
@@ -127,6 +134,13 @@ router.post('/requests/:id/accept', auth, async (req, res) => {
       },
       { upsert: true }
     );
+
+    const accepter = await User.findById(req.userId).select('username');
+    const NotificationService = require('../services/notificationService');
+    await NotificationService.createNotification(request.fromUserId, 'FRIEND_ACCEPTED', {
+      username: accepter.username,
+      userId: req.userId
+    });
 
     emitToUsers([request.fromUserId, request.toUserId], 'friend:request:resolved', {
       requestId: request._id,

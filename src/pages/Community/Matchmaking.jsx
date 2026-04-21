@@ -135,6 +135,16 @@ export default function Matchmaking({ user }) {
     };
   }, [instantStatus]);
 
+  // Sayfadan ayrılırken sıradan çık
+  useEffect(() => {
+    return () => {
+      if (instantStatus === 'searching') {
+        api.leaveInstantQueue().catch(console.error);
+      }
+      if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
+    };
+  }, [instantStatus]);
+
   // Akıllı Arama Döngüsü (Eğer maç listesi azaldıysa ara)
   useEffect(() => {
     let interval;

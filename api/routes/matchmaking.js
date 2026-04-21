@@ -14,9 +14,12 @@ router.post('/instant/join', auth, async (req, res) => {
     const userId = req.userId;
     const cleanGameName = (gameName || '').trim().toLowerCase();
 
-    // 1. Önce zaten bir eşleşmemiz var mı kontrol et (belki biri biz "join" derken bizi buldu)
+    console.log(`[InstantMatch] User ${userId} joining queue for: "${cleanGameName}"`);
+
+    // 1. Önce zaten bir eşleşmemiz var mı kontrol et
     const existingMatch = await MatchQueue.findOne({ userId, matchedWith: { $ne: null } });
     if (existingMatch) {
+      console.log(`[InstantMatch] User ${userId} already has a match in queue: ${existingMatch.matchedWith}`);
       const otherUser = await User.findById(existingMatch.matchedWith).select('username avatar level');
       const conversationId = existingMatch.conversationId;
       await MatchQueue.findByIdAndDelete(existingMatch._id);
@@ -26,20 +29,45 @@ router.post('/instant/join', auth, async (req, res) => {
     // 2. Eski (eşleşmemiş) sıramızı temizle
     await MatchQueue.deleteMany({ userId });
 
-    // 3. Uygun bir eş adayını ara (başka birinin sırası)
+    // 3. Bloklanan kullanıcıları al (onlarla eşleşmemek için)
+    const currentUser = await User.findById(userId).select('blockedUsers');
+    const blockedIds = (currentUser.blockedUsers || []).map(id => id.toString());
+    
+    // Bizi bloklayanları da bul
+    const whoBlockedMe = await User.find({ blockedUsers: userId }).select('_id');
+    const whoBlockedMeIds = whoBlockedMe.map(u => u._id.toString());
+    
+    const allBlockedIds = [...new Set([...blockedIds, ...whoBlockedMeIds])];
+
+    // 4. Uygun bir eş adayını ara
+    // Mantık: Aynı oyunu arayan VEYA (eğer biz genel arıyorsak herhangi birini) 
+    // VEYA (biz oyun arıyorsak genel arayan birini) bul.
+    
+    let matchQuery = {
+      userId: { $ne: userId, $nin: allBlockedIds },
+      matchedWith: null
+    };
+
+    if (cleanGameName) {
+      // Biz özel bir oyun arıyoruz: Ya aynı oyunu arayanı ya da "Genel" arayanı bul
+      matchQuery.$or = [
+        { gameName: cleanGameName },
+        { gameName: '' }
+      ];
+    } else {
+      // Biz "Genel" arıyoruz: Herhangi birini bulabiliriz (oyun araması fark etmez)
+      // Query'e ekstra kısıt eklemeye gerek yok, matchedWith: null yeterli
+    }
+
     const potentialMatch = await MatchQueue.findOneAndUpdate(
-      { 
-        userId: { $ne: userId }, 
-        gameName: cleanGameName,
-        matchedWith: null 
-      },
-      { 
-        matchedWith: userId 
-      },
+      matchQuery,
+      { matchedWith: userId },
       { new: true, sort: { createdAt: 1 } }
     );
 
     if (potentialMatch) {
+      console.log(`[InstantMatch] User ${userId} found match: ${potentialMatch.userId}`);
+      
       // Birini bulduk! Konuşma oluştur
       let conversation = await Conversation.findOne({
         type: 'dm',
@@ -55,6 +83,7 @@ router.post('/instant/join', auth, async (req, res) => {
 
       // Bulduğumuz kişinin kaydını güncelle ki o da poll yapınca görsün
       potentialMatch.conversationId = conversation._id;
+      // Biz onunla eşleştik, o yüzden matchedWith alanı BİZİM id'miz olmalı (zaten findOneAndUpdate ile set ettik)
       await potentialMatch.save();
 
       // Kendimize sonucu dönelim
@@ -66,7 +95,8 @@ router.post('/instant/join', auth, async (req, res) => {
       });
     }
 
-    // 4. Kimse yoksa biz sıraya girelim
+    // 5. Kimse yoksa biz sıraya girelim
+    console.log(`[InstantMatch] No match found for ${userId}, entering queue...`);
     await MatchQueue.create({
       userId,
       gameName: cleanGameName
@@ -91,6 +121,7 @@ router.get('/instant/status', auth, async (req, res) => {
     });
 
     if (myQueueEntry) {
+      console.log(`[InstantMatch] Polling: User ${userId} was matched with ${myQueueEntry.matchedWith}`);
       const otherUser = await User.findById(myQueueEntry.matchedWith).select('username avatar level');
       const conversationId = myQueueEntry.conversationId;
       

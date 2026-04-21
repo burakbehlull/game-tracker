@@ -404,38 +404,70 @@ export default function Matchmaking({ user }) {
                   </Button>
                 </div>
               ) : instantStatus === 'matched' ? (
-                /* Matched View */
-                <div className="flex flex-col items-center space-y-8 animate-in zoom-in-95 duration-500">
-                  <div className="relative flex items-center gap-4">
-                    <div className="w-24 h-24 rounded-[2rem] bg-secondary/50 border border-white/10 flex items-center justify-center font-black text-3xl text-white shadow-2xl overflow-hidden">
-                       {user?.avatar ? <img src={user.avatar} className="w-full h-full object-cover" /> : user?.username?.[0]?.toUpperCase()}
+                /* Matched View - Profile Card */
+                <div className="w-full max-w-md animate-in zoom-in-95 duration-500">
+                  <Card className="bg-[#0d1117] border border-primary/20 rounded-[3rem] overflow-hidden shadow-3xl flex flex-col">
+                    {/* Profile Image / Avatar */}
+                    <div className="relative h-64 bg-secondary/20 overflow-hidden">
+                      <div className={cn("w-full h-full flex items-center justify-center font-black text-8xl text-white/20", getAvatarColor(matchedUser.username))}>
+                        {matchedUser.avatar ? (
+                          <img src={matchedUser.avatar} className="w-full h-full object-cover" />
+                        ) : matchedUser.username[0].toUpperCase()}
+                      </div>
+                      
+                      {/* Gradient Overlay */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-[#0d1117] via-transparent to-transparent" />
+                      
+                      {/* Match Badge */}
+                      <div className="absolute top-6 right-6">
+                         <div className="bg-primary text-white px-4 py-1.5 rounded-full font-black text-[10px] uppercase tracking-widest shadow-xl animate-bounce">
+                            EŞLEŞME BULUNDU!
+                         </div>
+                      </div>
+
+                      {/* Info Overlay */}
+                      <div className="absolute bottom-6 left-8 right-8">
+                        <div className="flex items-center gap-3 mb-1">
+                          <h2 className="text-3xl font-black italic tracking-tighter text-white uppercase">{matchedUser.username}</h2>
+                          <span className="px-2 py-0.5 bg-primary text-white text-[10px] font-black rounded-lg">LVL {matchedUser.level || 1}</span>
+                        </div>
+                        <p className="text-sm font-bold text-gray-400 uppercase tracking-widest">{matchedUser.xp || 0} XP • OYUNCU</p>
+                      </div>
                     </div>
-                    <div className="w-12 h-12 bg-primary rounded-full flex items-center justify-center shadow-xl z-10 border-4 border-[#0d1117]">
-                      <Check className="w-6 h-6 text-white" />
+
+                    {/* Card Details */}
+                    <div className="p-8 space-y-6">
+                      <div className="bg-white/5 border border-white/5 rounded-2xl p-4">
+                        <p className="text-[10px] font-black text-primary uppercase tracking-widest mb-1 text-center">ANLIK EŞLEŞTİNİZ</p>
+                        <p className="text-xs text-gray-400 font-medium text-center">Artık sohbete başlayabilir veya profilini inceleyebilirsin.</p>
+                      </div>
+
+                      <div className="flex flex-col gap-3">
+                        <Button 
+                          onClick={() => navigate(`/chat/${matchedConversationId}`)}
+                          className="h-14 rounded-2xl gap-3 bg-primary hover:bg-primary/90 text-white font-black uppercase tracking-[0.2em] text-xs shadow-2xl shadow-primary/20"
+                        >
+                          <MessageSquare className="w-5 h-5" />
+                          MESAJ GÖNDER
+                        </Button>
+                        <div className="flex gap-3">
+                          <Link to={`/profile/${matchedUser.username}`} className="flex-1">
+                            <Button variant="secondary" className="w-full h-12 rounded-2xl gap-2 font-black uppercase tracking-widest text-[10px] bg-white/5 hover:bg-white/10 border-white/5">
+                              <Info className="w-4 h-4" />
+                              PROFİLİ GÖR
+                            </Button>
+                          </Link>
+                          <Button 
+                            onClick={stopInstantSearch}
+                            variant="ghost" 
+                            className="h-12 px-6 rounded-2xl font-black text-[10px] uppercase tracking-widest text-gray-500 hover:text-white"
+                          >
+                            KAPAT
+                          </Button>
+                        </div>
+                      </div>
                     </div>
-                    <div className="w-24 h-24 rounded-[2rem] bg-primary/20 border border-primary/20 flex items-center justify-center font-black text-3xl text-primary shadow-2xl shadow-primary/20 overflow-hidden">
-                       {matchedUser?.avatar ? <img src={matchedUser.avatar} className="w-full h-full object-cover" /> : matchedUser?.username?.[0]?.toUpperCase()}
-                    </div>
-                  </div>
-                  <div className="text-center space-y-2">
-                    <h3 className="text-2xl font-black italic tracking-tighter text-white uppercase">EŞLEŞME BULUNDU!</h3>
-                    <p className="text-sm text-primary font-black uppercase tracking-widest">{matchedUser?.username} ile eşleştin</p>
-                  </div>
-                  <div className="flex gap-4">
-                    <Button 
-                      onClick={() => navigate(`/chat/${matchedConversationId}`)}
-                      className="h-12 px-8 rounded-2xl bg-primary text-white font-black text-[10px] uppercase tracking-widest"
-                    >
-                      SOHBETE GİT
-                    </Button>
-                    <Button 
-                      onClick={stopInstantSearch}
-                      variant="secondary"
-                      className="h-12 px-8 rounded-2xl font-black text-[10px] uppercase tracking-widest bg-white/5 hover:bg-white/10"
-                    >
-                      YENİ ARAMA
-                    </Button>
-                  </div>
+                  </Card>
                 </div>
               ) : (
                 /* Timeout View */

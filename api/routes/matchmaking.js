@@ -36,19 +36,34 @@ router.get('/instant/status', auth, async (req, res) => {
   try {
     const userId = req.userId;
     
-    // 1. Zaten birisi beni bulmuş mu?
+    // 1. Kendi kaydımı bul
     const myRecord = await MatchQueue.findOne({ userId });
-    if (!myRecord) return res.status(404).json({ error: 'Not in queue' });
-
-    if (myRecord.matchedWith && myRecord.conversationId) {
-      console.log(`[MATCH_SUCCESS] User ${userId} was matched with ${myRecord.matchedWith}`);
-      const otherUser = await User.findById(myRecord.matchedWith).select('username avatar level');
-      const conversationId = myRecord.conversationId;
-      await MatchQueue.deleteOne({ _id: myRecord._id });
-      return res.json({ matched: true, otherUser, conversationId });
+    if (!myRecord) {
+       // Belki biri beni buldu ve kaydımı sildi (Success Durumu)
+       // Ama önce birisinin beni "matchedWith" olarak işaretlediği bir kayıt var mı bakalım
+       return res.status(404).json({ error: 'Not in queue' });
     }
 
-    // 2. Ben birini bulmaya çalışayım
+    // 2. Eğer zaten eşleşmişsem (Biri beni bulmuş)
+    if (myRecord.matchedWith && myRecord.conversationId) {
+      console.log(`[MATCH_SUCCESS] User ${userId} was matched by someone else.`);
+      const otherUser = await User.findById(myRecord.matchedWith).select('username avatar level globalName xp library');
+      const conversationId = myRecord.conversationId;
+      
+      // Bilgileri alıp kaydı siliyoruz
+      await MatchQueue.deleteOne({ _id: myRecord._id });
+      
+      return res.json({ 
+        matched: true, 
+        otherUser: {
+          ...otherUser.toObject(),
+          commonGames: [] // Polling tarafında ortak oyun hesaplaması backend'de yapılabilir ama şimdilik boş
+        }, 
+        conversationId 
+      });
+    }
+
+    // 3. Ben birini bulmaya çalışayım (Agresif Arama)
     const me = await User.findById(userId).select('blockedUsers');
     const myBlocks = (me.blockedUsers || []).map(id => id.toString());
     const whoBlockedMe = (await User.find({ blockedUsers: userId }).select('_id')).map(u => u._id.toString());
@@ -56,22 +71,24 @@ router.get('/instant/status', auth, async (req, res) => {
 
     let matchQuery = {
       userId: { $nin: excludeIds },
-      matchedWith: null
+      matchedWith: null // Boşta olan birini bul
     };
 
+    // Oyun kriteri: "Genel" her zaman eşleşir, özel oyunlar birbirini veya "Genel"i bulur
     if (myRecord.gameName) {
       matchQuery.$or = [{ gameName: myRecord.gameName }, { gameName: '' }];
     }
 
-    // Atomik olarak partneri rezerve et
     const partner = await MatchQueue.findOneAndUpdate(
       matchQuery,
-      { matchedWith: userId },
+      { 
+        matchedWith: userId // Onu rezerve et
+      },
       { new: true, sort: { createdAt: 1 } }
     );
 
     if (partner) {
-      console.log(`[MATCH_FOUND] User ${userId} found partner ${partner.userId}`);
+      console.log(`[MATCH_FOUND] User ${userId} found and reserved partner ${partner.userId}`);
       
       let conversation = await Conversation.findOne({
         type: 'dm',
@@ -85,22 +102,23 @@ router.get('/instant/status', auth, async (req, res) => {
         });
       }
 
-      // Partneri güncelle
+      // Partnerin kaydını güncelle (O poll yapınca görecek)
       partner.conversationId = conversation._id;
       await partner.save();
 
-      // Kendimi güncelle
-      myRecord.matchedWith = partner.userId;
-      myRecord.conversationId = conversation._id;
-      await myRecord.save();
-
-      const otherUser = await User.findById(partner.userId).select('username avatar level');
+      const otherUser = await User.findById(partner.userId).select('username avatar level globalName xp library');
       
-      // Kaydı silmiyoruz, bir sonraki poll'da partner de sonucu alsın diye 
-      // (Aslında burada silebiliriz çünkü kendi sonucumuzu hemen dönüyoruz)
+      // Kendi kaydımı sil (Ben buldum, işim bitti)
       await MatchQueue.deleteOne({ _id: myRecord._id });
 
-      return res.json({ matched: true, otherUser, conversationId: conversation._id });
+      return res.json({ 
+        matched: true, 
+        otherUser: {
+          ...otherUser.toObject(),
+          commonGames: partner.gameName ? [partner.gameName] : []
+        }, 
+        conversationId: conversation._id 
+      });
     }
 
     res.json({ matched: false });

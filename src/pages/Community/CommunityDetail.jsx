@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { api } from '../../services/api';
 import { Button } from '../../components/ui/button';
+import { useToast } from '../../components/ui/toaster';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '../../components/ui/card';
 import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
@@ -11,11 +12,8 @@ import {
   MessageSquare, 
   Calendar, 
   Settings, 
-  Shield, 
   Plus, 
   Loader2, 
-  ArrowLeft, 
-  MoreVertical, 
   Trash2, 
   Check, 
   Clock, 
@@ -23,12 +21,12 @@ import {
   Edit3, 
   X 
 } from 'lucide-react';
-import { renderMarkdown } from '../../lib/utils';
+import { renderMarkdown, cn } from '../../lib/utils';
 import CommunityManage from './CommunityManage';
-import { cn } from '../../lib/utils';
 export default function CommunityDetail({ user }) {
   const { slug } = useParams();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [community, setCommunity] = useState(null);
   const [discussions, setDiscussions] = useState([]);
   const [events, setEvents] = useState([]);
@@ -77,11 +75,12 @@ export default function CommunityDetail({ user }) {
       const result = await api.joinCommunity(slug);
       if (result.status === 'joined') {
         fetchCommunity();
+        toast({ title: 'Başarılı', description: 'Topluluğa katıldın!' });
       } else {
-        alert('Katılma isteğin gönderildi ve onay bekliyor.');
+        toast({ title: 'İstek Gönderildi', description: 'Katılma isteğin gönderildi ve onay bekliyor.' });
       }
     } catch (err) {
-      alert(err.message);
+      toast({ title: 'Hata', description: err.message });
     } finally {
       setIsJoining(false);
     }
@@ -92,8 +91,9 @@ export default function CommunityDetail({ user }) {
     try {
       await api.leaveCommunity(slug);
       fetchCommunity();
+      toast({ title: 'Ayrıldın', description: 'Topluluktan ayrıldın.' });
     } catch (err) {
-      alert(err.message);
+      toast({ title: 'Hata', description: err.message });
     }
   };
 
@@ -108,14 +108,14 @@ export default function CommunityDetail({ user }) {
       });
       if (disc.approved) {
         setDiscussions([disc, ...discussions]);
-        alert('Tartışma başarıyla oluşturuldu.');
+        toast({ title: 'Başarılı', description: 'Tartışma başarıyla oluşturuldu.' });
       } else {
-        alert('Tartışma oluşturuldu ve onay için moderatöre gönderildi.');
+        toast({ title: 'Onay Bekliyor', description: 'Tartışma oluşturuldu ve onay için moderatöre gönderildi.' });
       }
       setShowCreateModal(false);
       setNewDiscussion({ title: '', content: '' });
     } catch (err) {
-      alert(err.message);
+      toast({ title: 'Hata', description: err.message });
     } finally {
       setCreating(false);
     }
@@ -130,11 +130,11 @@ export default function CommunityDetail({ user }) {
         ...newEvent
       });
       setEvents([...events, event]);
-      alert('Etkinlik başarıyla oluşturuldu.');
+      toast({ title: 'Başarılı', description: 'Etkinlik başarıyla oluşturuldu.' });
       setShowEventModal(false);
       setNewEvent({ title: '', description: '', date: '' });
     } catch (err) {
-      alert(err.message);
+      toast({ title: 'Hata', description: err.message });
     } finally {
       setCreating(false);
     }
@@ -147,9 +147,10 @@ export default function CommunityDetail({ user }) {
     try {
       await api.deleteDiscussion(slug, id);
       setDiscussions(discussions.filter(d => d._id !== id));
+      toast({ title: 'Silindi', description: 'Tartışma başarıyla silindi.' });
     } catch (err) {
       console.error('Silme hatası:', err);
-      alert('Tartışma silinirken bir hata oluştu.');
+      toast({ title: 'Hata', description: 'Tartışma silinirken bir hata oluştu.' });
     }
   };
 
@@ -158,9 +159,10 @@ export default function CommunityDetail({ user }) {
     try {
       await api.deleteEvent(slug, id);
       setEvents(events.filter(e => e._id !== id));
+      toast({ title: 'Silindi', description: 'Etkinlik başarıyla silindi.' });
     } catch (err) {
       console.error('Silme hatası:', err);
-      alert('Etkinlik silinirken bir hata oluştu.');
+      toast({ title: 'Hata', description: 'Etkinlik silinirken bir hata oluştu.' });
     }
   };
 
@@ -532,41 +534,52 @@ export default function CommunityDetail({ user }) {
 
               <form onSubmit={handleCreateEvent} className="space-y-4">
                 <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Etkinlik Başlığı</Label>
+                  <Label htmlFor="event-title" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Etkinlik Başlığı</Label>
                   <Input 
+                    id="event-title"
                     required
+                    autoFocus
                     placeholder="Örn: Hafta Sonu Turnuvası"
-                    className="bg-secondary/30 border-white/5 rounded-xl h-12 font-bold"
+                    className="bg-secondary/30 border-white/10 rounded-xl h-12 font-bold focus:ring-2 focus:ring-primary/50 transition-all"
                     value={newEvent.title}
                     onChange={(e) => setNewEvent({ ...newEvent, title: e.target.value })}
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Açıklama</Label>
+                  <Label htmlFor="event-description" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Açıklama</Label>
                   <textarea 
+                    id="event-description"
                     required
                     placeholder="Etkinlik detayları..."
-                    className="w-full min-h-[100px] bg-secondary/30 border border-white/5 rounded-xl p-4 text-sm focus:outline-none focus:border-primary/50 transition-colors font-medium"
+                    className="w-full min-h-[100px] bg-secondary/30 border border-white/10 rounded-xl p-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all font-medium resize-none"
                     value={newEvent.description}
                     onChange={(e) => setNewEvent({ ...newEvent, description: e.target.value })}
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Tarih ve Saat</Label>
-                  <Input 
-                    required
-                    type="datetime-local"
-                    className="bg-secondary/30 border-white/5 rounded-xl h-12 font-bold"
-                    value={newEvent.date}
-                    onChange={(e) => setNewEvent({ ...newEvent, date: e.target.value })}
-                  />
+                  <Label htmlFor="event-date" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Tarih ve Saat</Label>
+                  <div className="relative group">
+                    <Input 
+                      id="event-date"
+                      required
+                      type="datetime-local"
+                      style={{ colorScheme: 'dark' }}
+                      className="bg-secondary/30 border-white/10 rounded-xl h-12 font-bold focus:ring-2 focus:ring-primary/50 transition-all w-full pr-10"
+                      value={newEvent.date}
+                      onChange={(e) => setNewEvent({ ...newEvent, date: e.target.value })}
+                    />
+                    <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-muted-foreground group-hover:text-primary transition-colors">
+                      <Calendar className="w-4 h-4" />
+                    </div>
+                  </div>
+                  <p className="text-[9px] font-bold text-muted-foreground mt-1 ml-1 uppercase italic">Etkinliğin yapılacağı gün ve saati belirle.</p>
                 </div>
 
                 <Button 
                   type="submit" 
-                  className="w-full h-12 rounded-xl font-black uppercase tracking-widest"
+                  className="w-full h-12 rounded-xl font-black uppercase tracking-widest shadow-lg shadow-primary/20 mt-4"
                   disabled={creating}
                 >
                   {creating ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Etkinliği Oluştur'}

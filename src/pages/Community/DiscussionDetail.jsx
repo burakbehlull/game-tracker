@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { api } from '../../services/api';
 import { Button } from '../../components/ui/button';
+import { useToast } from '../../components/ui/toaster';
 import { Card } from '../../components/ui/card';
 import { Loader2, ArrowLeft, Send, Trash2, MessageSquare } from 'lucide-react';
 import { renderMarkdown } from '../../lib/utils';
@@ -9,6 +10,7 @@ import { renderMarkdown } from '../../lib/utils';
 export default function DiscussionDetail({ user }) {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [discussion, setDiscussion] = useState(null);
   const [comments, setComments] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -44,8 +46,9 @@ export default function DiscussionDetail({ user }) {
       const newComment = await api.createComment(id, commentContent);
       setComments([...comments, newComment]);
       setCommentContent('');
+      toast({ title: 'Başarılı', description: 'Yorumun paylaşıldı.' });
     } catch (err) {
-      alert(err.message);
+      toast({ title: 'Hata', description: err.message });
     } finally {
       setSending(false);
     }
@@ -56,8 +59,9 @@ export default function DiscussionDetail({ user }) {
     try {
       await api.deleteComment(commentId);
       setComments(prev => prev.filter(c => c._id !== commentId));
+      toast({ title: 'Silindi', description: 'Yorum başarıyla silindi.' });
     } catch (err) {
-      alert(err.message);
+      toast({ title: 'Hata', description: err.message });
     }
   };
 

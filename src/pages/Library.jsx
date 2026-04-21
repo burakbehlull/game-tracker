@@ -2,11 +2,13 @@ import { useState, useEffect } from 'react';
 import { Button } from '../components/ui/button';
 import { Card } from '../components/ui/card';
 import { Input } from '../components/ui/input';
+import { useToast } from '../components/ui/toaster';
 import { Gamepad2, Play, Plus, X, FolderOpen, Loader2, Search, Settings } from 'lucide-react';
 import { api } from '../services/api';
 import { getAssetUrl } from '../lib/assetHelper';
 
 export default function Library({ user }) {
+  const { toast } = useToast();
   const [library, setLibrary] = useState(user?.library || []);
   const [supportedGames, setSupportedGames] = useState([]);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -77,8 +79,9 @@ export default function Library({ user }) {
       const updatedLibrary = await api.addToLibrary(gameName);
       setLibrary(updatedLibrary);
       setShowAddModal(false);
+      toast({ title: 'Başarılı', description: `${gameName} kütüphanene eklendi!` });
     } catch (err) {
-      alert(getErrorMessage(err, 'Oyun eklenemedi'));
+      toast({ title: 'Hata', description: getErrorMessage(err, 'Oyun eklenemedi') });
     } finally {
       setLoading(false);
     }
@@ -91,8 +94,9 @@ export default function Library({ user }) {
       try {
         const updatedLibrary = await api.updateLibraryExe(gameName, path);
         setLibrary(updatedLibrary);
+        toast({ title: 'Başarılı', description: 'Oyun dosyası kaydedildi.' });
       } catch (err) {
-        alert(getErrorMessage(err, 'Dosya yolu kaydedilemedi'));
+        toast({ title: 'Hata', description: getErrorMessage(err, 'Dosya yolu kaydedilemedi') });
       }
     }
   };
@@ -101,17 +105,24 @@ export default function Library({ user }) {
     if (!window.electronAPI) return;
     const res = await window.electronAPI.launchGame(exePath);
     if (!res.success) {
-      alert(`⚠️ Başlatma Hatası!\n\n${res.error}\n\nİpucu: Eğer oyun korumalıysa (Valorant vb.), lütfen uygulamayı "Yönetici Olarak Çalıştır" diyerek tekrar açın.`);
+      toast({ 
+        title: 'Başlatma Hatası!', 
+        description: `Hata: ${res.error}\nİpucu: Eğer oyun korumalıysa (Valorant vb.), lütfen uygulamayı "Yönetici Olarak Çalıştır" diyerek tekrar açın.`,
+        duration: 10000 
+      });
+    } else {
+      toast({ title: 'Oyun Başlatılıyor', description: 'İyi oyunlar!' });
     }
   };
 
   const handleRemove = async (gameName) => {
-    if (!confirm(`${gameName} kütüphaneden çıkarılsın mı?`)) return;
+    if (!window.confirm(`${gameName} kütüphaneden çıkarılsın mı?`)) return;
     try {
       const updatedLibrary = await api.removeFromLibrary(gameName);
       setLibrary(updatedLibrary);
+      toast({ title: 'Silindi', description: `${gameName} kütüphaneden çıkarıldı.` });
     } catch (err) {
-      alert(getErrorMessage(err, 'Oyun silinemedi'));
+      toast({ title: 'Hata', description: getErrorMessage(err, 'Oyun silinemedi') });
     }
   };
 

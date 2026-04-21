@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { api } from '../../services/api';
 import { Button } from '../../components/ui/button';
+import { useToast } from '../../components/ui/toaster';
 import { Card } from '../../components/ui/card';
 import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
@@ -26,6 +27,7 @@ export default function CommunityManage({ user, communityData, onUpdate }) {
   const { slug: urlSlug } = useParams();
   const slug = urlSlug || communityData?.slug;
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [community, setCommunity] = useState(communityData || null);
   const [pendingMembers, setPendingMembers] = useState([]);
   const [pendingDiscussions, setPendingDiscussions] = useState([]);
@@ -92,9 +94,10 @@ export default function CommunityManage({ user, communityData, onUpdate }) {
     try {
       await api.updateCommunitySettings(slug, formData);
       if (onUpdate) onUpdate();
-      alert('Ayarlar başarıyla güncellendi.');
+      toast({ title: 'Başarılı', description: 'Ayarlar başarıyla güncellendi.' });
     } catch (err) {
       setError(err.message);
+      toast({ title: 'Hata', description: err.message });
     } finally {
       setSaving(false);
     }
@@ -104,8 +107,9 @@ export default function CommunityManage({ user, communityData, onUpdate }) {
     try {
       await api.approveMember(slug, userId);
       setPendingMembers(prev => prev.filter(m => m._id !== userId));
+      toast({ title: 'Onaylandı', description: 'Üyelik isteği kabul edildi.' });
     } catch (err) {
-      alert(err.message);
+      toast({ title: 'Hata', description: err.message });
     }
   };
 
@@ -113,8 +117,9 @@ export default function CommunityManage({ user, communityData, onUpdate }) {
     try {
       await api.rejectMember(slug, userId);
       setPendingMembers(prev => prev.filter(m => m._id !== userId));
+      toast({ title: 'Reddedildi', description: 'Üyelik isteği reddedildi.' });
     } catch (err) {
-      alert(err.message);
+      toast({ title: 'Hata', description: err.message });
     }
   };
 
@@ -126,9 +131,9 @@ export default function CommunityManage({ user, communityData, onUpdate }) {
         ...prev,
         members: prev.members.filter(m => m._id !== userId)
       }));
-      alert('Üye topluluktan atıldı.');
+      toast({ title: 'Başarılı', description: 'Üye topluluktan atıldı.' });
     } catch (err) {
-      alert(err.message);
+      toast({ title: 'Hata', description: err.message });
     }
   };
 
@@ -136,8 +141,9 @@ export default function CommunityManage({ user, communityData, onUpdate }) {
     try {
       await api.approveDiscussion(id);
       setPendingDiscussions(prev => prev.filter(d => d._id !== id));
+      toast({ title: 'Başarılı', description: 'Tartışma onaylandı.' });
     } catch (err) {
-      alert(err.message);
+      toast({ title: 'Hata', description: err.message });
     }
   };
 
@@ -146,8 +152,9 @@ export default function CommunityManage({ user, communityData, onUpdate }) {
     try {
       await api.deleteDiscussion(id);
       setPendingDiscussions(prev => prev.filter(d => d._id !== id));
+      toast({ title: 'Silindi', description: 'Tartışma silindi.' });
     } catch (err) {
-      alert(err.message);
+      toast({ title: 'Hata', description: err.message });
     }
   };
 
@@ -155,9 +162,10 @@ export default function CommunityManage({ user, communityData, onUpdate }) {
     if (!window.confirm('DİKKAT: Bu topluluğu kalıcı olarak silmek istediğine emin misin? Bu işlem geri alınamaz!')) return;
     try {
       await api.deleteCommunity(slug);
+      toast({ title: 'Silindi', description: 'Topluluk başarıyla silindi.' });
       navigate('/community');
     } catch (err) {
-      alert(err.message);
+      toast({ title: 'Hata', description: err.message });
     }
   };
 

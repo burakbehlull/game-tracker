@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
+import { useToast } from '../components/ui/toaster';
 import { Gamepad2, Clock, Calendar, TrendingUp, AlertCircle, Moon, 
   Sun, Sunset, Coffee, Zap, Brain, ShieldCheck, Target, Trophy, CheckCircle2, Star } from 'lucide-react';
 import { api } from '../services/api';
@@ -32,6 +33,7 @@ const MiniBarChart = ({ data, color = '#3b82f6' }) => {
 };
 
 export default function Dashboard({ user }) {
+  const { toast } = useToast();
   const [sessions, setSessions] = useState([]);
   const [stats, setStats] = useState([]);
   const [challenges, setChallenges] = useState([]);
@@ -89,7 +91,7 @@ export default function Dashboard({ user }) {
     if (window.electronAPI) {
       await window.electronAPI.setSessionLimit(mins);
       setSessionLimit(mins);
-      // alert(`Oturum limiti ${mins} dakika olarak ayarlandı.`);
+      toast({ title: 'Limit Ayarlandı', description: `Oturum limiti ${mins} dakika olarak ayarlandı.` });
     }
   };
 

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
+import { useToast } from '../components/ui/toaster';
 import { 
   Users, 
   Shield, 
@@ -23,6 +24,7 @@ import {
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
 export default function AdminDashboard({ adminUser, onLogout }) {
+  const { toast } = useToast();
   const [stats, setStats] = useState(null);
   const [users, setUsers] = useState([]);
   const [sessions, setSessions] = useState([]);
@@ -90,10 +92,10 @@ export default function AdminDashboard({ adminUser, onLogout }) {
       setEditingUser(null);
       loadUsers(currentPage, searchQuery);
       loadDashboardData();
-      alert('Kullanıcı başarıyla güncellendi');
+      toast({ title: 'Başarılı', description: 'Kullanıcı başarıyla güncellendi' });
     } catch (error) {
       console.error('Error updating user:', error);
-      alert(error.message);
+      toast({ title: 'Hata', description: error.message });
     } finally {
       setIsUpdating(false);
     }
@@ -155,7 +157,7 @@ export default function AdminDashboard({ adminUser, onLogout }) {
       loadDashboardData();
     } catch (error) {
       console.error('Error deleting user:', error);
-      alert('Kullanıcı silinemedi');
+      toast({ title: 'Hata', description: 'Kullanıcı silinemedi' });
     }
   };
 
@@ -183,7 +185,7 @@ export default function AdminDashboard({ adminUser, onLogout }) {
       loadDashboardData();
     } catch (error) {
       console.error('Error updating role:', error);
-      alert('Roller güncellenemedi');
+      toast({ title: 'Hata', description: 'Roller güncellenemedi' });
     }
   };
 

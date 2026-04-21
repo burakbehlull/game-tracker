@@ -4,12 +4,14 @@ import { Settings, Monitor, Clock, Trophy, Zap, Eye, EyeOff, LibraryBig, Archive
   Heart, Flame, Gamepad2, Swords, TrendingUp, Crown, ShieldCheck, Rocket, Users2, UserPlus, MessageSquare } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { Button } from '../components/ui/button';
+import { useToast } from '../components/ui/toaster';
 import { api } from '../services/api';
 import { getAssetUrl } from '../lib/assetHelper';
 
 
 export default function Profile({ user: currentUser }) {
   const { username } = useParams();
+  const { toast } = useToast();
   
   // If we have a username in URL, we are viewing someone else.
   // If no username (or it matches current), we are viewing ours.
@@ -62,8 +64,9 @@ export default function Profile({ user: currentUser }) {
     try {
       await api.sendFriendRequest({ targetUserId: profileUser._id, username: profileUser.username });
       setFriendshipStatus('pending');
+      toast({ title: 'İstek Gönderildi', description: `${profileUser.username} kullanıcısına arkadaşlık isteği gönderildi.` });
     } catch (err) {
-      alert(err.message || 'İstek gönderilemedi');
+      toast({ title: 'Hata', description: err.message || 'İstek gönderilemedi' });
     } finally {
       setRequestLoading(false);
     }

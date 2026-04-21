@@ -14,6 +14,11 @@ if (dns.setDefaultResultOrder) {
 const isDev = !app.isPackaged;
 process.env.NODE_ENV = isDev ? 'development' : 'production';
 
+// Set App User Model ID for Windows Notifications
+if (process.platform === 'win32') {
+  app.setAppUserModelId('com.gametracker.app');
+}
+
 // Only load .env in development mode
 if (isDev) {
   const envPath = path.join(__dirname, '../.env');
@@ -57,7 +62,7 @@ log.info('App starting...');
 let mainWindow;
 let tray = null;
 let isTracking = true;
-let gameTracker = new GameTracker();
+let gameTracker; // Initialize later
 let updateService;
 let serverInstance;
 
@@ -101,32 +106,41 @@ function startBackend() {
 function createTray() {
   if (tray) return;
 
-  // Use a more robust path for the tray icon
-  const iconPath = isDev 
-    ? path.join(__dirname, '../public/icon.png')
-    : path.join(process.resourcesPath, 'app/public/icon.png');
+  log.info('Creating tray...');
   
-  log.info('Tray icon path:', iconPath);
-  
-  let image;
   try {
-    image = nativeImage.createFromPath(iconPath);
+    let image = nativeImage.createFromPath(iconPath);
     if (image.isEmpty()) {
-      // Fallback if the first path fails
-      const fallbackPath = path.join(__dirname, '../public/icon.png');
+      // If the robust path fails, try a very simple fallback
+      const fallbackPath = path.join(__dirname, 'icon.png');
       image = nativeImage.createFromPath(fallbackPath);
     }
+
+    // If still empty, we'll try to use the path directly or a generic icon
+    // Tray constructor might throw if image is invalid
+    tray = new Tray(image.isEmpty() ? iconPath : image);
+    
+    updateTrayMenu();
+
+    tray.setToolTip('Game Tracker');
+    
+    tray.on('click', () => {
+      if (mainWindow) {
+        if (mainWindow.isVisible()) {
+          mainWindow.focus();
+        } else {
+          mainWindow.show();
+        }
+      } else {
+        createWindow();
+      }
+    });
+    
+    log.info('Tray created successfully');
   } catch (err) {
-    log.error('Failed to load tray icon:', err);
+    log.error('Failed to create tray:', err);
+    // Non-critical failure, don't crash the whole app
   }
-
-  tray = new Tray(image || iconPath);
-  updateTrayMenu();
-
-  tray.setToolTip('Game Tracker');
-  tray.on('double-click', () => {
-    mainWindow?.show();
-  });
 }
 
 function updateTrayMenu() {
@@ -179,46 +193,88 @@ function updateTrayMenu() {
   tray.setContextMenu(contextMenu);
 }
 
-function createWindow() {
-  const iconPath = isDev 
-    ? path.join(__dirname, '../public/icon.png')
-    : path.join(process.resourcesPath, 'app/public/icon.png');
+// Use a more robust way to get the icon path
+const getIconPath = () => {
+  // Try multiple potential locations
+  const locations = [
+    path.join(__dirname, '../public/icon.png'),
+    path.join(__dirname, 'icon.png'),
+    path.join(process.resourcesPath, 'public/icon.png'),
+    path.join(process.resourcesPath, 'icon.png')
+  ];
 
-  mainWindow = new BrowserWindow({
-    width: 1400,
-    height: 900,
-    frame: false,
-    backgroundColor: '#000000',
-    icon: iconPath,
-    webPreferences: {
-      nodeIntegration: false,
-      contextIsolation: true,
-      preload: path.join(__dirname, 'preload.js')
-    }
-  });
-
-  if (isDev) {
-    mainWindow.loadURL('http://localhost:5173');
-    // mainWindow.webContents.openDevTools({ mode: 'detach' });
-  } else {
-    mainWindow.loadFile(path.join(__dirname, '../dist/index.html'));
-  }
-
-  mainWindow.on('close', (event) => {
-    if (!isQuitting && backgroundSettings.runInBackground) {
-      event.preventDefault();
-      mainWindow.hide();
-      // Optimize memory when hidden
-      if (process.platform === 'win32') {
-        app.setAppUserModelId(app.name);
+  for (const loc of locations) {
+    try {
+      if (require('fs').existsSync(loc)) {
+        return loc;
       }
-      return false;
-    }
-  });
+    } catch (e) {}
+  }
+  return path.join(__dirname, '../public/icon.png'); // Fallback
+};
 
-  mainWindow.on('closed', () => {
-    mainWindow = null;
-  });
+const iconPath = getIconPath();
+
+function createWindow() {
+  log.info('Creating window...');
+  try {
+    mainWindow = new BrowserWindow({
+      width: 1280,
+      height: 800,
+      minWidth: 1000,
+      minHeight: 700,
+      frame: false,
+      backgroundColor: '#000000',
+      icon: iconPath,
+      webPreferences: {
+        nodeIntegration: false,
+        contextIsolation: true,
+        preload: path.join(__dirname, 'preload.js')
+      },
+      show: false // Don't show until ready
+    });
+
+    if (isDev) {
+      mainWindow.loadURL('http://localhost:5173');
+      // mainWindow.webContents.openDevTools({ mode: 'detach' });
+    } else {
+      const indexPath = path.join(__dirname, '../dist/index.html');
+      log.info('Loading production file from:', indexPath);
+      if (fs.existsSync(indexPath)) {
+        mainWindow.loadFile(indexPath);
+      } else {
+        log.error('Production index.html NOT FOUND at:', indexPath);
+        // Try a fallback path just in case
+        const fallbackPath = path.join(process.resourcesPath, 'app/dist/index.html');
+        if (fs.existsSync(fallbackPath)) {
+           mainWindow.loadFile(fallbackPath);
+        }
+      }
+    }
+
+    mainWindow.once('ready-to-show', () => {
+      mainWindow.show();
+      mainWindow.focus();
+    });
+
+    mainWindow.on('close', (event) => {
+      if (!isQuitting && backgroundSettings.runInBackground) {
+        event.preventDefault();
+        mainWindow.hide();
+        // Optimize memory when hidden
+        if (process.platform === 'win32') {
+          app.setAppUserModelId(app.name);
+        }
+        return false;
+      }
+    });
+
+    mainWindow.on('closed', () => {
+      mainWindow = null;
+    });
+  } catch (err) {
+    log.error('Failed to create window:', err);
+  }
 }
 
 // Single Instance Lock - Check this as early as possible
@@ -240,9 +296,21 @@ app.on('second-instance', () => {
 app.whenReady().then(() => {
   log.info('App Ready');
   
-  startBackend();
+  // Initialize services
+  try {
+    gameTracker = new GameTracker();
+  } catch (err) {
+    log.error('Failed to initialize GameTracker:', err);
+  }
+
+  // Start window and tray immediately
   createWindow();
   createTray();
+
+  // Start backend in parallel
+  setTimeout(() => {
+    startBackend();
+  }, 100);
 
   // Apply auto-launch setting on startup
   if (app.isPackaged) {
@@ -253,8 +321,8 @@ app.whenReady().then(() => {
   }
   
   try {
-    gameTracker.start();
-    if (gameTracker.discordService) {
+    gameTracker?.start();
+    if (gameTracker?.discordService) {
       gameTracker.discordService.connect();
     }
     log.info('GameTracker service started.');
@@ -262,12 +330,17 @@ app.whenReady().then(() => {
     log.error('Error starting GameTracker:', e);
   }
   
-  // Update service
-  try {
-    updateService = new UpdateService(mainWindow);
-    updateService.checkForUpdates();
-  } catch (e) {
-    log.error('Error starting UpdateService:', e);
+  // Update control
+  if (mainWindow) {
+    try {
+      updateService = new UpdateService(mainWindow);
+      // Check for updates after 5 seconds
+      setTimeout(() => {
+        updateService.checkForUpdates();
+      }, 5000);
+    } catch (err) {
+      log.error('Failed to initialize UpdateService:', err);
+    }
   }
 
   app.on('activate', () => {

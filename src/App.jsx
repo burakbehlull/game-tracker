@@ -190,10 +190,10 @@ function App() {
       ) : (
         <WebSocketProvider token={authToken}>
           <NotificationHandler />
-          <div className="flex flex-col h-screen overflow-hidden bg-background text-foreground">
+          <div className="flex-1 flex flex-col min-h-0 overflow-hidden bg-background text-foreground">
             <TitleBar user={user} />
             <UpdateNotification />
-            <div className="flex-1 overflow-auto">
+            <div className="flex-1 overflow-hidden flex flex-col min-h-0">
               <Router>
                 <Suspense fallback={
                   <div className="h-full flex flex-col items-center justify-center gap-4">

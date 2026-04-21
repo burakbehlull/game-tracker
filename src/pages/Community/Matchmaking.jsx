@@ -22,10 +22,12 @@ import {
   ShieldAlert
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
+import { useToast } from '../../components/ui/toaster';
 import { useWebSocket } from '../../contexts/WebSocketContext';
 
 export default function Matchmaking({ user }) {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const { events } = useWebSocket();
   const [mode, setMode] = useState('instant'); // 'instant' or 'passive'
   const [matches, setMatches] = useState([]);
@@ -173,8 +175,17 @@ export default function Matchmaking({ user }) {
 
   // Yeni mesajları dinle
   useEffect(() => {
-    if (events.messageNew && conversation && events.messageNew.conversationId === conversation._id) {
-      setMessages(prev => [...prev, events.messageNew]);
+    if (events.messageNew && conversation) {
+      const payload = events.messageNew?.message || events.messageNew;
+      const eventConvId = String(payload.conversationId?._id || payload.conversationId);
+      const activeConvId = String(conversation._id);
+
+      if (eventConvId === activeConvId) {
+        setMessages(prev => {
+          if (prev.some(m => String(m._id) === String(payload._id))) return prev;
+          return [...prev, payload];
+        });
+      }
     }
   }, [events.messageNew, conversation]);
 
@@ -205,11 +216,21 @@ export default function Matchmaking({ user }) {
     setNewMessage('');
     
     try {
-      const msg = await api.sendMessage(conversation._id, content);
-      // WebSocket zaten mesajı ekleyecek, ama anlık tepki için:
-      // setMessages(prev => [...prev, msg]); 
+      const response = await api.sendMessage(conversation._id, content);
+      const msg = response?.message || response;
+      if (msg && msg._id) {
+        setMessages(prev => {
+          if (prev.some(m => String(m._id) === String(msg._id))) return prev;
+          return [...prev, msg];
+        });
+      }
     } catch (err) {
       console.error('Mesaj gönderme hatası:', err);
+      toast({
+        variant: "destructive",
+        title: "Gönderilemedi",
+        description: err.data?.error || err.message || "Mesaj gönderilemedi."
+      });
     }
   };
 

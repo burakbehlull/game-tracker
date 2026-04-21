@@ -245,7 +245,7 @@ export default function Friends() {
               </span>
             )}
           </div>
-          <div className="space-y-3 max-h-[600px] overflow-y-auto pr-2 scrollbar-none">
+          <div className="space-y-3 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
             {requests.incoming?.map((req) => (
               <RequestItem key={req._id} request={req} onAccept={api.acceptFriendRequest} onReject={api.rejectFriendRequest} />
             ))}
@@ -264,7 +264,7 @@ export default function Friends() {
             <h2 className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.3em]">ARKADAŞ LİSTESİ</h2>
             <span className="text-[10px] font-bold text-primary/60">{friends.length} TOPLAM</span>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[600px] overflow-y-auto pr-2 scrollbar-none">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
             {friends.map((friend) => (
               <FriendItem key={friend._id} friend={friend} presence={presence} onRemove={api.removeFriend} />
             ))}

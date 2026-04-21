@@ -29,13 +29,41 @@ export function WebSocketProvider({ token, children }) {
     }
 
     const socket = io(WS_URL, {
-      transports: ['websocket'],
-      auth: { token }
+      transports: ['polling', 'websocket'],
+      auth: { token },
+      reconnection: true,
+      reconnectionAttempts: Infinity,
+      reconnectionDelay: 1000,
+      reconnectionDelayMax: 5000,
+      timeout: 20000,
     });
     socketRef.current = socket;
 
-    socket.on('connect', () => setConnected(true));
-    socket.on('disconnect', () => setConnected(false));
+    socket.on('connect', () => {
+      console.log('WebSocket Connected');
+      setConnected(true);
+      // Backend expects identifying or joining? 
+      // If we have a common event for this, we could trigger it here.
+    });
+
+    socket.on('connect_error', (err) => {
+      console.error('WebSocket Connection Error:', err);
+      setConnected(false);
+    });
+
+    socket.on('disconnect', (reason) => {
+      console.log('WebSocket Disconnected:', reason);
+      setConnected(false);
+    });
+
+    // Debug all events
+    const originalOn = socket.on;
+    socket.on = function(event, callback) {
+      return originalOn.call(this, event, (payload) => {
+        console.log(`[SocketEvent] ${event}:`, payload);
+        callback(payload);
+      });
+    };
     socket.on('presence:update', (payload) => setEvents((prev) => ({ ...prev, presence: payload })));
     socket.on('friend:request:new', (payload) => setEvents((prev) => ({ ...prev, friendRequest: payload })));
     socket.on('friend:request:resolved', (payload) => setEvents((prev) => ({ ...prev, friendResolved: payload })));

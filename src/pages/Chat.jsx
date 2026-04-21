@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { Card } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
+import { useToast } from '../components/ui/toaster';
 import { api } from '../services/api';
 import { useWebSocket } from '../contexts/WebSocketContext';
 import { Send, PlusCircle, MessageSquare, AtSign, X, Check, Users, Trash2, ShieldAlert, ShieldCheck } from 'lucide-react';
@@ -67,7 +68,7 @@ const CreateGroupModal = memo(({ isOpen, onClose, friends, onCreate }) => {
           </div>
           <div className="space-y-2">
             <label className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] ml-2">Üyeleri Seç (Min. 2)</label>
-            <div className="max-h-48 overflow-y-auto space-y-2 scrollbar-none pr-1">
+            <div className="max-h-48 overflow-y-auto space-y-2 custom-scrollbar pr-1">
               {friends.map(f => (
                 <div 
                   key={f._id} 
@@ -115,7 +116,7 @@ const ConversationsSidebar = memo(({ conversations, activeId, onSelect, currentU
           <PlusCircle className="w-5 h-5" />
         </Button>
       </div>
-      <div className="flex-1 overflow-y-auto p-4 space-y-6 scrollbar-none">
+      <div className="flex-1 overflow-y-auto p-4 space-y-6 custom-scrollbar">
         <div className="space-y-3">
           <div className="px-2 text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">Hızlı Başlat</div>
           <div className="grid grid-cols-4 gap-2">
@@ -153,6 +154,7 @@ const ConversationsSidebar = memo(({ conversations, activeId, onSelect, currentU
 
 const MessageInput = memo(({ onSend, disabled, placeholder }) => {
   const inputRef = useRef(null);
+  
   const handleSend = (e) => {
     if (e) e.preventDefault();
     const value = inputRef.current?.value || '';
@@ -161,10 +163,24 @@ const MessageInput = memo(({ onSend, disabled, placeholder }) => {
       if (inputRef.current) inputRef.current.value = '';
     }
   };
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
+    }
+  };
+
   return (
     <form onSubmit={handleSend} className="bg-secondary/20 rounded-[2rem] p-2 flex items-center gap-2 border border-white/5 focus-within:border-primary/50 transition-colors">
       <Button type="button" variant="ghost" size="icon" className="rounded-2xl text-muted-foreground hover:text-primary shrink-0"><PlusCircle className="w-6 h-6" /></Button>
-      <input ref={inputRef} onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSend()} placeholder={placeholder} className="flex-1 bg-transparent border-none outline-none text-white text-sm px-2 font-medium italic" disabled={disabled} />
+      <input 
+        ref={inputRef} 
+        onKeyDown={handleKeyDown} 
+        placeholder={placeholder} 
+        className="flex-1 bg-transparent border-none outline-none text-white text-sm px-2 font-medium italic" 
+        disabled={disabled} 
+      />
       <Button type="submit" disabled={disabled} className="bg-primary hover:bg-primary/80 text-white rounded-2xl px-6 h-12 font-black italic tracking-tighter shrink-0 transition-colors">
         <span className="hidden sm:inline">GÖNDER</span>
         <Send className="w-4 h-4" />
@@ -211,11 +227,14 @@ const MessageList = memo(({ messages, loading, getMessageSenderName, currentUser
   useEffect(() => { if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight; }, [messages]);
   if (loading) return <div className="flex flex-col items-center justify-center h-full gap-4"><div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin" /><span className="text-xs font-black text-primary uppercase tracking-[0.3em]">Yükleniyor</span></div>;
   return (
-    <div ref={scrollRef} className="flex-1 overflow-y-auto p-8 space-y-8 scrollbar-none">
+    <div ref={scrollRef} className="flex-1 overflow-y-auto p-8 space-y-8 custom-scrollbar">
       {messages.map((m, i) => {
         const sender = getMessageSenderName(m);
-        const isMe = currentUser && String(m.senderId) === String(currentUser.id || currentUser._id);
-        const showH = i === 0 || messages[i-1].senderId !== m.senderId || (new Date(m.createdAt) - new Date(messages[i-1].createdAt) > 300000);
+        const senderId = String(m.senderId?._id || m.senderId);
+        const currentUserId = String(currentUser?.id || currentUser?._id);
+        const isMe = currentUser && senderId === currentUserId;
+        const prevSenderId = i > 0 ? String(messages[i-1].senderId?._id || messages[i-1].senderId) : null;
+        const showH = i === 0 || prevSenderId !== senderId || (new Date(m.createdAt) - new Date(messages[i-1].createdAt) > 300000);
         return <MessageItem key={m._id} message={m} senderName={sender} isMe={isMe} showHeader={showH} onDelete={onDeleteMessage} />;
       })}
     </div>
@@ -225,6 +244,7 @@ const MessageList = memo(({ messages, loading, getMessageSenderName, currentUser
 export default function Chat({ user }) {
   const { conversationId } = useParams();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const { events } = useWebSocket();
   const [conversations, setConversations] = useState([]);
   const [friends, setFriends] = useState([]);
@@ -260,10 +280,15 @@ export default function Chat({ user }) {
   const loadMessages = useCallback(async (id) => {
     if (!id) return;
     setLoading(true);
+    console.log('Loading messages for conversation:', id);
     try {
       const data = await api.getConversationMessages(id);
-      setMessages(data || []);
+      // API might return an array or an object with messages property
+      const messagesArray = Array.isArray(data) ? data : (data?.messages || []);
+      setMessages(messagesArray);
       api.markConversationRead(id);
+    } catch (err) {
+      console.error('Failed to load messages:', err);
     } finally { setLoading(false); }
   }, []);
 
@@ -282,12 +307,21 @@ export default function Chat({ user }) {
   useEffect(() => { if (events.presence?.userId) setPresence(prev => ({ ...prev, [String(events.presence.userId)]: events.presence })); }, [events.presence]);
   
   useEffect(() => { 
-    if (events.messageNew && String(events.messageNew.conversationId) === String(conversationId)) {
-      setMessages(p => {
-        // Çift eklemeyi önlemek için ID kontrolü yap
-        if (p.some(m => String(m._id) === String(events.messageNew._id))) return p;
-        return [...p, events.messageNew];
-      }); 
+    if (events.messageNew) {
+      console.log('New message event received:', events.messageNew);
+      
+      // WebSocket payload might be { message: { ... } } or { ... }
+      const payload = events.messageNew?.message || events.messageNew;
+      
+      const eventConvId = String(payload.conversationId?._id || payload.conversationId);
+      const activeConvId = String(conversationId);
+      
+      if (eventConvId === activeConvId) {
+        setMessages(p => {
+          if (p.some(m => String(m._id) === String(payload._id))) return p;
+          return [...p, payload];
+        }); 
+      }
     }
   }, [events.messageNew, conversationId]);
 
@@ -308,17 +342,29 @@ export default function Chat({ user }) {
 
   const handleSend = useCallback(async (content) => {
     if (!content || !conversationId) return;
+    console.log('Sending message to conversation:', conversationId);
     try {
-      const sent = await api.sendMessage(conversationId, content);
-      setMessages(p => {
-        // WebSocket üzerinden de gelebilir, ID kontrolü yap
-        if (p.some(m => String(m._id) === String(sent._id))) return p;
-        return [...p, sent];
-      });
+      const response = await api.sendMessage(conversationId, content);
+      console.log('Message send response:', response);
+      
+      // API might return { message: { ... } } or { ... }
+      const sent = response?.message || response;
+      
+      if (sent && sent._id) {
+        setMessages(p => {
+          if (p.some(m => String(m._id) === String(sent._id))) return p;
+          return [...p, sent];
+        });
+      }
     } catch (err) {
-      console.error('Mesaj gönderilemedi', err);
+      console.error('Mesaj gönderilemedi error detail:', err);
+      toast({
+        variant: "destructive",
+        title: "Gönderilemedi",
+        description: err.data?.error || err.message || "Mesaj gönderilemedi. Lütfen tekrar deneyin."
+      });
     }
-  }, [conversationId]);
+  }, [conversationId, toast]);
 
   const handleCreateGroup = useCallback(async (title, participantIds) => {
     try {

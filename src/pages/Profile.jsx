@@ -288,6 +288,7 @@ export default function Profile({ user: currentUser }) {
                       src={profileUser.avatar} 
                       alt="Avatar" 
                       className="w-full h-full object-cover rounded-xl"
+                      loading="lazy"
                     />
                   ) : (
                     <img 

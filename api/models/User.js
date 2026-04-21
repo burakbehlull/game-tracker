@@ -157,6 +157,11 @@ const userSchema = new mongoose.Schema({
 });
 
 // Şifre hashleme
+userSchema.index({ 'library.gameName': 1 });
+userSchema.index({ 'settings.privacy.passiveMatchmakingEnabled': 1 });
+userSchema.index({ xp: -1 }); // Liderlik tabloları için
+userSchema.index({ level: -1 });
+
 userSchema.pre('save', async function(next) {
   if (!this.isModified('password')) return next();
   this.password = await bcrypt.hash(this.password, 10);

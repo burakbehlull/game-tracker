@@ -6,6 +6,10 @@ const auth = require('../middleware/auth');
 const BadgeService = require('../services/badgeService');
 const ImageUploadService = require('../services/imageUploadService');
 
+// Simple in-memory cache for profile stats
+const profileStatsCache = new Map();
+const STATS_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
 const ChallengeService = require('../services/challengeService');
 
 // Badges definitions
@@ -149,22 +153,33 @@ router.get('/profile/:username', async (req, res) => {
 
     const hiddenGames = updatedUser.settings?.privacy?.hiddenGames || [];
 
-    const stats = await GameSession.aggregate([
-      { 
-        $match: { 
-          userId: updatedUser._id,
-          gameName: { $nin: hiddenGames }
-        } 
-      },
-      {
-        $group: {
-          _id: '$gameName',
-          totalTime: { $sum: '$duration' },
-          lastPlayed: { $max: { $ifNull: ['$endTime', '$startTime'] } }
-        }
-      },
-      { $sort: { lastPlayed: -1 } }
-    ]);
+    // Check cache for stats
+    const cacheKey = `stats_${updatedUser._id}`;
+    let stats = profileStatsCache.get(cacheKey);
+    const now = Date.now();
+
+    if (!stats || (now - stats.lastFetched > STATS_CACHE_TTL)) {
+      stats = {
+        data: await GameSession.aggregate([
+          { 
+            $match: { 
+              userId: updatedUser._id,
+              gameName: { $nin: hiddenGames }
+            } 
+          },
+          {
+            $group: {
+              _id: '$gameName',
+              totalTime: { $sum: '$duration' },
+              lastPlayed: { $max: { $ifNull: ['$endTime', '$startTime'] } }
+            }
+          },
+          { $sort: { lastPlayed: -1 } }
+        ]),
+        lastFetched: now
+      };
+      profileStatsCache.set(cacheKey, stats);
+    }
 
     const responseUser = updatedUser.toObject();
     
@@ -212,7 +227,7 @@ router.get('/profile/:username', async (req, res) => {
       }
     }
     
-    res.json({ user: responseUser, stats, friendshipStatus });
+    res.json({ user: responseUser, stats: stats.data, friendshipStatus });
   } catch (err) {
     console.error('[Profile API Error]', err);
     res.status(500).json({ error: 'Profil bilgileri alınamadı' });

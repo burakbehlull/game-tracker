@@ -1,29 +1,32 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider } from './contexts/ThemeContext';
-import Login from './pages/Login';
-import Register from './pages/Register';
-import ForgotPassword from './pages/ForgotPassword';
-import ResetPassword from './pages/ResetPassword';
-import Home from './pages/Home';
-import Discover from './pages/Discover';
-import Dashboard from './pages/Dashboard';
-import Profile from './pages/Profile';
-import Timer from './pages/Timer';
-import Settings from './pages/Settings';
-import Library from './pages/Library';
-import GameDetails from './pages/GameDetails';
-import Friends from './pages/Friends';
-import Chat from './pages/Chat';
-import Notifications from './pages/Notifications';
-import CommunityList from './pages/Community/CommunityList';
-import CreateCommunity from './pages/Community/CreateCommunity';
-import CommunityDetail from './pages/Community/CommunityDetail';
-import CommunityManage from './pages/Community/CommunityManage';
-import DiscussionDetail from './pages/Community/DiscussionDetail';
-import Matchmaking from './pages/Community/Matchmaking';
-import AdminLogin from './pages/AdminLogin';
-import AdminDashboard from './pages/AdminDashboard';
+
+// Lazy loading components
+const Login = lazy(() => import('./pages/Login'));
+const Register = lazy(() => import('./pages/Register'));
+const ForgotPassword = lazy(() => import('./pages/ForgotPassword'));
+const ResetPassword = lazy(() => import('./pages/ResetPassword'));
+const Home = lazy(() => import('./pages/Home'));
+const Discover = lazy(() => import('./pages/Discover'));
+const Dashboard = lazy(() => import('./pages/Dashboard'));
+const Profile = lazy(() => import('./pages/Profile'));
+const Timer = lazy(() => import('./pages/Timer'));
+const Settings = lazy(() => import('./pages/Settings'));
+const Library = lazy(() => import('./pages/Library'));
+const GameDetails = lazy(() => import('./pages/GameDetails'));
+const Friends = lazy(() => import('./pages/Friends'));
+const Chat = lazy(() => import('./pages/Chat'));
+const Notifications = lazy(() => import('./pages/Notifications'));
+const CommunityList = lazy(() => import('./pages/Community/CommunityList'));
+const CreateCommunity = lazy(() => import('./pages/Community/CreateCommunity'));
+const CommunityDetail = lazy(() => import('./pages/Community/CommunityDetail'));
+const CommunityManage = lazy(() => import('./pages/Community/CommunityManage'));
+const DiscussionDetail = lazy(() => import('./pages/Community/DiscussionDetail'));
+const Matchmaking = lazy(() => import('./pages/Community/Matchmaking'));
+const AdminLogin = lazy(() => import('./pages/AdminLogin'));
+const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
+
 import Layout from './components/Layout';
 import { api } from './services/api';
 
@@ -192,7 +195,13 @@ function App() {
             <UpdateNotification />
             <div className="flex-1 overflow-auto">
               <Router>
-                <Routes>
+                <Suspense fallback={
+                  <div className="h-full flex flex-col items-center justify-center gap-4">
+                    <div className="w-12 h-12 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
+                    <p className="text-sm font-black text-muted-foreground uppercase tracking-widest animate-pulse">Yükleniyor</p>
+                  </div>
+                }>
+                  <Routes>
                 <Route 
                   path="/login" 
                   element={!user ? <Login onLogin={handleLogin} /> : <Navigate to="/" />} 
@@ -411,6 +420,7 @@ function App() {
                 />
                 <Route path="*" element={<Navigate to="/" />} />
                 </Routes>
+                </Suspense>
               </Router>
             </div>
           </div>

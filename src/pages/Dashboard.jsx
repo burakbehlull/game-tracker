@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, memo } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { useToast } from '../components/ui/toaster';
 import { Gamepad2, Clock, Calendar, TrendingUp, AlertCircle, Moon, 
@@ -8,8 +8,8 @@ import { Link } from 'react-router-dom';
 import { cn } from '../lib/utils';
 
 // Simplified Chart Component (since we can't install recharts easily)
-const MiniBarChart = ({ data, color = '#3b82f6' }) => {
-  const max = Math.max(...data.map(d => d.value), 1);
+const MiniBarChart = memo(({ data, color = '#3b82f6' }) => {
+  const max = useMemo(() => Math.max(...data.map(d => d.value), 1), [data]);
   return (
     <div className="flex items-end gap-1 h-24 mt-4 px-2">
       {data.map((d, i) => (
@@ -30,7 +30,7 @@ const MiniBarChart = ({ data, color = '#3b82f6' }) => {
       ))}
     </div>
   );
-};
+});
 
 export default function Dashboard({ user }) {
   const { toast } = useToast();

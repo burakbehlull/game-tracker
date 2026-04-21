@@ -6,6 +6,13 @@ const GameSession = require('../models/GameSession');
 
 const router = express.Router();
 
+// Cache for global stats
+let globalStatsCache = {
+  data: null,
+  lastFetched: 0
+};
+const CACHE_TTL = 10 * 60 * 1000; // 10 minutes
+
 // Helper function to calculate date ranges
 function getDateRanges() {
   const now = new Date();
@@ -21,6 +28,12 @@ function getDateRanges() {
 // Get global statistics
 router.get('/global', async (req, res) => {
   try {
+    // Check cache
+    const now = Date.now();
+    if (globalStatsCache.data && (now - globalStatsCache.lastFetched < CACHE_TTL)) {
+      return res.json(globalStatsCache.data);
+    }
+
     // Total users
     const totalUsers = await User.countDocuments();
     
@@ -28,7 +41,7 @@ router.get('/global', async (req, res) => {
     const uniqueGames = await GameSession.distinct('gameName');
     const totalUniqueGames = uniqueGames.length;
 
-    // Total play time (in minutes) - summing up all durations
+    // Total play time (in seconds) - summing up all durations
     const totalPlayTime = await GameSession.aggregate([
       {
         $group: {
@@ -38,15 +51,23 @@ router.get('/global', async (req, res) => {
       }
     ]);
     
-    const totalMinutes = totalPlayTime.length > 0 ? totalPlayTime[0].totalDuration : 0;
-    const totalHours = Math.floor(totalMinutes / 60); // Use floor for cleaner hour count
+    const totalSeconds = totalPlayTime.length > 0 ? totalPlayTime[0].totalDuration : 0;
+    const totalHours = Math.floor(totalSeconds / 3600);
     
-    res.json({
+    const responseData = {
       totalUsers,
       totalUniqueGames,
-      totalPlayMinutes: totalMinutes,
+      totalPlaySeconds: totalSeconds,
       totalPlayHours: totalHours
-    });
+    };
+
+    // Update cache
+    globalStatsCache = {
+      data: responseData,
+      lastFetched: now
+    };
+    
+    res.json(responseData);
   } catch (error) {
     console.error('[Stats API Error]', error);
     res.status(500).json({ error: 'İstatistikler alınamadı' });

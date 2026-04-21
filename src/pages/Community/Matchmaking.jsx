@@ -62,19 +62,24 @@ export default function Matchmaking({ user }) {
     }
   }, [selectedGame]);
 
-  // 5 Saniyelik Arama Döngüsü
+  // Akıllı Arama Döngüsü (Eğer maç listesi azaldıysa ara)
   useEffect(() => {
     let interval;
     if (isSearching) {
       // Hemen ilk aramayı yap
-      fetchMatches(selectedGame, true);
+      if (matches.length - currentIndex < 3) {
+        fetchMatches(selectedGame, true);
+      }
       
       interval = setInterval(() => {
-        fetchMatches(selectedGame, true);
-      }, 5000);
+        // Sadece liste azaldığında veya boşsa istek at
+        if (matches.length - currentIndex < 3) {
+          fetchMatches(selectedGame, true);
+        }
+      }, 10000); // 10 saniyeye çıkarıldı (performans için)
     }
     return () => clearInterval(interval);
-  }, [isSearching, selectedGame, fetchMatches]);
+  }, [isSearching, selectedGame, fetchMatches, matches.length, currentIndex]);
 
   // Eşleşme değiştiğinde sohbeti yükle
   useEffect(() => {

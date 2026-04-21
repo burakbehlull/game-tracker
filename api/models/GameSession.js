@@ -32,5 +32,9 @@ const gameSessionSchema = new mongoose.Schema({
   isNightSession: Boolean 
 });
 
+gameSessionSchema.index({ userId: 1, startTime: -1 });
+gameSessionSchema.index({ userId: 1, gameName: 1 });
+gameSessionSchema.index({ gameName: 1 });
+
 module.exports = mongoose.model('GameSession', gameSessionSchema);
 

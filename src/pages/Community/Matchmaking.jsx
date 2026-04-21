@@ -54,6 +54,7 @@ export default function Matchmaking({ user }) {
   const chatEndRef = useRef(null);
 
   const fetchMatches = useCallback(async (gameName = '', silent = false) => {
+    if (mode === 'instant') return; // Anlık modda pasif eşleşme arama
     if (!silent) setLoading(true);
     try {
       const data = await api.getMatches(gameName || selectedGame);
@@ -98,14 +99,14 @@ export default function Matchmaking({ user }) {
 
   const stopInstantSearch = async () => {
     if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
+    setInstantStatus('idle');
+    setMatchedUser(null);
+    setMatchedConversationId(null);
     try {
       await api.leaveInstantQueue();
     } catch (err) {
       console.error('Sıradan çıkılamadı:', err);
     }
-    setInstantStatus('idle');
-    setMatchedUser(null);
-    setMatchedConversationId(null);
   };
 
   useEffect(() => {

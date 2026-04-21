@@ -14,72 +14,65 @@ router.post('/instant/join', auth, async (req, res) => {
     const userId = req.userId;
     const cleanGameName = (gameName || '').trim().toLowerCase();
 
-    console.log(`[MATCH] User ${userId} joining queue for: "${cleanGameName}"`);
+    console.log(`[MATCH_JOIN] User ${userId} starting search for: "${cleanGameName}"`);
 
-    // 1. Zaten bir eşleşme var mı? (Polling sırasında biri bizi bulmuş olabilir)
-    const alreadyMatched = await MatchQueue.findOne({ 
-      userId, 
-      matchedWith: { $ne: null } 
-    });
-    
-    if (alreadyMatched && alreadyMatched.conversationId) {
-      console.log(`[MATCH] User ${userId} was already matched during join.`);
-      const otherUser = await User.findById(alreadyMatched.matchedWith).select('username avatar level');
-      const conversationId = alreadyMatched.conversationId;
-      await MatchQueue.findByIdAndDelete(alreadyMatched._id);
-      return res.json({ matched: true, otherUser, conversationId });
-    }
-
-    // 2. Temizlik: Eski kayıtları sil
+    // 1. Her ihtimale karşı eski kayıtları temizle
     await MatchQueue.deleteMany({ userId });
 
-    // 3. Blok listesi
+    // 2. Blok listesi hazırlığı
     const me = await User.findById(userId).select('blockedUsers');
     const myBlocks = (me.blockedUsers || []).map(id => id.toString());
     const whoBlockedMe = (await User.find({ blockedUsers: userId }).select('_id')).map(u => u._id.toString());
     const excludeIds = [...new Set([userId.toString(), ...myBlocks, ...whoBlockedMe])];
 
-    // 4. Eş Arama (Atomik)
-    // Query: Başka bir kullanıcı, bloke değil, henüz eşleşmemiş
+    // 3. Eş Arama (Sırada bekleyen birini bul)
+    // Mantık: Oyun ismi tam eşleşmeli VEYA biri "genel" arıyor olmalı
     let matchQuery = {
       userId: { $nin: excludeIds },
       matchedWith: null
     };
 
-    // Oyun kriteri: Eğer biz oyun seçtiysek o oyunu arayanı veya genel arayanı bul.
-    // Eğer biz genel seçtiysek herkesi bulabiliriz.
     if (cleanGameName) {
+      // Ben oyun seçtim, o zaman ya aynı oyunu arayanı ya da "herkesle eşleşirim" diyeni bul
       matchQuery.$or = [{ gameName: cleanGameName }, { gameName: '' }];
     }
+    // Eğer ben genel seçtiysem (cleanGameName === ''), matchQuery zaten herkesi bulur
 
-    // findOneAndUpdate ile atomik olarak "rezerve" ediyoruz
-    const potentialMatch = await MatchQueue.findOneAndUpdate(
+    const partnerRecord = await MatchQueue.findOneAndUpdate(
       matchQuery,
       { matchedWith: userId },
       { new: true, sort: { createdAt: 1 } }
     );
 
-    if (potentialMatch) {
-      console.log(`[MATCH] User ${userId} matched with ${potentialMatch.userId}`);
+    if (partnerRecord) {
+      console.log(`[MATCH_FOUND] User ${userId} found partner ${partnerRecord.userId}`);
       
-      // Konuşma oluştur veya bul
+      // Konuşma odası kur
       let conversation = await Conversation.findOne({
         type: 'dm',
-        participants: { $all: [userId, potentialMatch.userId], $size: 2 }
+        participants: { $all: [userId, partnerRecord.userId], $size: 2 }
       });
 
       if (!conversation) {
         conversation = await Conversation.create({
           type: 'dm',
-          participants: [userId, potentialMatch.userId]
+          participants: [userId, partnerRecord.userId]
         });
       }
 
-      // Rezerve ettiğimiz kayda conversationId ekle ki karşı tarafın polling'i tamamlasın
-      potentialMatch.conversationId = conversation._id;
-      await potentialMatch.save();
+      // Partnerin kaydına conversationId ekle ki o da polling yapınca görsün
+      partnerRecord.conversationId = conversation._id;
+      await partnerRecord.save();
 
-      const otherUser = await User.findById(potentialMatch.userId).select('username avatar level');
+      // Kendisi için de geçici bir "eşleşti" kaydı oluştur (Join anında sonuç dönebilmek için)
+      await MatchQueue.create({
+        userId,
+        gameName: cleanGameName,
+        matchedWith: partnerRecord.userId,
+        conversationId: conversation._id
+      });
+
+      const otherUser = await User.findById(partnerRecord.userId).select('username avatar level');
       return res.json({ 
         matched: true, 
         otherUser, 
@@ -87,8 +80,8 @@ router.post('/instant/join', auth, async (req, res) => {
       });
     }
 
-    // 5. Kimse yoksa sıraya gir
-    console.log(`[MATCH] No match for ${userId}, adding to queue.`);
+    // 4. Kimse yoksa sıraya gir ve bekle
+    console.log(`[MATCH_QUEUE] User ${userId} added to queue.`);
     await MatchQueue.create({
       userId,
       gameName: cleanGameName,
@@ -98,8 +91,8 @@ router.post('/instant/join', auth, async (req, res) => {
 
     res.json({ matched: false });
   } catch (error) {
-    console.error('[MATCH ERROR]', error);
-    res.status(500).json({ error: 'Eşleştirme hatası' });
+    console.error('[MATCH_JOIN_ERROR]', error);
+    res.status(500).json({ error: 'Eşleştirme başlatılamadı' });
   }
 });
 
@@ -108,47 +101,36 @@ router.get('/instant/status', auth, async (req, res) => {
   try {
     const userId = req.userId;
     
-    // Durum 1: Birisi bizim kaydımızla eşleşmiş ve conversation kurmuş mu?
-    const matchFound = await MatchQueue.findOne({ 
-      userId, 
-      matchedWith: { $ne: null },
-      conversationId: { $ne: null }
-    });
+    // Benim kaydım ne durumda?
+    const myRecord = await MatchQueue.findOne({ userId });
 
-    if (matchFound) {
-      console.log(`[MATCH] Polling success for ${userId}`);
-      const otherUser = await User.findById(matchFound.matchedWith).select('username avatar level');
-      const conversationId = matchFound.conversationId;
-      await MatchQueue.findByIdAndDelete(matchFound._id);
-      return res.json({ matched: true, otherUser, conversationId });
+    if (!myRecord) {
+      console.log(`[MATCH_STATUS] No record for ${userId} (timeout or manual leave)`);
+      return res.status(404).json({ error: 'Sırada değilsiniz' });
     }
 
-    // Durum 2: Hala sıradayız ve henüz kimse bizi bulmadı
-    const stillSearching = await MatchQueue.findOne({ 
-      userId, 
-      matchedWith: null 
-    });
-
-    if (stillSearching) {
-      return res.json({ matched: false });
+    // Eşleşme sağlandı mı?
+    if (myRecord.matchedWith && myRecord.conversationId) {
+      console.log(`[MATCH_SUCCESS] User ${userId} matched with ${myRecord.matchedWith}`);
+      
+      const otherUser = await User.findById(myRecord.matchedWith).select('username avatar level');
+      const conversationId = myRecord.conversationId;
+      
+      // Kaydı sil (eşleşme tamamlandı)
+      await MatchQueue.deleteOne({ _id: myRecord._id });
+      
+      return res.json({ 
+        matched: true, 
+        otherUser, 
+        conversationId 
+      });
     }
 
-    // Durum 3: Birisi bizi "rezerve" etti (matchedWith dolu) ama henüz conversationId'yi yazmadı
-    // Bu durumda 404 dönmemek için bekletiyoruz (matched: false döner, bir sonraki poll'da Durum 1'e girer)
-    const beingMatched = await MatchQueue.findOne({ 
-      userId, 
-      matchedWith: { $ne: null },
-      conversationId: null
-    });
-
-    if (beingMatched) {
-      return res.json({ matched: false, status: 'connecting' });
-    }
-
-    // Durum 4: Kayıt hiç yoksa (timeout/manuel çıkış)
-    res.status(404).json({ error: 'Not in queue' });
+    // Hala aranıyor
+    res.json({ matched: false });
   } catch (error) {
-    res.status(500).json({ error: 'Status error' });
+    console.error('[MATCH_STATUS_ERROR]', error);
+    res.status(500).json({ error: 'Durum kontrol hatası' });
   }
 });
 

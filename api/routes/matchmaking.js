@@ -4,6 +4,106 @@ const auth = require('../middleware/auth');
 const User = require('../models/User');
 const Friendship = require('../models/Friendship');
 const FriendRequest = require('../models/FriendRequest');
+const MatchQueue = require('../models/MatchQueue');
+const Conversation = require('../models/Conversation');
+
+// Instant Matchmaking - Join Queue
+router.post('/instant/join', auth, async (req, res) => {
+  try {
+    const { gameName } = req.body;
+    const userId = req.userId;
+
+    // Remove if already in queue
+    await MatchQueue.findOneAndDelete({ userId });
+
+    // Try to find a match in the queue
+    const match = await MatchQueue.findOne({
+      userId: { $ne: userId },
+      gameName: gameName || '',
+      matchedWith: null
+    }).sort({ createdAt: 1 });
+
+    if (match) {
+      // Create a DM conversation for the matched users
+      let conversation = await Conversation.findOne({
+        type: 'dm',
+        participants: { $all: [userId, match.userId], $size: 2 }
+      });
+
+      if (!conversation) {
+        conversation = await Conversation.create({
+          type: 'dm',
+          participants: [userId, match.userId]
+        });
+      }
+
+      // Update the match in the queue
+      match.matchedWith = userId;
+      match.conversationId = conversation._id;
+      await match.save();
+
+      // Return match info
+      const otherUser = await User.findById(match.userId).select('username avatar level');
+      return res.json({ 
+        matched: true, 
+        otherUser, 
+        conversationId: conversation._id 
+      });
+    }
+
+    // No match found, add to queue
+    await MatchQueue.create({
+      userId,
+      gameName: gameName || ''
+    });
+
+    res.json({ matched: false, message: 'Sıraya girildi, eşleşme bekleniyor...' });
+  } catch (error) {
+    console.error('[Instant Join Error]', error);
+    res.status(500).json({ error: 'Sıraya girilemedi' });
+  }
+});
+
+// Instant Matchmaking - Check Status
+router.get('/instant/status', auth, async (req, res) => {
+  try {
+    const userId = req.userId;
+    const myQueueEntry = await MatchQueue.findOne({ userId });
+
+    if (!myQueueEntry) {
+      return res.status(404).json({ error: 'Sırada değilsiniz' });
+    }
+
+    if (myQueueEntry.matchedWith) {
+      const otherUser = await User.findById(myQueueEntry.matchedWith).select('username avatar level');
+      const conversationId = myQueueEntry.conversationId;
+      
+      // Remove from queue after finding match
+      await MatchQueue.findByIdAndDelete(myQueueEntry._id);
+      
+      return res.json({ 
+        matched: true, 
+        otherUser, 
+        conversationId 
+      });
+    }
+
+    res.json({ matched: false });
+  } catch (error) {
+    console.error('[Instant Status Error]', error);
+    res.status(500).json({ error: 'Durum kontrol edilemedi' });
+  }
+});
+
+// Instant Matchmaking - Leave Queue
+router.post('/instant/leave', auth, async (req, res) => {
+  try {
+    await MatchQueue.findOneAndDelete({ userId: req.userId });
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: 'Sıradan çıkılamadı' });
+  }
+});
 
 // Matchmaking - Find friends based on common games or general
 router.get('/match', auth, async (req, res) => {

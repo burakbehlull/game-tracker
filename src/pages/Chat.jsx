@@ -234,17 +234,17 @@ export default function Chat({ user }) {
   const [isGroupModalOpen, setIsGroupModalOpen] = useState(false);
   const [blocking, setBlocking] = useState(false);
 
-  const isBlocked = useMemo(() => {
-    if (!otherParticipant || !user) return false;
-    return user.blockedUsers?.includes(String(otherParticipant._id || otherParticipant));
-  }, [otherParticipant, user]);
-
   const activeConversation = useMemo(() => conversations.find((c) => String(c._id) === String(conversationId)) || null, [conversations, conversationId]);
 
   const otherParticipant = useMemo(() => {
     if (!activeConversation || activeConversation.type === 'group') return null;
     return activeConversation.participants?.find(p => String(p._id || p) !== String(user?.id || user?._id));
   }, [activeConversation, user]);
+
+  const isBlocked = useMemo(() => {
+    if (!otherParticipant || !user) return false;
+    return user.blockedUsers?.includes(String(otherParticipant._id || otherParticipant));
+  }, [otherParticipant, user]);
 
   const activePresence = useMemo(() => {
     if (!otherParticipant) return null;

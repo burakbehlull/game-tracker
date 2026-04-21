@@ -489,6 +489,25 @@ export const api = {
     return request(`${API_URL}/matchmaking/match${qs}`, { headers: getHeaders() });
   },
 
+  joinInstantQueue: async (gameName = '') => {
+    return request(`${API_URL}/matchmaking/instant/join`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify({ gameName })
+    });
+  },
+
+  checkInstantStatus: async () => {
+    return request(`${API_URL}/matchmaking/instant/status`, { headers: getHeaders() });
+  },
+
+  leaveInstantQueue: async () => {
+    return request(`${API_URL}/matchmaking/instant/leave`, {
+      method: 'POST',
+      headers: getHeaders()
+    });
+  },
+
   // User Blocking
   blockUser: async (userId) => {
     return request(`${API_URL}/users/block/${userId}`, {

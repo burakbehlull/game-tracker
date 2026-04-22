@@ -107,13 +107,25 @@ class BadgeService {
     }
 
     // 3 & 4. Sadık Oyuncu & Takıntılı (Tek oyunda süre)
-    const sessions = await GameSession.find({ userId }).select('gameName duration');
-    const timePerGame = sessions.reduce((acc, session) => {
-      acc[session.gameName] = (acc[session.gameName] || 0) + (session.duration / 60); // dakikaya çevir
-      return acc;
-    }, {});
+    const timeStats = await GameSession.aggregate([
+      { $match: { userId } },
+      {
+        $group: {
+          _id: '$gameName',
+          totalDurationMinutes: { $sum: { $divide: ['$duration', 60] } }
+        }
+      },
+      {
+        $group: {
+          _id: null,
+          maxGameTime: { $max: '$totalDurationMinutes' },
+          totalTimeAcrossAllGames: { $sum: '$totalDurationMinutes' }
+        }
+      }
+    ]);
 
-    const maxGameTime = Math.max(...Object.values(timePerGame), 0);
+    const maxGameTime = timeStats.length > 0 ? timeStats[0].maxGameTime : 0;
+    
     if (!currentBadges.includes('loyal_player') && maxGameTime >= 1440) { // 24 saat
       newBadges.push('loyal_player');
     }
@@ -148,7 +160,7 @@ class BadgeService {
     }
 
     // 10. Oyun Hükümdarı (1000 saat)
-    const totalPlayTimeHours = (user.stats?.totalPlayTimeMinutes || 0) / 60;
+    const totalPlayTimeHours = (timeStats.length > 0 ? timeStats[0].totalTimeAcrossAllGames : 0) / 60;
     if (!currentBadges.includes('game_ruler') && totalPlayTimeHours >= 1000) {
       newBadges.push('game_ruler');
     }

@@ -458,17 +458,23 @@ export default function Dashboard({ user }) {
                     {(() => {
                       const total = sessions.length || 1;
                       const stats = [
-                        { label: 'Sabah', hMin: 6, hMax: 12, color: 'bg-amber-500', icon: <Sun className="w-3 h-3" /> },
-                        { label: 'Gündüz', hMin: 12, hMax: 13, color: 'bg-yellow-400', icon: <Sun className="w-3 h-3" /> },
-                        { label: 'Akşam', hMin: 13, hMax: 22, color: 'bg-orange-500', icon: <Sunset className="w-3 h-3" /> },
-                        { label: 'Gece', hMin: 22, hMax: 6, color: 'bg-blue-500', icon: <Moon className="w-3 h-3" />, isGece: true }
+                        { label: 'SABAH', color: 'bg-amber-500', icon: <Sun className="w-3 h-3" />, key: 'sabah' },
+                        { label: 'GÜNDÜZ', color: 'bg-yellow-400', icon: <Sun className="w-3 h-3" />, key: 'öğle' },
+                        { label: 'AKŞAM', color: 'bg-orange-500', icon: <Sunset className="w-3 h-3" />, key: 'akşam' },
+                        { label: 'GECE', color: 'bg-blue-500', icon: <Moon className="w-3 h-3" />, key: 'gece' }
                       ];
 
                       return stats.map((time, idx) => {
                         const count = sessions.filter(s => {
+                          // Use timeOfDay if available, otherwise calculate from startHour
+                          if (s.timeOfDay) return s.timeOfDay === time.key;
+                          
                           const h = s.startHour !== undefined ? s.startHour : new Date(s.startTime).getHours();
-                          if (time.isGece) return h >= 22 || h < 6;
-                          return h >= time.hMin && h < time.hMax;
+                          let calculated = 'gece';
+                          if (h >= 6 && h < 12) calculated = 'sabah';
+                          else if (h >= 12 && h < 18) calculated = 'öğle';
+                          else if (h >= 18 && h < 23) calculated = 'akşam';
+                          return calculated === time.key;
                         }).length;
                         const pct = Math.round((count / total) * 100);
 

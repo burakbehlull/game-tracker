@@ -103,9 +103,18 @@ router.put('/me', auth, async (req, res) => {
     }
 
     if (settings && typeof settings === 'object') {
-      Object.keys(settings).forEach(key => {
-        user.set(`settings.${key}`, settings[key]);
-      });
+      // Deep merge for nested settings (privacy, timer, etc.)
+      const mergeDeep = (target, source, prefix = 'settings') => {
+        Object.keys(source).forEach(key => {
+          const fullKey = `${prefix}.${key}`;
+          if (source[key] && typeof source[key] === 'object' && !Array.isArray(source[key])) {
+            mergeDeep(target, source[key], fullKey);
+          } else {
+            user.set(fullKey, source[key]);
+          }
+        });
+      };
+      mergeDeep(user, settings);
     }
 
     await user.save();

@@ -29,6 +29,7 @@ const gameSessionSchema = new mongoose.Schema({
   // Analitik için:
   startHour: Number, // 0-23
   dayOfWeek: Number, // 0-6 (Pazar-Cumartesi)
+  timeOfDay: String, // sabah, öğle, akşam, gece
   isNightSession: Boolean 
 });
 

@@ -103,7 +103,7 @@ class ChallengeService {
           break;
         case 'night_session':
           if (type === 'session_start') {
-            const hour = new Date().getHours();
+            const hour = data.startHour !== undefined ? data.startHour : new Date().getHours();
             if (hour >= 23 || hour <= 5) {
               challenge.current = 1;
               progressTriggered = true;
@@ -118,7 +118,7 @@ class ChallengeService {
           break;
         case 'weekend_play':
           if (type === 'session_start') {
-            const day = new Date().getDay();
+            const day = data.dayOfWeek !== undefined ? data.dayOfWeek : new Date().getDay();
             if (day === 0 || day === 6) { // Pazar or Cmt
               challenge.current = 1;
               progressTriggered = true;

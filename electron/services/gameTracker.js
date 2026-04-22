@@ -103,38 +103,32 @@ class GameTracker {
     try {
       const runningGame = await this.processMonitor.getRunningGameProcess();
       
-      if (runningGame) {
-        log.info(`[GameTracker] Currently running: ${runningGame.gameName}`);
-      } else if (this.currentSession) {
-        log.info(`[GameTracker] No game detected. Closing current session: ${this.currentSession.gameName}`);
-      }
-
       // Handle Game Session Logic
       if (this.currentSession) {
+        // Oyun hala çalışıyor mu kontrol et
         if (!runningGame || runningGame.gameName !== this.currentSession.gameName) {
-          log.info(`[GameTracker] Game change detected: ${this.currentSession.gameName} -> ${runningGame?.gameName || 'None'}`);
+          log.info(`[GameTracker] Game stopped or changed: ${this.currentSession.gameName} -> ${runningGame?.gameName || 'None'}`);
           await this.endSession();
-          if (runningGame) {
-            if (!this.disabledTrackingGames.includes(runningGame.gameName)) {
-              await this.startSession(runningGame);
-            }
+          
+          // Yeni oyun başladıysa ve tracking disabled değilse başlat
+          if (runningGame && !this.disabledTrackingGames.includes(runningGame.gameName)) {
+            await this.startSession(runningGame);
           }
         } else {
+          // Oyun hala çalışıyor - heartbeat ve limit kontrolü
           this.checkSessionLimits();
           if (this.authToken) {
             await this.sendHeartbeat();
           }
         }
       } else {
-        if (runningGame) {
-          if (this.disabledTrackingGames.includes(runningGame.gameName)) {
-            return;
-          }
+        // Hiç session yok, yeni oyun başladı mı?
+        if (runningGame && !this.disabledTrackingGames.includes(runningGame.gameName)) {
           await this.startSession(runningGame);
         }
       }
     } catch (error) {
-      log.error('Game tracking error:', error);
+      log.error('[GameTracker] Game tracking error:', error);
     }
   }
 
@@ -211,7 +205,10 @@ class GameTracker {
         this.discordService.updateActivity(game.gameName, this.currentSession.startTime.getTime());
       }
 
-      // 3. Perform backend sync in background (if token available)
+      // 3. Notify main process to update tray
+      this.notifyMainProcess('game-started', { gameName: game.gameName });
+
+      // 4. Perform backend sync in background (if token available)
       if (this.authToken) {
         try {
           const res = await fetch(`${this.apiUrl}/games/start`, {
@@ -243,12 +240,34 @@ class GameTracker {
     }
   }
 
+  notifyMainProcess(event, data) {
+    try {
+      // Send event to main process via IPC if available
+      if (process && process.send) {
+        process.send({ type: event, data });
+      }
+    } catch (err) {
+      // Silently fail if IPC not available
+    }
+  }
+
   async endSession() {
     if (!this.currentSession) return;
 
     try {
-      log.info(`Ending session for: ${this.currentSession.gameName}`);
+      const gameName = this.currentSession.gameName;
+      log.info(`[GameTracker] Ending session for: ${gameName}`);
       
+      // 1. Clear Discord RPC immediately when game closes
+      if (this.discordService) {
+        await this.discordService.clearActivity();
+        log.info(`[GameTracker] Discord RPC cleared for: ${gameName}`);
+      }
+      
+      // 2. Notify main process to update tray
+      this.notifyMainProcess('game-stopped', { gameName });
+      
+      // 3. End backend session
       if (this.authToken && !this.currentSession.id.startsWith('local-')) {
         await fetch(`${this.apiUrl}/games/end`, {
           method: 'POST',
@@ -260,15 +279,14 @@ class GameTracker {
         }).catch(err => log.error(`[GameTracker] Failed to end remote session: ${err.message}`));
       }
       
-      if (this.discordService) {
-        this.discordService.updateIdleActivity();
-      }
-      
+      // 4. Update presence to idle
       if (this.authToken) {
         await this.syncPresence(false, null);
       }
 
+      // 5. Clear current session
       this.currentSession = null;
+      log.info(`[GameTracker] Session ended successfully for: ${gameName}`);
     } catch (err) {
       log.error('[GameTracker] Error ending session:', err);
       this.currentSession = null;

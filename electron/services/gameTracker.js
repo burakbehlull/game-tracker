@@ -100,34 +100,28 @@ class GameTracker {
   }
 
   async checkGameStatus() {
-    if (!this.authToken) {
-      // log.warn('[GameTracker] No Auth Token available. Waiting for login...');
-      return;
-    }
-
     try {
       const runningGame = await this.processMonitor.getRunningGameProcess();
 
+      // Handle Game Session Logic
       if (this.currentSession) {
-        // We have an active session
         if (!runningGame || runningGame.gameName !== this.currentSession.gameName) {
-          // Game stopped or changed
+          log.info(`[GameTracker] Game change detected: ${this.currentSession.gameName} -> ${runningGame?.gameName || 'None'}`);
           await this.endSession();
-
-          // If changed directly to another game
           if (runningGame) {
-            await this.startSession(runningGame);
+            if (!this.disabledTrackingGames.includes(runningGame.gameName)) {
+              await this.startSession(runningGame);
+            }
           }
         } else {
-          // Game is still running, send heartbeat
           this.checkSessionLimits();
-          await this.sendHeartbeat();
+          if (this.authToken) {
+            await this.sendHeartbeat();
+          }
         }
       } else {
-        // No active session
         if (runningGame) {
           if (this.disabledTrackingGames.includes(runningGame.gameName)) {
-            // log.info(`[GameTracker] Skipping ${runningGame.gameName} as it is disabled for tracking.`);
             return;
           }
           await this.startSession(runningGame);
@@ -190,36 +184,49 @@ class GameTracker {
   }
 
   async startSession(game) {
-    if (!this.authToken) return;
+    if (this.currentSession) return;
 
     try {
-      log.info(`Starting session for: ${game.gameName}`);
-      const res = await fetch(`${this.apiUrl}/games/start`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${this.authToken}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(game)
-      });
+      log.info(`Attempting to start session for: ${game.gameName}`);
+      
+      let sessionId = 'local-' + Date.now();
+      let startTime = new Date();
 
-      if (!res.ok) {
-        const text = await res.text();
-        throw new Error(`API Error: ${res.statusText} ${text}`);
+      if (this.authToken) {
+        const res = await fetch(`${this.apiUrl}/games/start`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${this.authToken}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(game)
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          sessionId = data.sessionId;
+          startTime = new Date(data.startTime);
+          log.info(`[GameTracker] Remote session started: ${sessionId}`);
+        } else {
+          const text = await res.text();
+          log.warn(`[GameTracker] Remote session failed: ${res.statusText} ${text}`);
+        }
       }
 
-      const data = await res.json();
       this.currentSession = {
-        id: data.sessionId,
+        id: sessionId,
         gameName: game.gameName,
-        processName: game.processName, // Crucial for taskkill
-        startTime: new Date(data.startTime)
+        processName: game.processName, 
+        startTime: startTime
       };
       
       if (this.discordService && this.discordRPCEnabled) {
-        this.discordService.updateActivity(game.gameName);
+        this.discordService.updateActivity(game.gameName, this.currentSession.startTime.getTime());
       }
-      await this.syncPresence(true, game.gameName);
+      
+      if (this.authToken) {
+        await this.syncPresence(true, game.gameName);
+      }
 
       log.info(`[GameTracker] Session started: ${data.sessionId} (Process: ${game.processName})`);
     } catch (err) {
@@ -233,28 +240,29 @@ class GameTracker {
     try {
       log.info(`Ending session for: ${this.currentSession.gameName}`);
       
-      const res = await fetch(`${this.apiUrl}/games/end`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${this.authToken}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ sessionId: this.currentSession.id })
-      });
-
-      if (res && !res.ok) {
-        const text = await res.text();
-        log.error(`[GameTracker] Failed to end session: ${res.status} ${text}`);
+      if (this.authToken && !this.currentSession.id.startsWith('local-')) {
+        await fetch(`${this.apiUrl}/games/end`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${this.authToken}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ sessionId: this.currentSession.id })
+        }).catch(err => log.error(`[GameTracker] Failed to end remote session: ${err.message}`));
       }
       
       if (this.discordService) {
-        this.discordService.clearActivity();
+        this.discordService.updateIdleActivity();
       }
-      await this.syncPresence(false, null);
+      
+      if (this.authToken) {
+        await this.syncPresence(false, null);
+      }
 
       this.currentSession = null;
     } catch (err) {
       log.error('[GameTracker] Error ending session:', err);
+      this.currentSession = null;
     }
   }
 

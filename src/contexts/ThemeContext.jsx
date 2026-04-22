@@ -10,15 +10,22 @@ const readStoredTheme = () => {
   return normalizeTheme(storedTheme);
 };
 
-export function ThemeProvider({ children }) {
-  const [theme, setTheme] = useState(readStoredTheme);
+export function ThemeProvider({ 
+  children, 
+  defaultTheme = 'dark', 
+  storageKey = 'theme' 
+}) {
+  const [theme, setTheme] = useState(() => {
+    const storedTheme = localStorage.getItem(storageKey);
+    return storedTheme || defaultTheme;
+  });
 
   useEffect(() => {
     const root = window.document.documentElement;
     root.classList.remove('light', 'dark');
     root.classList.add(theme);
-    localStorage.setItem(THEME_STORAGE_KEY, theme);
-  }, [theme]);
+    localStorage.setItem(storageKey, theme);
+  }, [theme, storageKey]);
 
   const toggleTheme = (checked) => {
     if (typeof checked === 'boolean') {

@@ -126,41 +126,45 @@ class ProcessMonitor {
   }
 
   async getProcessesFromPowershell() {
-    // CMD: Get processes, select Name and Path, output as JSON.
-    // We use -Compress to minimize size, and -Depth 1.
-    const cmd = `powershell -NoProfile -Command "Get-Process | Select-Object Name, Path | ConvertTo-Json -Depth 1 -Compress"`;
+    // We use a more robust script that handles potential null values and errors
+    const script = `
+      Get-Process | ForEach-Object {
+        try {
+          $name = $_.Name
+          $path = $_.Path
+          [PSCustomObject]@{ Name = $name; Path = $path }
+        } catch {}
+      } | ConvertTo-Json -Compress
+    `.replace(/\n/g, ' ').trim();
 
-    // Increase maxBuffer to 10MB to handle many processes
-    const { stdout } = await execAsync(cmd, { maxBuffer: 10 * 1024 * 1024 });
+    const cmd = `powershell -NoProfile -ExecutionPolicy Bypass -Command "${script}"`;
 
-    if (!stdout || !stdout.trim()) return new Set();
-
-    let processList = [];
     try {
-      // Powershell might return a single object or an array
+      const { stdout } = await execAsync(cmd, { maxBuffer: 20 * 1024 * 1024 });
+
+      if (!stdout || !stdout.trim()) return new Set();
+
       const parsed = JSON.parse(stdout);
-      processList = Array.isArray(parsed) ? parsed : [parsed];
-    } catch (parseErr) {
-      log.error('Failed to parse PowerShell output:', parseErr);
-      throw parseErr;
+      const processList = Array.isArray(parsed) ? parsed : [parsed];
+      const runningExes = new Set();
+
+      processList.forEach(p => {
+        if (p.Name) {
+          runningExes.add(this.normalize(p.Name + '.exe'));
+        }
+        if (p.Path) {
+          try {
+            const winBasename = path.win32.basename(p.Path);
+            runningExes.add(this.normalize(winBasename));
+          } catch (e) {}
+        }
+      });
+
+      return runningExes;
+    } catch (err) {
+      log.error('[ProcessMonitor] PowerShell command failed:', err.message);
+      throw err;
     }
-
-    const runningExes = new Set();
-
-    processList.forEach(p => {
-      // 1. Add Process Name + .exe (e.g. "notepad" -> "notepad.exe")
-      if (p.Name) {
-        runningExes.add(this.normalize(p.Name + '.exe'));
-      }
-
-      // 2. Add full binary name from Path if available
-      if (p.Path) {
-        const winBasename = path.win32.basename(p.Path);
-        runningExes.add(this.normalize(winBasename));
-      }
-    });
-
-    return runningExes;
   }
 
   async getProcessesFromTasklist() {

@@ -89,7 +89,8 @@ log.info('App starting...');
 let mainWindow;
 let tray = null;
 let isTracking = true;
-let gameTracker; // Initialize later
+let isQuitting = false; // Moved to top
+let gameTracker; 
 let updateService;
 let serverInstance;
 
@@ -137,15 +138,26 @@ function createTray() {
   
   try {
     let image = nativeImage.createFromPath(iconPath);
+    
     if (image.isEmpty()) {
-      // If the robust path fails, try a very simple fallback
-      const fallbackPath = path.join(__dirname, 'icon.png');
-      image = nativeImage.createFromPath(fallbackPath);
+      log.warn('[Main] createFromPath failed, trying buffer-based loading');
+      try {
+        const buffer = fs.readFileSync(iconPath);
+        image = nativeImage.createFromBuffer(buffer);
+      } catch (err) {
+        log.error('[Main] Buffer-based loading failed');
+      }
     }
 
-    // If still empty, we'll try to use the path directly or a generic icon
-    // Tray constructor might throw if image is invalid
-    tray = new Tray(image.isEmpty() ? iconPath : image);
+    // Final base64 fallback (a simple blue circle with 'G') if everything else fails
+    if (image.isEmpty()) {
+      log.warn('[Main] All file-based loading failed, using embedded base64 fallback');
+      const base64Icon = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAACXBIWXMAAAsTAAALEwEAmpwYAAAAZklEQVRYR2NgGAWjYBSMglEwCkbBSAcMA8XGhv8zSInBByYGBgYpYvRCDYBrYOBgg9mDLAfAGkgqYIDZg0wHwBrIKmCA2YMMB8AayCpgwEAZpC47YMANUuYdMApGwSgYBaNgFIyC4QEA0WwIBfPBaA0AAAAASUVORK5CYII=';
+      image = nativeImage.createFromDataURL(base64Icon);
+    }
+
+    const trayIcon = image.resize({ width: 16, height: 16 });
+    tray = new Tray(trayIcon);
     
     updateTrayMenu();
 
@@ -153,11 +165,8 @@ function createTray() {
     
     tray.on('click', () => {
       if (mainWindow) {
-        if (mainWindow.isVisible()) {
-          mainWindow.focus();
-        } else {
-          mainWindow.show();
-        }
+        mainWindow.show();
+        mainWindow.focus();
       } else {
         createWindow();
       }
@@ -165,8 +174,7 @@ function createTray() {
     
     log.info('Tray created successfully');
   } catch (err) {
-    log.error('Failed to create tray:', err);
-    // Non-critical failure, don't crash the whole app
+    log.error('CRITICAL: Failed to create tray:', err);
   }
 }
 
@@ -175,12 +183,20 @@ function updateTrayMenu() {
 
   const contextMenu = Menu.buildFromTemplate([
     { 
-      label: 'Uygulamayı Aç', 
+      label: 'Uygulamayı Göster', 
       click: () => {
         mainWindow?.show();
+        mainWindow?.focus();
       } 
     },
     { type: 'separator' },
+    { 
+      label: 'Ana Sayfa', 
+      click: () => {
+        mainWindow?.show();
+        mainWindow?.webContents.send('nav-to-home');
+      } 
+    },
     {
       label: isTracking ? '🟢 Takip Aktif' : '🔴 Takip Durduruldu',
       enabled: false
@@ -222,22 +238,24 @@ function updateTrayMenu() {
 
 // Use a more robust way to get the icon path
 const getIconPath = () => {
-  // Try multiple potential locations
+  const appPath = app.getAppPath();
   const locations = [
+    path.resolve(appPath, 'public/icon.png'),
+    path.resolve(appPath, 'electron/icon.png'),
+    path.resolve(appPath, 'assets/icon.png'),
     path.join(__dirname, '../public/icon.png'),
-    path.join(__dirname, 'icon.png'),
-    path.join(process.resourcesPath, 'public/icon.png'),
-    path.join(process.resourcesPath, 'icon.png')
+    path.join(__dirname, 'icon.png')
   ];
 
   for (const loc of locations) {
-    try {
-      if (require('fs').existsSync(loc)) {
-        return loc;
-      }
-    } catch (e) {}
+    if (fs.existsSync(loc)) {
+      log.info('[Main] Found icon at:', loc);
+      return loc;
+    }
   }
-  return path.join(__dirname, '../public/icon.png'); // Fallback
+  
+  log.error('[Main] Icon not found in any location!');
+  return path.join(__dirname, 'icon.png'); // Final fallback
 };
 
 const iconPath = getIconPath();
@@ -304,14 +322,20 @@ function createWindow() {
     });
 
     mainWindow.on('close', (event) => {
-      if (!isQuitting && backgroundSettings.runInBackground) {
+      // Only hide if we are NOT quitting and background mode is enabled AND tray exists
+      if (!isQuitting && backgroundSettings.runInBackground && tray) {
         event.preventDefault();
         mainWindow.hide();
-        // Optimize memory when hidden
-        if (process.platform === 'win32') {
-          app.setAppUserModelId(app.name);
-        }
+        log.info('[Main] Window closed to tray');
         return false;
+      }
+    });
+
+    mainWindow.on('minimize', (event) => {
+      if (backgroundSettings.runInBackground && tray) {
+        event.preventDefault();
+        mainWindow.hide();
+        log.info('[Main] Window minimized to tray');
       }
     });
 
@@ -377,7 +401,6 @@ app.on('window-all-closed', () => {
   }
 });
 
-let isQuitting = false;
 app.on('before-quit', async (e) => {
   if (!isQuitting) {
     e.preventDefault();
@@ -399,7 +422,13 @@ app.on('before-quit', async (e) => {
 
 /* IPC */
 
-ipcMain.handle('minimize-window', () => mainWindow?.minimize());
+ipcMain.handle('minimize-window', () => {
+  if (backgroundSettings.runInBackground && tray) {
+    mainWindow?.hide();
+  } else {
+    mainWindow?.minimize();
+  }
+});
 
 ipcMain.handle('maximize-window', () => {
   if (!mainWindow) return;
@@ -409,9 +438,14 @@ ipcMain.handle('maximize-window', () => {
 });
 
 ipcMain.handle('close-window', () => {
-  if (backgroundSettings.runInBackground) {
+  log.info(`[Main] close-window handle. Background tracking: ${backgroundSettings.runInBackground}, Tray: ${!!tray}`);
+  
+  if (backgroundSettings.runInBackground && tray) {
     mainWindow?.hide();
+    log.info('[Main] Window hidden to tray');
   } else {
+    log.info('[Main] Closing window completely (background mode off or tray missing)');
+    isQuitting = true;
     mainWindow?.close();
   }
 });

@@ -74,7 +74,7 @@ class GameTracker {
     // Start the tracking loop
     this.checkInterval = setInterval(async () => {
       await this.checkGameStatus();
-    }, 3000); // Check every 3 seconds
+    }, 2000); // Check every 2 seconds
   }
 
   async setSessionLimit(minutes) {
@@ -102,6 +102,12 @@ class GameTracker {
   async checkGameStatus() {
     try {
       const runningGame = await this.processMonitor.getRunningGameProcess();
+      
+      if (runningGame) {
+        log.info(`[GameTracker] Currently running: ${runningGame.gameName}`);
+      } else if (this.currentSession) {
+        log.info(`[GameTracker] No game detected. Closing current session: ${this.currentSession.gameName}`);
+      }
 
       // Handle Game Session Logic
       if (this.currentSession) {
@@ -187,31 +193,11 @@ class GameTracker {
     if (this.currentSession) return;
 
     try {
-      log.info(`Attempting to start session for: ${game.gameName}`);
+      log.info(`[GameTracker] Starting session for: ${game.gameName}`);
       
+      // 1. Set local state immediately for instant feedback
       let sessionId = 'local-' + Date.now();
       let startTime = new Date();
-
-      if (this.authToken) {
-        const res = await fetch(`${this.apiUrl}/games/start`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${this.authToken}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(game)
-        });
-
-        if (res.ok) {
-          const data = await res.json();
-          sessionId = data.sessionId;
-          startTime = new Date(data.startTime);
-          log.info(`[GameTracker] Remote session started: ${sessionId}`);
-        } else {
-          const text = await res.text();
-          log.warn(`[GameTracker] Remote session failed: ${res.statusText} ${text}`);
-        }
-      }
 
       this.currentSession = {
         id: sessionId,
@@ -220,22 +206,45 @@ class GameTracker {
         startTime: startTime
       };
       
+      // 2. Update Discord RPC immediately
       if (this.discordService && this.discordRPCEnabled) {
         this.discordService.updateActivity(game.gameName, this.currentSession.startTime.getTime());
       }
-      
-      if (this.authToken) {
-        await this.syncPresence(true, game.gameName);
-      }
 
-      log.info(`[GameTracker] Session started: ${data.sessionId} (Process: ${game.processName})`);
+      // 3. Perform backend sync in background (if token available)
+      if (this.authToken) {
+        try {
+          const res = await fetch(`${this.apiUrl}/games/start`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${this.authToken}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(game)
+          });
+
+          if (res.ok) {
+            const data = await res.json();
+            this.currentSession.id = data.sessionId;
+            this.currentSession.startTime = new Date(data.startTime);
+            log.info(`[GameTracker] Remote session established: ${this.currentSession.id}`);
+          } else {
+            const text = await res.text();
+            log.warn(`[GameTracker] Remote session failed: ${res.statusText} ${text}`);
+          }
+          
+          await this.syncPresence(true, game.gameName);
+        } catch (syncErr) {
+          log.warn(`[GameTracker] Background sync error:`, syncErr.message);
+        }
+      }
     } catch (err) {
-      log.error('Failed to start session:', err);
+      log.error('[GameTracker] Fatal error in startSession:', err);
     }
   }
 
   async endSession() {
-    if (!this.currentSession || !this.authToken) return;
+    if (!this.currentSession) return;
 
     try {
       log.info(`Ending session for: ${this.currentSession.gameName}`);

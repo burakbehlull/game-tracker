@@ -93,7 +93,6 @@ class DiscordService {
     try {
       const activity = {
         details: `Playing ${upperGameName}`,
-        state: 'with Game Tracker',
         startTimestamp: startTimestamp,
         largeImageKey: 'app_icon',
         largeImageText: 'Game Tracker',

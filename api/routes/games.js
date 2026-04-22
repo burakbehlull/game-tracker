@@ -25,6 +25,11 @@ router.post('/start', auth, async (req, res) => {
     const startHour = now.getHours();
     const dayOfWeek = now.getDay();
     const isNightSession = startHour >= 23 || startHour <= 5;
+    
+    let timeOfDay = 'gece';
+    if (startHour >= 6 && startHour < 12) timeOfDay = 'sabah';
+    else if (startHour >= 12 && startHour < 18) timeOfDay = 'öğle';
+    else if (startHour >= 18 && startHour < 23) timeOfDay = 'akşam';
 
     const session = new GameSession({
       userId: req.userId,
@@ -33,6 +38,7 @@ router.post('/start', auth, async (req, res) => {
       startTime: now,
       startHour,
       dayOfWeek,
+      timeOfDay,
       isNightSession
     });
 
@@ -153,7 +159,22 @@ router.put('/:id/heartbeat', auth, async (req, res) => {
         if (user) {
           user.xp += xpGained;
           user.level = Math.floor(user.xp / 1000) + 1;
+          
+          // Update total play time
+          if (!user.stats) user.stats = {};
+          user.stats.totalPlayTimeMinutes = (user.stats.totalPlayTimeMinutes || 0) + extraMinutes;
+          
+          if (!user.stats.differentGamesPlayed) user.stats.differentGamesPlayed = [];
+          if (!user.stats.differentGamesPlayed.includes(session.gameName)) {
+            user.stats.differentGamesPlayed.push(session.gameName);
+          }
+          
+          user.markModified('stats');
           await user.save();
+
+          // Check badges periodically during heartbeat if XP gained
+          const BadgeService = require('../services/badgeService');
+          await BadgeService.checkBadges(user._id);
         }
       }
 

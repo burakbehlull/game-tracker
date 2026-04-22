@@ -113,20 +113,23 @@ class DiscordService {
 
   async clearActivity() {
     if (!this.isConnected || !this.client) {
-      this.pendingActivity = { isIdle: true };
+      log.info('[DiscordService] Not connected, clearing pending activity');
+      this.pendingActivity = null;
       return;
     }
 
     try {
       await this.client.clearActivity();
-      log.info('[DiscordService] Activity cleared via clearActivity');
+      log.info('[DiscordService] Activity cleared successfully');
     } catch (err) {
       log.error('[DiscordService] clearActivity error:', err);
       try {
         // Fallback to empty activity
         await this.client.setActivity({});
         log.info('[DiscordService] Activity cleared via empty setActivity');
-      } catch (e) {}
+      } catch (e) {
+        log.error('[DiscordService] Failed to clear activity completely:', e);
+      }
     }
   }
 

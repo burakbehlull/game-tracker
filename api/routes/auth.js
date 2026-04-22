@@ -177,19 +177,26 @@ router.post('/login', authLimiter, async (req, res) => {
 
 
     const now = new Date();
-    const lastLogin = user.stats?.lastLoginDate;
+    const lastLogin = user.stats?.lastLoginDate ? new Date(user.stats.lastLoginDate) : null;
     
     if (!user.stats) user.stats = {};
     
     if (lastLogin) {
-      const diffTime = Math.abs(now - lastLogin);
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      // Start of today and start of last login day
+      const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const startOfLastLogin = new Date(lastLogin.getFullYear(), lastLogin.getMonth(), lastLogin.getDate());
+      
+      const diffTime = startOfToday - startOfLastLogin;
+      const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
       
       if (diffDays === 1) {
+        // Next day - increment streak
         user.stats.consecutiveLoginDays = (user.stats.consecutiveLoginDays || 0) + 1;
       } else if (diffDays > 1) {
+        // More than one day - reset streak
         user.stats.consecutiveLoginDays = 1;
       }
+      // If diffDays === 0 (same day), do nothing to the streak
     } else {
       user.stats.consecutiveLoginDays = 1;
     }

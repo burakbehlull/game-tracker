@@ -132,38 +132,69 @@ function startBackend() {
 }
 
 function createTray() {
-  if (tray) return;
+  if (tray) {
+    log.info('[Tray] Tray already exists');
+    return;
+  }
 
-  log.info('Creating tray...');
+  log.info('[Tray] Creating tray icon...');
   
   try {
-    let image = nativeImage.createFromPath(iconPath);
+    // Get icon path dynamically
+    const trayIconPath = getIconPath();
+    log.info('[Tray] Using icon path:', trayIconPath);
+    
+    let image = nativeImage.createFromPath(trayIconPath);
     
     if (image.isEmpty()) {
-      log.warn('[Main] createFromPath failed, trying buffer-based loading');
+      log.warn('[Tray] createFromPath failed, trying buffer-based loading');
       try {
-        const buffer = fs.readFileSync(iconPath);
+        const buffer = fs.readFileSync(trayIconPath);
         image = nativeImage.createFromBuffer(buffer);
       } catch (err) {
-        log.error('[Main] Buffer-based loading failed');
+        log.error('[Tray] Buffer-based loading failed:', err.message);
       }
     }
 
-    // Final base64 fallback (a simple blue circle with 'G') if everything else fails
+    // Final base64 fallback if everything else fails
     if (image.isEmpty()) {
-      log.warn('[Main] All file-based loading failed, using embedded base64 fallback');
+      log.warn('[Tray] All file-based loading failed, using embedded base64 fallback');
+      // Simple gamepad icon as base64
       const base64Icon = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAACXBIWXMAAAsTAAALEwEAmpwYAAAAZklEQVRYR2NgGAWjYBSMglEwCkbBSAcMA8XGhv8zSInBByYGBgYpYvRCDYBrYOBgg9mDLAfAGkgqYIDZg0wHwBrIKmCA2YMMB8AayCpgwEAZpC47YMANUuYdMApGwSgYBaNgFIyC4QEA0WwIBfPBaA0AAAAASUVORK5CYII=';
       image = nativeImage.createFromDataURL(base64Icon);
+      log.info('[Tray] Using fallback base64 icon');
     }
 
+    // Resize for tray (16x16 is standard for Windows)
     const trayIcon = image.resize({ width: 16, height: 16 });
     tray = new Tray(trayIcon);
     
-    updateTrayMenu();
-
+    log.info('[Tray] Tray object created successfully');
+    
+    // Set initial tooltip
     tray.setToolTip('Game Tracker');
     
+    // Set up tray menu
+    updateTrayMenu();
+
+    // Handle tray click
     tray.on('click', () => {
+      log.info('[Tray] Tray icon clicked');
+      if (mainWindow) {
+        if (mainWindow.isVisible()) {
+          mainWindow.focus();
+        } else {
+          mainWindow.show();
+          mainWindow.focus();
+        }
+      } else {
+        createWindow();
+      }
+    });
+    
+    // Handle double click
+    tray.on('double-click', () => {
+      log.info('[Tray] Tray icon double-clicked');
       if (mainWindow) {
         mainWindow.show();
         mainWindow.focus();
@@ -172,30 +203,47 @@ function createTray() {
       }
     });
     
-    log.info('Tray created successfully');
+    log.info('[Tray] ✅ Tray created and configured successfully!');
   } catch (err) {
-    log.error('CRITICAL: Failed to create tray:', err);
+    log.error('[Tray] CRITICAL: Failed to create tray:', err);
+    // Try one more time with a simple approach
+    try {
+      const simpleIcon = nativeImage.createFromDataURL('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAACXBIWXMAAAsTAAALEwEAmpwYAAAAZklEQVRYR2NgGAWjYBSMglEwCkbBSAcMA8XGhv8zSInBByYGBgYpYvRCDYBrYOBgg9mDLAfAGkgqYIDZg0wHwBrIKmCA2YMMB8AayCpgwEAZpC47YMANUuYdMApGwSgYBaNgFIyC4QEA0WwIBfPBaA0AAAAASUVORK5CYII=');
+      tray = new Tray(simpleIcon.resize({ width: 16, height: 16 }));
+      tray.setToolTip('Game Tracker');
+      updateTrayMenu();
+      log.info('[Tray] Created tray with emergency fallback');
+    } catch (e) {
+      log.error('[Tray] Emergency fallback also failed:', e);
+    }
   }
 }
 
 function updateTrayMenu() {
   if (!tray) return;
 
+  // Get current game info
+  const currentGame = gameTracker?.getCurrentSession();
+  const gameStatus = currentGame 
+    ? `🎮 Oynuyor: ${currentGame.gameName}` 
+    : '💤 Oyun Oynamıyor';
+
   const contextMenu = Menu.buildFromTemplate([
     { 
-      label: 'Uygulamayı Göster', 
+      label: 'Uygulamayı Aç', 
       click: () => {
-        mainWindow?.show();
-        mainWindow?.focus();
+        if (mainWindow) {
+          mainWindow.show();
+          mainWindow.focus();
+        } else {
+          createWindow();
+        }
       } 
     },
     { type: 'separator' },
-    { 
-      label: 'Ana Sayfa', 
-      click: () => {
-        mainWindow?.show();
-        mainWindow?.webContents.send('nav-to-home');
-      } 
+    {
+      label: gameStatus,
+      enabled: false
     },
     {
       label: isTracking ? '🟢 Takip Aktif' : '🔴 Takip Durduruldu',
@@ -207,9 +255,11 @@ function updateTrayMenu() {
         if (isTracking) {
           await gameTracker?.stop();
           isTracking = false;
+          log.info('[Tray] Game tracking stopped');
         } else {
           gameTracker?.start();
           isTracking = true;
+          log.info('[Tray] Game tracking started');
         }
         updateTrayMenu();
       }
@@ -220,13 +270,19 @@ function updateTrayMenu() {
       click: () => {
         gameTracker?.setAuthToken(null);
         mainWindow?.webContents.send('force-logout');
-        mainWindow?.show();
+        if (mainWindow) {
+          mainWindow.show();
+          mainWindow.focus();
+        } else {
+          createWindow();
+        }
         updateTrayMenu();
       }
     },
     { 
       label: 'Tamamen Kapat', 
       click: () => {
+        log.info('[Tray] Completely quitting app');
         isQuitting = true;
         app.quit();
       } 
@@ -234,6 +290,13 @@ function updateTrayMenu() {
   ]);
 
   tray.setContextMenu(contextMenu);
+  
+  // Update tooltip with current game
+  if (currentGame) {
+    tray.setToolTip(`Game Tracker - Oynuyor: ${currentGame.gameName}`);
+  } else {
+    tray.setToolTip('Game Tracker');
+  }
 }
 
 // Use a more robust way to get the icon path
@@ -322,20 +385,36 @@ function createWindow() {
     });
 
     mainWindow.on('close', (event) => {
-      // Only hide if we are NOT quitting and background mode is enabled AND tray exists
-      if (!isQuitting && backgroundSettings.runInBackground && tray) {
+      log.info(`[Window] Close event triggered. isQuitting: ${isQuitting}, runInBackground: ${backgroundSettings.runInBackground}, tray exists: ${!!tray}`);
+      
+      // ALWAYS prevent close if not quitting and tray exists
+      if (!isQuitting && tray) {
         event.preventDefault();
         mainWindow.hide();
-        log.info('[Main] Window closed to tray');
+        log.info('[Window] ✅ Window hidden to tray (not closed)');
+        
+        // Show notification to user
+        if (tray) {
+          tray.displayBalloon({
+            title: 'Game Tracker',
+            content: 'Uygulama arka planda çalışmaya devam ediyor. Tamamen kapatmak için tray menüsünden "Tamamen Kapat" seçin.',
+            icon: nativeImage.createFromPath(getIconPath())
+          });
+        }
+        
         return false;
+      } else {
+        log.info('[Window] Window will close completely');
       }
     });
 
     mainWindow.on('minimize', (event) => {
-      if (backgroundSettings.runInBackground && tray) {
+      log.info(`[Window] Minimize event triggered. tray exists: ${!!tray}`);
+      
+      if (tray) {
         event.preventDefault();
         mainWindow.hide();
-        log.info('[Main] Window minimized to tray');
+        log.info('[Window] ✅ Window minimized to tray');
       }
     });
 
@@ -348,13 +427,25 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
-  log.info('App Ready');
+  log.info('[App] App Ready - Starting initialization...');
   
-  // 1. Create window and tray as soon as possible
-  createWindow();
+  // CRITICAL: Create tray FIRST before anything else
+  log.info('[App] Step 1: Creating tray icon...');
   createTray();
+  
+  // Verify tray was created
+  if (tray) {
+    log.info('[App] ✅ Tray icon created successfully and is visible');
+  } else {
+    log.error('[App] ❌ CRITICAL: Tray icon failed to create!');
+  }
+  
+  // Then create window
+  log.info('[App] Step 2: Creating main window...');
+  createWindow();
 
-  // 2. Load services and start backend (delayed to keep UI responsive)
+  // Load services and start backend (delayed to keep UI responsive)
+  log.info('[App] Step 3: Loading background services...');
   setTimeout(() => {
     if (loadServices()) {
       try {
@@ -363,6 +454,11 @@ app.whenReady().then(() => {
         if (gameTracker.discordService) {
           gameTracker.discordService.connect();
         }
+        
+        // Update tray menu every 5 seconds to reflect current game
+        setInterval(() => {
+          updateTrayMenu();
+        }, 5000);
         
         startBackend();
         
@@ -423,10 +519,14 @@ app.on('before-quit', async (e) => {
 /* IPC */
 
 ipcMain.handle('minimize-window', () => {
-  if (backgroundSettings.runInBackground && tray) {
+  log.info(`[IPC] minimize-window called. Tray exists: ${!!tray}`);
+  
+  if (tray) {
     mainWindow?.hide();
+    log.info('[IPC] ✅ Window minimized to tray');
   } else {
     mainWindow?.minimize();
+    log.info('[IPC] Window minimized normally');
   }
 });
 
@@ -438,13 +538,14 @@ ipcMain.handle('maximize-window', () => {
 });
 
 ipcMain.handle('close-window', () => {
-  log.info(`[Main] close-window handle. Background tracking: ${backgroundSettings.runInBackground}, Tray: ${!!tray}`);
+  log.info(`[IPC] close-window called. Tray exists: ${!!tray}, isQuitting: ${isQuitting}`);
   
-  if (backgroundSettings.runInBackground && tray) {
+  // ALWAYS hide to tray if tray exists and not quitting
+  if (tray && !isQuitting) {
     mainWindow?.hide();
-    log.info('[Main] Window hidden to tray');
+    log.info('[IPC] ✅ Window hidden to tray');
   } else {
-    log.info('[Main] Closing window completely (background mode off or tray missing)');
+    log.info('[IPC] Closing window completely');
     isQuitting = true;
     mainWindow?.close();
   }

@@ -191,4 +191,65 @@ router.get('/active-users/:period', async (req, res) => {
   }
 });
 
+// Get user's time of day distribution
+router.get('/user-time-distribution', auth, async (req, res) => {
+  try {
+    const stats = await GameSession.aggregate([
+      { $match: { userId: new mongoose.Types.ObjectId(req.userId) } },
+      {
+        $project: {
+          duration: 1,
+          effectiveTimeOfDay: {
+            $ifNull: [
+              '$timeOfDay',
+              {
+                $let: {
+                  vars: {
+                    h: { $hour: { date: '$startTime', timezone: '+03:00' } } // User's timezone
+                  },
+                  in: {
+                    $cond: [
+                      { $and: [{ $gte: ['$$h', 6] }, { $lt: ['$$h', 12] }] }, 'sabah',
+                      { $cond: [
+                        { $and: [{ $gte: ['$$h', 12] }, { $lt: ['$$h', 18] }] }, 'öğle',
+                        { $cond: [
+                          { $and: [{ $gte: ['$$h', 18] }, { $lt: ['$$h', 23] }] }, 'akşam',
+                          'gece'
+                        ]}
+                      ]}
+                    ]
+                  }
+                }
+              }
+            ]
+          }
+        }
+      },
+      {
+        $group: {
+          _id: '$effectiveTimeOfDay',
+          count: { $sum: 1 },
+          totalDuration: { $sum: '$duration' }
+        }
+      }
+    ]);
+    
+    // Ensure all categories are present
+    const categories = ['sabah', 'öğle', 'akşam', 'gece'];
+    const result = categories.map(cat => {
+      const found = stats.find(s => s._id === cat);
+      return {
+        label: cat,
+        count: found ? found.count : 0,
+        totalDuration: found ? found.totalDuration : 0
+      };
+    });
+
+    res.json(result);
+  } catch (error) {
+    console.error('[Stats API Error]', error);
+    res.status(500).json({ error: 'Zaman dağılımı alınamadı' });
+  }
+});
+
 module.exports = router;

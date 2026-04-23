@@ -25,19 +25,18 @@ if (isDev) {
   require('dotenv').config({ path: envPath });
   log.info('Loaded .env from:', envPath);
 } else {
-  // In production, use environment variables or defaults
-  // These should be set via system environment or installer
-  log.info('Production mode: Using system environment variables');
-  
-  // Set default values if not provided
-  if (!process.env.MONGO_URI) {
-    process.env.MONGO_URI = 'mongodb://localhost:27017/gametracker';
-  }
-  if (!process.env.JWT_SECRET) {
-    // Generate a random secret if not provided (not recommended for production)
-    log.warn('JWT_SECRET not set! Using generated secret (not recommended for production)');
-    process.env.JWT_SECRET = require('crypto').randomBytes(64).toString('hex');
-  }
+  // In production, prioritize existing environment variables
+  log.info('Production mode: Initializing with environment variables');
+}
+
+// Ensure critical defaults if not provided anywhere
+if (!process.env.MONGO_URI) {
+  process.env.MONGO_URI = 'mongodb://localhost:27017/gametracker';
+}
+if (!process.env.JWT_SECRET) {
+  // Generate a random secret if not provided (not recommended for production)
+  log.warn('JWT_SECRET not set! Using generated secret (not recommended for production)');
+  process.env.JWT_SECRET = require('crypto').randomBytes(64).toString('hex');
 }
 
 // 2. Global Error Handling - Show dialog in production
@@ -449,8 +448,13 @@ app.whenReady().then(() => {
   setTimeout(() => {
     if (loadServices()) {
       try {
+        // 1. Start backend FIRST so sync can work
+        startBackend();
+
+        // 2. Start GameTracker
         gameTracker = new GameTracker();
         gameTracker.start();
+        
         if (gameTracker.discordService) {
           gameTracker.discordService.connect();
         }
@@ -459,8 +463,6 @@ app.whenReady().then(() => {
         setInterval(() => {
           updateTrayMenu();
         }, 5000);
-        
-        startBackend();
         
         if (mainWindow) {
           updateService = new UpdateService(mainWindow);

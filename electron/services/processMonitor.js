@@ -40,7 +40,8 @@ class ProcessMonitor {
       }
     });
     
-    log.info(`[ProcessMonitor] Updated game list with ${dbGames.length} games from database`);
+    const gameList = dbGames.map(g => g.name).join(', ');
+    log.info(`[ProcessMonitor] Updated game list with ${dbGames.length} games: ${gameList}`);
   }
 
   async isAdmin() {
@@ -130,13 +131,20 @@ class ProcessMonitor {
   async getRunningGameProcess() {
     const runningProcesses = await this.getRunningProcesses();
 
-    // log.info(`Scanned ${runningProcesses.size} processes`);
+    if (Object.keys(this.gameProcesses).length === 0) {
+      // Periodic warning if list is empty
+      if (!this.lastEmptyWarn || Date.now() - this.lastEmptyWarn > 60000) {
+        log.warn('[ProcessMonitor] Tracking list is EMPTY. Check if API sync is working.');
+        this.lastEmptyWarn = Date.now();
+      }
+      return null;
+    }
 
     for (const [gameName, exeList] of Object.entries(this.gameProcesses)) {
       for (const exe of exeList) {
         const targetExe = this.normalize(exe);
         if (runningProcesses.has(targetExe)) {
-          log.info(`[ProcessMonitor] DETECTED GAME: ${gameName} (Executable: ${exe})`);
+          log.info(`[ProcessMonitor] ✅ DETECTED: ${gameName} (${exe})`);
           return { gameName, processName: exe };
         }
       }

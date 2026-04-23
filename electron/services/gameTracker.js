@@ -90,8 +90,11 @@ class GameTracker {
       const res = await fetch(`${this.apiUrl}/games`);
       if (res.ok) {
         const games = await res.json();
+        log.debug(`[GameTracker] Raw data from API: ${JSON.stringify(games)}`);
         this.processMonitor.updateGameProcesses(games);
         log.info(`[GameTracker] Synced ${games.length} games from database`);
+      } else {
+        log.warn(`[GameTracker] Failed to sync games: ${res.status} ${res.statusText}`);
       }
     } catch (err) {
       log.warn('[GameTracker] Failed to sync games from DB:', err.message);

@@ -7,6 +7,8 @@ const GameSession = require('../models/GameSession');
 const adminAuth = require('../middleware/adminAuth');
 const ImageUploadService = require('../services/imageUploadService');
 const SystemConfig = require('../models/SystemConfig');
+const Game = require('../models/Game');
+
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
@@ -30,6 +32,28 @@ router.post('/cdn-reset', adminAuth, async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+
+// Generic Image Upload for Admin (Games, etc.)
+router.post('/upload', adminAuth, async (req, res) => {
+  try {
+    const { image } = req.body;
+    if (!image) {
+      return res.status(400).json({ error: 'Resim verisi eksik' });
+    }
+
+    console.log('[Admin Upload] Starting image upload...');
+    const imageUrl = await ImageUploadService.uploadImage(image);
+    console.log('[Admin Upload] Upload successful:', imageUrl);
+    res.json({ url: imageUrl });
+  } catch (error) {
+    console.error('[Admin Upload Error]', error);
+    res.status(500).json({ 
+      error: error.message || 'Resim yüklenemedi',
+      details: error.response?.data || undefined
+    });
+  }
+});
+
 
 // Admin Login with attempt tracking
 router.post('/login', async (req, res) => {
@@ -360,4 +384,99 @@ router.get('/sessions', adminAuth, async (req, res) => {
   }
 });
 
+// --- GAME MANAGEMENT ---
+
+// Get all games for admin (without pagination for now, or simple pagination)
+router.get('/games', adminAuth, async (req, res) => {
+  try {
+    const games = await Game.find().sort({ name: 1 });
+    res.json(games);
+  } catch (error) {
+    console.error('[Admin Games Error]', error);
+    res.status(500).json({ error: 'Oyunlar yüklenemedi' });
+  }
+});
+
+// Create new game (single or bulk)
+router.post('/games', adminAuth, async (req, res) => {
+  try {
+    const { games } = req.body;
+
+    // Bulk addition support
+    if (games && Array.isArray(games)) {
+      if (games.length === 0) return res.status(400).json({ error: 'Eklenecek oyun bulunamadı' });
+      
+      const results = {
+        success: [],
+        errors: []
+      };
+
+      for (const gameData of games) {
+        try {
+          if (!gameData.name || !gameData.processName) {
+            results.errors.push({ name: gameData.name || 'Bilinmeyen', error: 'Ad ve exe adı gerekli' });
+            continue;
+          }
+          const newGame = new Game(gameData);
+          await newGame.save();
+          results.success.push(newGame);
+        } catch (err) {
+          results.errors.push({ name: gameData.name, error: err.code === 11000 ? 'Bu oyun zaten var' : err.message });
+        }
+      }
+      return res.status(207).json(results);
+    }
+
+    // Single addition support (Legacy)
+    const { name, processName, genre, bannerImage } = req.body;
+    if (!name || !processName) {
+      return res.status(400).json({ error: 'Oyun adı ve izlenecek exe adı gereklidir' });
+    }
+
+    const game = new Game({ name, processName, genre, bannerImage });
+    await game.save();
+    res.status(201).json(game);
+  } catch (error) {
+    console.error('[Admin Create Game Error]', error);
+    res.status(500).json({ error: 'Oyun eklenemedi' });
+  }
+});
+
+// Update game
+router.put('/games/:id', adminAuth, async (req, res) => {
+  try {
+    const { name, processName, genre, bannerImage } = req.body;
+    
+    const game = await Game.findByIdAndUpdate(
+      req.params.id,
+      { name, processName, genre, bannerImage, updatedAt: Date.now() },
+      { new: true }
+    );
+
+    if (!game) {
+      return res.status(404).json({ error: 'Oyun bulunamadı' });
+    }
+
+    res.json(game);
+  } catch (error) {
+    console.error('[Admin Update Game Error]', error);
+    res.status(500).json({ error: 'Oyun güncellenemedi' });
+  }
+});
+
+// Delete game
+router.delete('/games/:id', adminAuth, async (req, res) => {
+  try {
+    const game = await Game.findByIdAndDelete(req.params.id);
+    if (!game) {
+      return res.status(404).json({ error: 'Oyun bulunamadı' });
+    }
+    res.json({ message: 'Oyun başarıyla silindi' });
+  } catch (error) {
+    console.error('[Admin Delete Game Error]', error);
+    res.status(500).json({ error: 'Oyun silinemedi' });
+  }
+});
+
 module.exports = router;
+

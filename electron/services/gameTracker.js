@@ -71,10 +71,31 @@ class GameTracker {
 
     this.isTracking = true;
 
+    // Sync games from DB on start
+    this.syncGamesFromDB();
+
     // Start the tracking loop
     this.checkInterval = setInterval(async () => {
       await this.checkGameStatus();
     }, 2000); // Check every 2 seconds
+
+    // Periodically re-sync games from DB (every 5 minutes)
+    this.syncInterval = setInterval(async () => {
+      await this.syncGamesFromDB();
+    }, 5 * 60 * 1000);
+  }
+
+  async syncGamesFromDB() {
+    try {
+      const res = await fetch(`${this.apiUrl}/games`);
+      if (res.ok) {
+        const games = await res.json();
+        this.processMonitor.updateGameProcesses(games);
+        log.info(`[GameTracker] Synced ${games.length} games from database`);
+      }
+    } catch (err) {
+      log.warn('[GameTracker] Failed to sync games from DB:', err.message);
+    }
   }
 
   async setSessionLimit(minutes) {
@@ -88,6 +109,10 @@ class GameTracker {
     if (this.checkInterval) {
       clearInterval(this.checkInterval);
       this.checkInterval = null;
+    }
+    if (this.syncInterval) {
+      clearInterval(this.syncInterval);
+      this.syncInterval = null;
     }
     this.isTracking = false;
     

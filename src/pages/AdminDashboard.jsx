@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
+
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -14,15 +15,21 @@ import {
   Search, 
   LogOut,
   Trash2,
+  Gamepad,
   UserCog,
+
   Clock,
   Mail,
   Calendar,
   X,
   Edit,
   CheckCircle,
-  AlertCircle
+  AlertCircle,
+  ImagePlus,
+  Upload,
+  Loader2
 } from 'lucide-react';
+
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
 export default function AdminDashboard({ adminUser, onLogout }) {
@@ -45,6 +52,20 @@ export default function AdminDashboard({ adminUser, onLogout }) {
     isVerified: true
   });
   const [isUpdating, setIsUpdating] = useState(false);
+  const [games, setGames] = useState([]);
+  const [showGameModal, setShowGameModal] = useState(false);
+  const [gameFormData, setGameFormData] = useState({
+    name: '',
+    processName: '',
+    genre: '',
+    bannerImage: ''
+  });
+  const [editingGame, setEditingGame] = useState(null);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+
+  const [bulkMode, setBulkMode] = useState(false);
+  const [bulkText, setBulkText] = useState('');
+
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -58,7 +79,10 @@ export default function AdminDashboard({ adminUser, onLogout }) {
       loadSessions(currentPage);
     } else if (activeTab === 'cdn') {
       loadCDNStatus();
+    } else if (activeTab === 'games') {
+      loadGames();
     }
+
   }, [activeTab, currentPage, searchQuery]);
 
   const loadCDNStatus = async () => {
@@ -157,6 +181,141 @@ export default function AdminDashboard({ adminUser, onLogout }) {
       console.error('Error loading sessions:', error);
     }
   };
+
+  const loadGames = async () => {
+    try {
+      const res = await fetch(`${API_URL}/admin/games`, { headers: getHeaders() });
+      if (!res.ok) throw new Error('Oyunlar yüklenemedi');
+      const data = await res.json();
+      setGames(data);
+    } catch (error) {
+      console.error('Error loading games:', error);
+      toast({ title: 'Hata', description: 'Oyun listesi alınamadı' });
+    }
+  };
+
+  const handleGameSubmit = async (e) => {
+    e.preventDefault();
+    setIsUpdating(true);
+    try {
+      let url = editingGame 
+        ? `${API_URL}/admin/games/${editingGame._id}`
+        : `${API_URL}/admin/games`;
+      let method = editingGame ? 'PUT' : 'POST';
+      let body = gameFormData;
+
+      if (!editingGame && bulkMode) {
+        try {
+          const gamesToUpload = JSON.parse(bulkText);
+          if (!Array.isArray(gamesToUpload)) throw new Error('JSON bir dizi olmalıdır');
+          body = { games: gamesToUpload };
+        } catch (err) {
+          throw new Error('Geçersiz JSON formatı. Lütfen kontrol edin.');
+        }
+      }
+
+      const res = await fetch(url, {
+        method,
+        headers: getHeaders(),
+        body: JSON.stringify(body)
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || 'İşlem başarısız');
+      }
+
+      const responseData = await res.json();
+      
+      if (bulkMode && !editingGame) {
+        toast({ 
+          title: 'İşlem Tamamlandı', 
+          description: `${responseData.success?.length || 0} oyun eklendi, ${responseData.errors?.length || 0} hata oluştu.` 
+        });
+      } else {
+        toast({ 
+          title: 'Başarılı', 
+          description: editingGame ? 'Oyun güncellendi' : 'Oyun eklendi' 
+        });
+      }
+
+      setShowGameModal(false);
+      setEditingGame(null);
+      setBulkMode(false);
+      setBulkText('');
+      setGameFormData({ name: '', processName: '', genre: '', bannerImage: '' });
+      loadGames();
+    } catch (error) {
+      toast({ title: 'Hata', description: error.message });
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  const handleImageUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast({ title: 'Hata', description: 'Resim boyutu 5MB\'dan küçük olmalıdır' });
+      return;
+    }
+
+    setIsUploadingImage(true);
+    try {
+      const base64 = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+
+      const res = await fetch(`${API_URL}/admin/upload`, {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify({ image: base64 })
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Resim yüklenemedi');
+
+      setGameFormData({ ...gameFormData, bannerImage: data.url });
+      toast({ title: 'Başarılı', description: 'Resim yüklendi' });
+    } catch (error) {
+      console.error('Image upload error:', error);
+      toast({ title: 'Hata', description: error.message || 'Resim yüklenirken bir sorun oluştu' });
+    } finally {
+      setIsUploadingImage(false);
+    }
+  };
+
+  const getPreviewImage = (url) => {
+    if (!url) return null;
+    
+    // GitHub URL conversion
+    if (url.includes('github.com') && !url.includes('raw.githubusercontent.com') && url.includes('/blob/')) {
+      return url.replace('github.com', 'raw.githubusercontent.com').replace('/blob/', '/');
+    }
+    
+    return url;
+  };
+
+
+  const handleDeleteGame = async (gameId) => {
+    if (!confirm('Bu oyunu silmek istediğinizden emin misiniz?')) return;
+    try {
+      const res = await fetch(`${API_URL}/admin/games/${gameId}`, {
+        method: 'DELETE',
+        headers: getHeaders()
+      });
+      if (!res.ok) throw new Error('Oyun silinemedi');
+      loadGames();
+      toast({ title: 'Başarılı', description: 'Oyun silindi' });
+    } catch (error) {
+      toast({ title: 'Hata', description: error.message });
+    }
+  };
+
 
   const handleDeleteUser = async (userId) => {
     if (!confirm('Bu kullanıcıyı silmek istediğinizden emin misiniz?')) return;
@@ -286,6 +445,17 @@ export default function AdminDashboard({ adminUser, onLogout }) {
           >
             CDN Yönetimi
           </button>
+          <button
+            onClick={() => setActiveTab('games')}
+            className={`px-4 py-2 font-medium transition-colors ${
+              activeTab === 'games'
+                ? 'text-primary border-b-2 border-primary'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            Oyun Yönetimi
+          </button>
+
         </div>
 
         {/* CDN Tab */}
@@ -688,7 +858,255 @@ export default function AdminDashboard({ adminUser, onLogout }) {
             )}
           </div>
         )}
+
+        {/* Games Tab */}
+        {activeTab === 'games' && (
+          <div className="space-y-4">
+            <div className="flex justify-between items-center">
+              <h2 className="text-xl font-bold">Sistemdeki Oyunlar</h2>
+              <Button onClick={() => {
+                setEditingGame(null);
+                setGameFormData({ name: '', processName: '', genre: '', bannerImage: '' });
+                setShowGameModal(true);
+              }}>
+                <Gamepad className="h-4 w-4 mr-2" />
+                Yeni Oyun Ekle
+              </Button>
+            </div>
+
+            <Card>
+              <CardContent className="p-0">
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="border-b bg-muted/50">
+                      <tr>
+                        <th className="text-left p-4 font-medium">Oyun Adı</th>
+                        <th className="text-left p-4 font-medium">İzlenecek Exe</th>
+                        <th className="text-left p-4 font-medium">Tür</th>
+                        <th className="text-left p-4 font-medium">Eklenme Tarihi</th>
+                        <th className="text-right p-4 font-medium">İşlemler</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {games.map((game) => (
+                        <tr key={game._id} className="border-b hover:bg-muted/50 transition-colors">
+                          <td className="p-4 font-bold">
+                            <Link 
+                              to={`/games/${encodeURIComponent(game.name)}`} 
+                              className="hover:text-primary transition-colors flex items-center gap-2"
+                            >
+                              {game.bannerImage && (
+                                <img src={game.bannerImage} alt="" className="w-8 h-8 rounded object-cover border border-white/10" />
+                              )}
+                              {game.name}
+                            </Link>
+                          </td>
+
+                          <td className="p-4 font-mono text-sm">{game.processName}</td>
+                          <td className="p-4">
+                            <span className="px-2 py-1 rounded-full bg-primary/10 text-primary text-xs font-bold">
+                              {game.genre || 'Belirtilmemiş'}
+                            </span>
+                          </td>
+                          <td className="p-4 text-sm text-muted-foreground">
+                            {new Date(game.createdAt).toLocaleDateString('tr-TR')}
+                          </td>
+                          <td className="p-4">
+                            <div className="flex items-center justify-end gap-2">
+                              <Button 
+                                variant="ghost" 
+                                size="sm"
+                                onClick={() => {
+                                  setEditingGame(game);
+                                  setGameFormData({
+                                    name: game.name,
+                                    processName: game.processName,
+                                    genre: game.genre || '',
+                                    bannerImage: game.bannerImage || ''
+                                  });
+                                  setShowGameModal(true);
+                                }}
+                              >
+                                <Edit className="h-4 w-4 text-primary" />
+                              </Button>
+                              <Button 
+                                variant="ghost" 
+                                size="sm"
+                                onClick={() => handleDeleteGame(game._id)}
+                              >
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                      {games.length === 0 && (
+                        <tr>
+                          <td colSpan="5" className="p-8 text-center text-muted-foreground">
+                            Henüz oyun eklenmemiş.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
       </div>
+
+      {/* Add/Edit Game Modal */}
+      {showGameModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm">
+          <Card className="w-full max-w-lg shadow-2xl border-primary/20 animate-in zoom-in-95 duration-200">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+              <div>
+                <CardTitle className="text-xl font-bold">
+                  {editingGame ? 'Oyunu Düzenle' : (bulkMode ? 'Çoklu Oyun Ekle' : 'Yeni Oyun Ekle')}
+                </CardTitle>
+                <CardDescription>
+                  {bulkMode ? 'JSON formatında oyun listesi yükleyin' : 'Sisteme yeni bir oyun tanımlayın'}
+                </CardDescription>
+              </div>
+              <Button variant="ghost" size="icon" onClick={() => { setShowGameModal(false); setBulkMode(false); }} className="rounded-full">
+                <X className="h-4 w-4" />
+              </Button>
+            </CardHeader>
+            <form onSubmit={handleGameSubmit}>
+              <CardContent className="space-y-4">
+                {!editingGame && (
+                  <div className="flex items-center gap-2 mb-4 bg-muted/30 p-2 rounded-lg">
+                    <Button 
+                      type="button"
+                      variant={!bulkMode ? 'default' : 'ghost'} 
+                      size="sm" 
+                      className="flex-1 text-[10px] font-bold h-8"
+                      onClick={() => setBulkMode(false)}
+                    >
+                      Tekli Ekle
+                    </Button>
+                    <Button 
+                      type="button"
+                      variant={bulkMode ? 'default' : 'ghost'} 
+                      size="sm" 
+                      className="flex-1 text-[10px] font-bold h-8"
+                      onClick={() => setBulkMode(true)}
+                    >
+                      Çoklu Ekle (JSON)
+                    </Button>
+                  </div>
+                )}
+
+                {bulkMode && !editingGame ? (
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Oyun Listesi (JSON Dizi)</label>
+                      <textarea 
+                        className="w-full h-48 bg-background border border-input rounded-md p-3 text-xs font-mono focus:ring-2 focus:ring-primary outline-none"
+                        placeholder='[{"name": "Game 1", "processName": "g1.exe", "genre": "FPS"}, ...]'
+                        value={bulkText}
+                        onChange={(e) => setBulkText(e.target.value)}
+                        required
+                      />
+                    </div>
+                    <div className="bg-blue-500/10 border border-blue-500/20 p-3 rounded-lg flex items-start gap-3">
+                      <AlertCircle className="w-4 h-4 text-blue-400 shrink-0 mt-0.5" />
+                      <p className="text-[10px] text-blue-300 font-medium">
+                        Lütfen verilerin geçerli bir JSON dizisi olduğundan ve her objenin "name" ile "processName" alanlarını içerdiğinden emin olun.
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Oyun Adı</label>
+                      <Input 
+                        placeholder="Örn: Counter-Strike 2"
+                        value={gameFormData.name}
+                        onChange={(e) => setGameFormData({...gameFormData, name: e.target.value})}
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">İzlenecek Exe Adı (Virgülle ayırabilirsiniz)</label>
+                      <Input 
+                        placeholder="Örn: cs2.exe, csgo.exe"
+                        value={gameFormData.processName}
+                        onChange={(e) => setGameFormData({...gameFormData, processName: e.target.value})}
+                        required
+                      />
+                      <p className="text-[10px] text-muted-foreground font-medium">
+                        Oyun birden fazla exe ile çalışıyorsa virgül (,) kullanarak hepsini ekleyebilirsiniz.
+                      </p>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">Tür</label>
+                        <Input 
+                          placeholder="Örn: FPS"
+                          value={gameFormData.genre}
+                          onChange={(e) => setGameFormData({...gameFormData, genre: e.target.value})}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">Kapak Resmi (URL)</label>
+                        <div className="flex gap-2">
+                          <Input 
+                            placeholder="https://..."
+                            value={gameFormData.bannerImage}
+                            onChange={(e) => setGameFormData({...gameFormData, bannerImage: e.target.value})}
+                          />
+                          <div className="relative">
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={handleImageUpload}
+                              className="absolute inset-0 opacity-0 cursor-pointer"
+                              disabled={isUploadingImage}
+                            />
+                            <Button type="button" variant="outline" disabled={isUploadingImage}>
+                              {isUploadingImage ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    {gameFormData.bannerImage && (
+                      <div className="mt-2 relative rounded-lg overflow-hidden border border-white/10 aspect-video bg-muted">
+                        <img 
+                          src={getPreviewImage(gameFormData.bannerImage)} 
+                          alt="Önizleme" 
+                          className="w-full h-full object-cover"
+                        />
+
+                        <Button 
+                          type="button" 
+                          variant="destructive" 
+                          size="icon" 
+                          className="absolute top-2 right-2 h-6 w-6 rounded-full"
+                          onClick={() => setGameFormData({...gameFormData, bannerImage: ''})}
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    )}
+                  </>
+                )}
+              </CardContent>
+              <CardFooter className="flex justify-end gap-2 pt-2">
+                <Button type="button" variant="outline" onClick={() => setShowGameModal(false)}>
+                  İptal
+                </Button>
+                <Button type="submit" disabled={isUpdating}>
+                  {isUpdating ? 'Kaydediliyor...' : (editingGame ? 'Güncelle' : 'Oyunu Kaydet')}
+                </Button>
+              </CardFooter>
+            </form>
+          </Card>
+        </div>
+      )}
+
 
       {/* Edit User Modal */}
       {editingUser && (

@@ -5,18 +5,18 @@ class ImageUploadService {
   constructor() {
     this.cdns = [
       {
-        id: 'imgbb',
-        name: 'ImgBB',
-        uploadUrl: 'https://api.imgbb.com/1/upload',
-        apiKey: process.env.IMGBB_API_KEY,
-        upload: this.uploadToImgBB.bind(this)
-      },
-      {
         id: 'freeimage',
         name: 'FreeImage',
         uploadUrl: 'https://freeimage.host/api/1/upload',
         apiKey: process.env.FREEIMAGE_API_KEY,
         upload: this.uploadToFreeImage.bind(this)
+      },
+      {
+        id: 'imgbb',
+        name: 'ImgBB',
+        uploadUrl: 'https://api.imgbb.com/1/upload',
+        apiKey: process.env.IMGBB_API_KEY,
+        upload: this.uploadToImgBB.bind(this)
       },
       {
         id: 'cloudinary',
@@ -80,40 +80,50 @@ class ImageUploadService {
   }
 
   async uploadImage(base64Data) {
-    let startIndex = await this.getActiveCDNIndex();
+    const fullCDNs = await SystemConfig.findOne({ key: 'full_cdns' });
+    const fullCDNIds = fullCDNs ? fullCDNs.value : [];
     
-    for (let i = startIndex; i < this.cdns.length; i++) {
+    // Always try all CDNs in order of preference
+    for (let i = 0; i < this.cdns.length; i++) {
       const cdn = this.cdns[i];
       
+      // Skip if marked as full in DB
+      if (fullCDNIds.includes(cdn.id)) {
+        console.log(`[ImageUpload] Skipping ${cdn.name} because it is marked as FULL.`);
+        continue;
+      }
+
       // Skip if no API key
       if (!cdn.apiKey) {
-        console.warn(`CDN ${cdn.name} is missing API key, skipping...`);
+        console.warn(`[ImageUpload] CDN ${cdn.name} is missing API key, skipping...`);
         continue;
       }
 
       try {
         const url = await cdn.upload(base64Data, cdn);
-        if (url) return url;
+        if (url) {
+          // If this succeeded and was not the "active" one, maybe we should update active index?
+          // For now, just return.
+          return url;
+        }
       } catch (error) {
-        console.error(`Upload to ${cdn.name} failed:`, error.message);
+        console.error(`[ImageUpload] ${cdn.name} failed:`, error.message);
         
-        // Check if error is related to quota
-        const errorMessage = error.response?.data?.error?.message || error.message || '';
-        if (errorMessage.toLowerCase().includes('quota') || 
-            errorMessage.toLowerCase().includes('limit') || 
+        // Mark as full if quota issue
+        const errorMessage = (error.response?.data?.error?.message || error.message || '').toLowerCase();
+        if (errorMessage.includes('quota') || 
+            errorMessage.includes('limit') || 
             error.response?.status === 402 || 
             error.response?.status === 429) {
           
+          console.warn(`[ImageUpload] ${cdn.name} reached quota limit. Marking as FULL.`);
           await this.markCDNAsFull(cdn.id);
-          // Loop will continue to next CDN
-        } else {
-          // Other errors might be temporary, but let's try next one anyway
-          continue;
         }
+        // Continue to next CDN
       }
     }
 
-    throw new Error('Tüm CDN kotaları dolmuş veya servisler kullanılamıyor.');
+    throw new Error('Tüm CDN kotaları dolmuş veya servisler kullanılamıyor. Lütfen API anahtarlarını kontrol edin.');
   }
 
   async uploadToImgBB(base64Data, cdn) {

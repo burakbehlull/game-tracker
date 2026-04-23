@@ -12,82 +12,35 @@ class ProcessMonitor {
   constructor() {
     this.checkInterval = 3000;
     // Normalized keys (lowercase) -> Array of exact exe names
-    this.gameProcesses = {
-      'Valorant': ['VALORANT-Win64-Shipping.exe'],
-      'Stardew Valley': ['Stardew Valley.exe', 'StardewValley.exe'],
-      'League of Legends': ['League of Legends.exe'],
-      'Counter-Strike 2': ['cs2.exe'],
-      'Minecraft': ['javaw.exe'],
-      'Roblox': ['RobloxPlayerBeta.exe'],
-      'Gta V': ['GTA5.exe'],
-      'Euro Truck Simulator 2': ['eurotrucks2.exe'],
-      'Fortnite': ['FortniteClient-Win64-Shipping.exe'],
-      'Apex Legends': ['r5apex.exe'],
-      'Dota 2': ['dota2.exe'],
-      'Rocket League': ['RocketLeague.exe'],
-      'Overwatch 2': ['Overwatch.exe'],
-      'The Sims 4': ['TS4_x64.exe'],
-      'Rust': ['RustClient.exe'],
-      'Genshin Impact': ['GenshinImpact.exe', 'YuanShen.exe'],
-      'Cyberpunk 2077': ['Cyberpunk2077.exe'],
-      'Baldurs Gate 3': ['bg3.exe', 'bg3_dx11.exe'],
-      'Pubg': ['TslGame.exe'],
-      'Call of Duty': ['cod.exe'],
-      'Red Dead Redemption 2': ['RDR2.exe'],
-      'Red Dead Redemption 1': ['RDR.exe', 'RDR1.exe'],
-      'Dark Souls I': ['DarkSouls.exe', 'DarkSoulsRemastered.exe'],
-      'Dark Souls II': ['DarkSoulsII.exe'],
-      'Dark Souls III': ['DarkSoulsIII.exe'],
-      'Alan Wake': ['AlanWake.exe', 'AlanWake2.exe', 'AlanWake-Win64-Shipping.exe'],
-      'Outlast': ['Outlast.exe'],
-      'Outlast 2': ['Outlast2.exe'],
-      'Papers Please': ['PapersPlease.exe'],
-      'Left 4 Dead 1': ['left4dead.exe'],
-      'Left 4 Dead 2': ['left4dead2.exe'],
-      'Gta Vice City': ['gta-vc.exe', 'GTAVC.exe'],
-      'Gta San Andreas': ['gta_sa.exe', 'GTASA.exe'],
-      'Gta III': ['gta3.exe'],
-      'Gta IV': ['GTAIV.exe'],
-      'The Forest': ['TheForest.exe'],
-      'Business Tour': ['BusinessTour.exe'],
-      'Half Life 1': ['hl.exe'],
-      'Half Life 2': ['hl2.exe'],
-      'Elden Ring': ['eldenring.exe'],
-      'Fivem': ['Fivem.exe'],
-      'Resident Evil 1': ['ResidentEvil.exe'],
-      'Resident Evil 2': ['re2.exe'],
-      'Resident Evil 3': ['re3.exe'],
-      'Resident Evil 4': ['re4.exe'],
-      'Resident Evil Requiem': ['ResidentEvilRequiem.exe'],
-      'Marvels Spider-Man 1': ['Spider-Man.exe'],
-      'Marvels Spider-Man 2': ['Spider-Man2.exe'],
-      'Marvels Spider-Man: Miles Morales': ['MilesMorales.exe'],
-      'FC 25': ['FC25.exe'],
-      'FC 24': ['FC24.exe'],
-      'FC 23': ['FIFA23.exe'],
-      'FC 22': ['FIFA22.exe'],
-      'Sekiro': ['sekiro.exe'],
-      'Assassins Creed': ['AssassinsCreed_Dx10.exe', 'AssassinsCreed_Dx9.exe'],
-      'Mafia I': ['mafia.exe'],
-      'Mafia II': ['mafia2.exe'],
-      'Far Cry 3': ['farCry3.exe', 'farCry3_d3d11.exe'],
-      'Far Cry 4': ['FarCry4.exe'],
-      'Far Cry 5': ['FarCry5.exe'],
-      'Serious Sam Classic: TFE': ['SeriousSam.exe'],
-      'Serious Sam Classic: TSE': ['SeriousSam.exe'],
-      'Serious Sam HD: TFE': ['SeriousSamHD.exe'],
-      'Serious Sam HD: TSE': ['SeriousSamHD.exe'],
-      'Serious Sam 2': ['Sam2.exe'],
-      'Serious Sam 3: BFE': ['Sam3.exe'],
-      'Serious Sam 4': ['Sam4.exe'],
-      // Feign
-      'Feign': ['Feign.exe'],
-      // Mortal Kombat Serisi
-      'Mortal Kombat Komplete Edition': ['MK9.exe'],
-      'Mortal Kombat X': ['MK10.exe'],
-      'Mortal Kombat 11': ['MK11.exe'],
-      'Mortal Kombat 1': ['MK1.exe'],
-    };
+    this.gameProcesses = {};
+    this.loadDefaultGames();
+  }
+
+  loadDefaultGames() {
+    this.gameProcesses = {};
+  }
+
+  updateGameProcesses(dbGames) {
+    if (!Array.isArray(dbGames)) return;
+    
+    dbGames.forEach(game => {
+      if (game.name && game.processName) {
+        // Split by comma to support multiple exes for one game entry
+        const exes = game.processName.split(',').map(e => e.trim()).filter(Boolean);
+        
+        if (!this.gameProcesses[game.name]) {
+          this.gameProcesses[game.name] = [];
+        }
+        
+        exes.forEach(exe => {
+          if (!this.gameProcesses[game.name].includes(exe)) {
+            this.gameProcesses[game.name].push(exe);
+          }
+        });
+      }
+    });
+    
+    log.info(`[ProcessMonitor] Updated game list with ${dbGames.length} games from database`);
   }
 
   async isAdmin() {

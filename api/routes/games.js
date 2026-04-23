@@ -3,11 +3,25 @@ const router = express.Router();
 const GameSession = require('../models/GameSession');
 const auth = require('../middleware/auth');
 const mongoose = require('mongoose');
+const Game = require('../models/Game');
+
 
 const ChallengeService = require('../services/challengeService');
 const { setPlaying } = require('../services/presenceService');
 
+// List all supported games
+router.get('/', async (req, res) => {
+  try {
+    const games = await Game.find().sort({ name: 1 });
+    res.json(games);
+  } catch (error) {
+    console.error('[Games API Error]', error);
+    res.status(500).json({ error: 'Oyun listesi alınamadı' });
+  }
+});
+
 // Start session
+
 router.post('/start', auth, async (req, res) => {
   try {
     const { gameName, processName } = req.body;
@@ -301,7 +315,14 @@ router.get('/details/:gameName', async (req, res) => {
       { $limit: 10 }
     ]);
 
-    res.json(stats);
+    // Get game info
+    const gameInfo = await Game.findOne({ name: { $regex: new RegExp(`^${sanitizedGameName}$`, 'i') } });
+
+    res.json({
+      game: gameInfo,
+      leaderboard: stats
+    });
+
   } catch (error) {
     console.error('[Games API Error]', error);
     res.status(500).json({ 

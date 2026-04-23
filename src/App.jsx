@@ -254,7 +254,7 @@ function App() {
                       <Route path="/community/:id/manage" element={user ? <CommunityManage user={user} /> : <Navigate to="/login" />} />
                       <Route path="/discussion/:id" element={user ? <DiscussionDetail user={user} /> : <Navigate to="/login" />} />
                       <Route path="/matchmaking" element={user ? <Matchmaking user={user} /> : <Navigate to="/login" />} />
-                      <Route path="/game/:id" element={<GameDetails />} />
+                      <Route path="/games/:gameName" element={<GameDetails />} />
                     </Route>
                     <Route path="*" element={<Navigate to="/" />} />
                   </Routes>

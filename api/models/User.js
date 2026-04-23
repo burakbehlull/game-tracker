@@ -138,7 +138,9 @@ const userSchema = new mongoose.Schema({
   library: [
     {
       gameName: { type: String, required: true },
-      exePath: { type: String, default: '' },
+      exeName: { type: String, default: '' }, // Takip edilecek exe adı (örn: Valorant.exe)
+      exePath: { type: String, default: '' }, // Oyunun tam yolu (başlatmak için)
+      genre: { type: String, default: 'Genel' }, // Oyun türü (Fps, Çiftçi Oyunu vb.)
       addedAt: { type: Date, default: Date.now }
     }
   ],

@@ -30,9 +30,24 @@ export default function Library({ user }) {
 
   const getGameImage = (gameName) => {
     if (!gameName) return null;
+    
+    const dbGame = supportedGames.find(g => g.name === gameName);
+    
+    // GitHub URL conversion for stored DB images
+    if (dbGame?.bannerImage) {
+      let url = dbGame.bannerImage;
+      if (url.includes('github.com') && !url.includes('raw.githubusercontent.com') && url.includes('/blob/')) {
+        return url.replace('github.com', 'raw.githubusercontent.com').replace('/blob/', '/');
+      }
+      return url;
+    }
+
+    // Fallback to local asset
     const fileName = gameName.toLowerCase().replace(/\s+/g, '_');
     return getAssetUrl(`assets/games/${fileName}_banner.jpg`);
   };
+
+
 
   const getErrorMessage = (err, fallback) => {
     return err?.data?.error || err?.message || fallback;
@@ -56,11 +71,14 @@ export default function Library({ user }) {
   };
 
   const loadSupportedGames = async () => {
-    if (window.electronAPI) {
-      const games = await window.electronAPI.getSupportedGames();
+    try {
+      const games = await api.getSupportedGames();
       setSupportedGames(Array.isArray(games) ? games : []);
+    } catch (err) {
+      console.error('Desteklenen oyunlar alınamadı:', err);
     }
   };
+
 
   const checkCurrentGameSafe = async () => {
     if (window.electronAPI) {
@@ -127,9 +145,10 @@ export default function Library({ user }) {
   };
 
   const filteredSupported = supportedGames.filter(g => 
-    g.toLowerCase().includes(searchTerm.toLowerCase()) && 
-    !library.find(lg => lg.gameName === g)
+    g.name.toLowerCase().includes(searchTerm.toLowerCase()) && 
+    !library.find(lg => lg.gameName === g.name)
   );
+
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -281,16 +300,20 @@ export default function Library({ user }) {
                 ) : (
                   filteredSupported.map((game) => (
                     <button
-                      key={game}
-                      onClick={() => handleAddToLibrary(game)}
+                      key={game._id}
+                      onClick={() => handleAddToLibrary(game.name)}
                       disabled={loading}
                       className="w-full flex items-center justify-between p-4 rounded-2xl bg-white/5 hover:bg-primary/20 border border-white/5 hover:border-primary/30 transition-all duration-200 group"
                     >
-                      <span className="font-bold text-white uppercase italic text-sm group-hover:translate-x-1 transition-transform">{game}</span>
+                      <div className="flex flex-col items-start">
+                        <span className="font-bold text-white uppercase italic text-sm group-hover:translate-x-1 transition-transform">{game.name}</span>
+                        {game.genre && <span className="text-[10px] text-muted-foreground font-bold">{game.genre}</span>}
+                      </div>
                       {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4 text-primary" />}
                     </button>
                   ))
                 )}
+
               </div>
             </div>
           </Card>

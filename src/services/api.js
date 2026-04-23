@@ -122,7 +122,12 @@ export const api = {
     return request(`${API_URL}/games/details/${encodeURIComponent(gameName)}`, { headers: getHeaders() });
   },
 
+  getSupportedGames: async () => {
+    return request(`${API_URL}/games`, { headers: getHeaders() });
+  },
+
   // Library
+
   addToLibrary: async (gameName, exePath = '') => {
     return request(`${API_URL}/users/library/add`, {
       method: 'POST',
@@ -521,5 +526,18 @@ export const api = {
       method: 'POST',
       headers: getHeaders()
     });
+  },
+
+  // Admin CDN
+  getCDNStatus: async () => {
+    return request(`${API_URL}/admin/cdn-status`, { headers: getHeaders() });
+  },
+
+  resetCDNStatus: async () => {
+    return request(`${API_URL}/admin/cdn-reset`, {
+      method: 'POST',
+      headers: getHeaders()
+    });
   }
 };
+

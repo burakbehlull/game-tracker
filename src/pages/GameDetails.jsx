@@ -7,7 +7,9 @@ import { getAssetUrl } from '../lib/assetHelper';
 
 export default function GameDetails() {
   const { gameName } = useParams();
+  const [gameInfo, setGameInfo] = useState(null);
   const [players, setPlayers] = useState([]);
+
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -18,8 +20,10 @@ export default function GameDetails() {
     setLoading(true);
     try {
       const data = await api.getGameDetails(gameName);
-      setPlayers(data);
+      setGameInfo(data.game);
+      setPlayers(data.leaderboard || []);
     } catch (error) {
+
       console.error('Oyun detayları yüklenemedi:', error);
     } finally {
       setLoading(false);
@@ -27,10 +31,21 @@ export default function GameDetails() {
   };
 
   const getGameImage = (name) => {
-    if (!name) return null;
-    const fileName = name.toLowerCase().replace(/\s+/g, '_');
-    return getAssetUrl(`assets/games/${fileName}_banner.jpg`);
+    let url = null;
+    if (gameInfo?.bannerImage) {
+      url = gameInfo.bannerImage;
+    } else if (name) {
+      const fileName = name.toLowerCase().replace(/\s+/g, '_');
+      url = getAssetUrl(`assets/games/${fileName}_banner.jpg`);
+    }
+
+    if (url && url.includes('github.com') && !url.includes('raw.githubusercontent.com') && url.includes('/blob/')) {
+      return url.replace('github.com', 'raw.githubusercontent.com').replace('/blob/', '/');
+    }
+    
+    return url;
   };
+
 
 
   const formatTotalTime = (seconds) => {

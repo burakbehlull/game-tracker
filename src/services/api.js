@@ -1,4 +1,5 @@
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+const isDev = import.meta.env.DEV;
+const API_URL = import.meta.env.VITE_API_URL || (window.electronAPI ? 'http://localhost:3000/api' : '/api');
 export const WS_URL = import.meta.env.VITE_WS_URL || API_URL.replace('/api', '');
 
 const request = async (url, options = {}) => {

@@ -100,9 +100,10 @@ app.use('/api/matchmaking', matchmakingRoutes);
 // Global Error Handler
 app.use((err, req, res, next) => {
   console.error('[API Error]', err.stack);
+  const isProd = process.env.NODE_ENV === 'production';
   res.status(500).json({ 
     error: 'İşlem sırasında bir hata oluştu.', 
-    message: process.env.NODE_ENV === 'development' ? err.message : undefined 
+    message: !isProd ? err.message : undefined 
   });
 });
 

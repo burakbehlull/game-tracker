@@ -253,7 +253,7 @@ export default function Dashboard({ user }) {
   }
 
   return (
-    <div className="relative min-h-screen pb-12">
+    <div className="relative min-h-full pb-12">
       {/* Optimized Background: CSS gradient is cheaper than heavy blurry divs */}
       <div className="absolute top-0 left-0 w-full h-[300px] bg-gradient-to-b from-blue-900/10 to-transparent pointer-events-none" />
 

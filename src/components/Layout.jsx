@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, Outlet } from 'react-router-dom';
 import { useTheme } from '../contexts/ThemeContext';
 import { Button } from './ui/button';
 import { User, LogOut, Gamepad2, Globe, BarChart3, Download, Clock, 
@@ -10,7 +10,7 @@ import { useWebSocket } from '../contexts/WebSocketContext';
 
 const DownloadURL = import.meta.env.VITE_DOWNLOAD_URL;
 
-export default function Layout({ children, user, onLogout }) {
+export default function Layout({ user, onLogout }) {
   const { theme, toggleTheme } = useTheme();
   const location = useLocation();
   const isWeb = !window.electronAPI;
@@ -98,7 +98,7 @@ export default function Layout({ children, user, onLogout }) {
   ];
 
   return (
-    <div className="flex flex-col min-h-screen bg-background h-screen overflow-hidden">
+    <div className="flex flex-col h-full bg-background overflow-hidden">
       <nav className="border-b bg-card shrink-0">
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between h-16">
@@ -306,7 +306,7 @@ export default function Layout({ children, user, onLogout }) {
           "flex-1 overflow-y-auto",
           (location.pathname === '/' || location.pathname === '/profile' || location.pathname.startsWith('/profile/')) ? 'w-full' : 'container mx-auto px-4 py-8'
         )}>
-          {children}
+          <Outlet />
         </main>
       </div>
 

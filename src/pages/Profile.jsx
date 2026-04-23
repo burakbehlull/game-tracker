@@ -239,7 +239,7 @@ export default function Profile({ user: currentUser }) {
 
   if (!profileUser && !loading) {
      return (
-        <div className="min-h-screen flex items-center justify-center">
+        <div className="min-h-full flex items-center justify-center">
            <div className="text-center">
               <h2 className="text-2xl font-bold mb-2">Kullanıcı bulunamadı</h2>
               <Link to="/" className="text-blue-500 hover:underline">Ana sayfaya dön</Link>
@@ -249,7 +249,7 @@ export default function Profile({ user: currentUser }) {
   }
 
   return (
-    <div className="relative min-h-screen pb-12">
+    <div className="relative min-h-full pb-12">
       {/* Optimized Background - Removed heavy blur/glow layers */}
       <div className="fixed inset-0 bg-background -z-10" />
       

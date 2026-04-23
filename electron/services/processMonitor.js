@@ -73,6 +73,20 @@ class ProcessMonitor {
       'Far Cry 3': ['farCry3.exe', 'farCry3_d3d11.exe'],
       'Far Cry 4': ['FarCry4.exe'],
       'Far Cry 5': ['FarCry5.exe'],
+      'Serious Sam Classic: TFE': ['SeriousSam.exe'],
+      'Serious Sam Classic: TSE': ['SeriousSam.exe'],
+      'Serious Sam HD: TFE': ['SeriousSamHD.exe'],
+      'Serious Sam HD: TSE': ['SeriousSamHD.exe'],
+      'Serious Sam 2': ['Sam2.exe'],
+      'Serious Sam 3: BFE': ['Sam3.exe'],
+      'Serious Sam 4': ['Sam4.exe'],
+      // Feign
+      'Feign': ['Feign.exe'],
+      // Mortal Kombat Serisi
+      'Mortal Kombat Komplete Edition': ['MK9.exe'],
+      'Mortal Kombat X': ['MK10.exe'],
+      'Mortal Kombat 11': ['MK11.exe'],
+      'Mortal Kombat 1': ['MK1.exe'],
     };
   }
 

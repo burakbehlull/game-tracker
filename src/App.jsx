@@ -214,7 +214,7 @@ function App() {
       ) : (
         <WebSocketProvider token={authToken}>
           <NotificationHandler />
-          <div className="flex-1 flex flex-col min-h-0 overflow-hidden bg-background text-foreground">
+          <div className="h-screen flex flex-col overflow-hidden bg-background text-foreground">
             <TitleBar user={user} />
             <UpdateNotification />
             <div className="flex-1 overflow-hidden flex flex-col min-h-0">
@@ -226,230 +226,44 @@ function App() {
                   </div>
                 }>
                   <Routes>
-                <Route 
-                  path="/login" 
-                  element={!user ? <Login onLogin={handleLogin} /> : <Navigate to="/" />} 
-                />
-                <Route 
-                  path="/register" 
-                  element={!user ? <Register onLogin={handleLogin} /> : <Navigate to="/" />} 
-                />
-                <Route 
-                  path="/forgot-password" 
-                  element={!user ? <ForgotPassword /> : <Navigate to="/" />} 
-                />
-                <Route 
-                  path="/reset-password/:token" 
-                  element={!user ? <ResetPassword /> : <Navigate to="/" />} 
-                />
-                <Route 
-                  path="/admin" 
-                  element={!adminUser ? <AdminLogin onAdminLogin={handleAdminLogin} /> : <Navigate to="/admin/dashboard" />} 
-                />
-                <Route 
-                  path="/admin/dashboard" 
-                  element={adminUser ? <AdminDashboard adminUser={adminUser} onLogout={handleAdminLogout} /> : <Navigate to="/admin" />} 
-                />
-                <Route
-                  path="/"
-                  element={
-                    <Layout user={user} onLogout={handleLogout}>
-                      <Home user={user} />
-                    </Layout>
-                  }
-                />
-                <Route
-                  path="/discover"
-                  element={
-                    <Layout user={user} onLogout={handleLogout}>
-                      <Discover />
-                    </Layout>
-                  }
-                />
-                <Route
-                  path="/dashboard"
-                  element={
-                    user ? (
-                      <Layout user={user} onLogout={handleLogout}>
-                        <Dashboard user={user} />
-                      </Layout>
-                    ) : (
-                      <Navigate to="/login" />
-                    )
-                  }
-                />
-                <Route
-                  path="/profile/:username?"
-                  element={
-                    user ? (
-                      <Layout user={user} onLogout={handleLogout}>
-                        <Profile user={user} />
-                      </Layout>
-                    ) : (
-                      <Navigate to="/login" />
-                    )
-                  }
-                />
-                <Route
-                  path="/timer"
-                  element={
-                    user ? (
-                      <Layout user={user} onLogout={handleLogout}>
-                        <Timer user={user} />
-                      </Layout>
-                    ) : (
-                      <Navigate to="/login" />
-                    )
-                  }
-                />
-                <Route
-                  path="/settings"
-                  element={
-                    user ? (
-                      <Layout user={user} onLogout={handleLogout}>
-                        <Settings user={user} />
-                      </Layout>
-                    ) : (
-                      <Navigate to="/login" />
-                    )
-                  }
-                />
-                <Route
-                  path="/library"
-                  element={
-                    user ? (
-                      <Layout user={user} onLogout={handleLogout}>
-                        <Library user={user} />
-                      </Layout>
-                    ) : (
-                      <Navigate to="/login" />
-                    )
-                  }
-                />
-                <Route 
-                  path="/games/:gameName" 
-                  element={
-                    <Layout user={user} onLogout={handleLogout}>
-                      <GameDetails />
-                    </Layout>
-                  } 
-                />
-                <Route
-                  path="/friends"
-                  element={
-                    user ? (
-                      <Layout user={user} onLogout={handleLogout}>
-                        <Friends />
-                      </Layout>
-                    ) : (
-                      <Navigate to="/login" />
-                    )
-                  }
-                />
-                <Route
-                  path="/chat/:conversationId?"
-                  element={
-                    user ? (
-                      <Layout user={user} onLogout={handleLogout}>
-                        <Chat user={user} />
-                      </Layout>
-                    ) : (
-                      <Navigate to="/login" />
-                    )
-                  }
-                />
-                <Route
-                  path="/notifications"
-                  element={
-                    user ? (
-                      <Layout user={user} onLogout={handleLogout}>
-                        <Notifications />
-                      </Layout>
-                    ) : (
-                      <Navigate to="/login" />
-                    )
-                  }
-                />
-                <Route
-                  path="/community"
-                  element={
-                    user ? (
-                      <Layout user={user} onLogout={handleLogout}>
-                        <CommunityList user={user} />
-                      </Layout>
-                    ) : (
-                      <Navigate to="/login" />
-                    )
-                  }
-                />
-                <Route
-                  path="/community/create"
-                  element={
-                    user ? (
-                      <Layout user={user} onLogout={handleLogout}>
-                        <CreateCommunity />
-                      </Layout>
-                    ) : (
-                      <Navigate to="/login" />
-                    )
-                  }
-                />
-                <Route
-                  path="/community/:slug"
-                  element={
-                    user ? (
-                      <Layout user={user} onLogout={handleLogout}>
-                        <CommunityDetail user={user} />
-                      </Layout>
-                    ) : (
-                      <Navigate to="/login" />
-                    )
-                  }
-                />
-                <Route
-                  path="/community/:slug/manage"
-                  element={
-                    user ? (
-                      <Layout user={user} onLogout={handleLogout}>
-                        <CommunityManage user={user} />
-                      </Layout>
-                    ) : (
-                      <Navigate to="/login" />
-                    )
-                  }
-                />
-                <Route
-                  path="/community/discussion/:id"
-                  element={
-                    user ? (
-                      <Layout user={user} onLogout={handleLogout}>
-                        <DiscussionDetail user={user} />
-                      </Layout>
-                    ) : (
-                      <Navigate to="/login" />
-                    )
-                  }
-                />
-                <Route
-                  path="/matchmaking"
-                  element={
-                    user ? (
-                      <Layout user={user} onLogout={handleLogout}>
-                        <Matchmaking user={user} />
-                      </Layout>
-                    ) : (
-                      <Navigate to="/login" />
-                    )
-                  }
-                />
-                <Route path="*" element={<Navigate to="/" />} />
-                </Routes>
+                    {/* Public Auth Routes */}
+                    <Route path="/login" element={!user ? <Login onLogin={handleLogin} /> : <Navigate to="/" />} />
+                    <Route path="/register" element={!user ? <Register onLogin={handleLogin} /> : <Navigate to="/" />} />
+                    <Route path="/forgot-password" element={!user ? <ForgotPassword /> : <Navigate to="/" />} />
+                    <Route path="/reset-password/:token" element={!user ? <ResetPassword /> : <Navigate to="/" />} />
+                    
+                    {/* Admin Routes */}
+                    <Route path="/admin" element={!adminUser ? <AdminLogin onAdminLogin={handleAdminLogin} /> : <Navigate to="/admin/dashboard" />} />
+                    <Route path="/admin/dashboard" element={adminUser ? <AdminDashboard adminUser={adminUser} onLogout={handleAdminLogout} /> : <Navigate to="/admin" />} />
+
+                    {/* App Layout Routes */}
+                    <Route element={<Layout user={user} onLogout={handleLogout} />}>
+                      <Route path="/" element={<Home user={user} />} />
+                      <Route path="/discover" element={<Discover />} />
+                      <Route path="/dashboard" element={user ? <Dashboard user={user} /> : <Navigate to="/login" />} />
+                      <Route path="/profile/:username?" element={user ? <Profile user={user} /> : <Navigate to="/login" />} />
+                      <Route path="/timer" element={user ? <Timer user={user} /> : <Navigate to="/login" />} />
+                      <Route path="/library" element={user ? <Library user={user} /> : <Navigate to="/login" />} />
+                      <Route path="/settings" element={user ? <Settings user={user} onUpdate={setUser} /> : <Navigate to="/login" />} />
+                      <Route path="/friends" element={user ? <Friends user={user} /> : <Navigate to="/login" />} />
+                      <Route path="/chat/:conversationId?" element={user ? <Chat user={user} /> : <Navigate to="/login" />} />
+                      <Route path="/notifications" element={user ? <Notifications user={user} /> : <Navigate to="/login" />} />
+                      <Route path="/community" element={user ? <CommunityList user={user} /> : <Navigate to="/login" />} />
+                      <Route path="/community/create" element={user ? <CreateCommunity user={user} /> : <Navigate to="/login" />} />
+                      <Route path="/community/:id" element={user ? <CommunityDetail user={user} /> : <Navigate to="/login" />} />
+                      <Route path="/community/:id/manage" element={user ? <CommunityManage user={user} /> : <Navigate to="/login" />} />
+                      <Route path="/discussion/:id" element={user ? <DiscussionDetail user={user} /> : <Navigate to="/login" />} />
+                      <Route path="/matchmaking" element={user ? <Matchmaking user={user} /> : <Navigate to="/login" />} />
+                      <Route path="/game/:id" element={<GameDetails />} />
+                    </Route>
+                    <Route path="*" element={<Navigate to="/" />} />
+                  </Routes>
                 </Suspense>
               </Router>
             </div>
           </div>
-          </WebSocketProvider>
-        )}
+        </WebSocketProvider>
+      )}
       </ToastProvider>
     </ThemeProvider>
   );

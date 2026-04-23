@@ -43,7 +43,7 @@ export default function GameDetails() {
   if (loading) return null;
 
   return (
-    <div className="min-h-screen pb-20">
+    <div className="min-h-full pb-20">
       {/* Hero Banner Section */}
       <div className="relative h-[400px] w-full overflow-hidden">
         <div className="absolute inset-0">

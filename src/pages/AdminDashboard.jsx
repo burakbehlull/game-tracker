@@ -380,7 +380,7 @@ export default function AdminDashboard({ adminUser, onLogout }) {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-red-500/5">
+    <div className="h-full overflow-y-auto bg-gradient-to-br from-background via-background to-red-500/5">
       {/* Header */}
       <div className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container mx-auto px-4 py-4">
@@ -402,7 +402,7 @@ export default function AdminDashboard({ adminUser, onLogout }) {
         </div>
       </div>
 
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-8 pb-20">
         {/* Tabs */}
         <div className="flex gap-2 mb-6 border-b">
           <button

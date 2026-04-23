@@ -166,8 +166,23 @@ router.get('/profile/:username', async (req, res) => {
     const cacheKey = `stats_${updatedUser._id}`;
     let stats = profileStatsCache.get(cacheKey);
     const now = Date.now();
+    
+    // Get current user ID from token if available
+    let currentUserId = null;
+    const authHeader = req.headers.authorization;
+    if (authHeader) {
+      try {
+        const jwt = require('jsonwebtoken');
+        const token = authHeader.split(' ')[1];
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        currentUserId = decoded.userId;
+      } catch (err) {}
+    }
 
-    if (!stats || (now - stats.lastFetched > STATS_CACHE_TTL)) {
+    // Bypass cache if it's the user's own profile or cache expired
+    const isOwnProfile = currentUserId && String(currentUserId) === String(updatedUser._id);
+
+    if (isOwnProfile || !stats || (now - stats.lastFetched > STATS_CACHE_TTL)) {
       stats = {
         data: await GameSession.aggregate([
           { 
@@ -187,52 +202,46 @@ router.get('/profile/:username', async (req, res) => {
         ]),
         lastFetched: now
       };
-      profileStatsCache.set(cacheKey, stats);
+      if (!isOwnProfile) {
+        profileStatsCache.set(cacheKey, stats);
+      }
     }
 
     const responseUser = updatedUser.toObject();
     
     // Check friendship status if user is logged in
     let friendshipStatus = 'none'; // none, pending, accepted
-    const authHeader = req.headers.authorization;
-    if (authHeader) {
+    if (currentUserId && !isOwnProfile) {
       try {
-        const jwt = require('jsonwebtoken');
-        const token = authHeader.split(' ')[1];
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        const currentUserId = decoded.userId;
+        const Friendship = require('../models/Friendship');
+        const FriendRequest = require('../models/FriendRequest');
 
-        if (currentUserId && String(currentUserId) !== String(updatedUser._id)) {
-          const Friendship = require('../models/Friendship');
-          const FriendRequest = require('../models/FriendRequest');
+        // Check if already friends
+        const ids = [String(currentUserId), String(updatedUser._id)].sort();
+        const friendship = await Friendship.findOne({
+          userA: ids[0],
+          userB: ids[1],
+          deletedAt: null
+        });
 
-          // Check if already friends
-          const ids = [String(currentUserId), String(updatedUser._id)].sort();
-          const friendship = await Friendship.findOne({
-            userA: ids[0],
-            userB: ids[1],
-            deletedAt: null
+        if (friendship) {
+          friendshipStatus = 'accepted';
+        } else {
+          // Check for pending request
+          const request = await FriendRequest.findOne({
+            $or: [
+              { fromUserId: currentUserId, toUserId: updatedUser._id },
+              { fromUserId: updatedUser._id, toUserId: currentUserId }
+            ],
+            status: 'pending'
           });
 
-          if (friendship) {
-            friendshipStatus = 'accepted';
-          } else {
-            // Check for pending request
-            const request = await FriendRequest.findOne({
-              $or: [
-                { fromUserId: currentUserId, toUserId: updatedUser._id },
-                { fromUserId: updatedUser._id, toUserId: currentUserId }
-              ],
-              status: 'pending'
-            });
-
-            if (request) {
-              friendshipStatus = 'pending';
-            }
+          if (request) {
+            friendshipStatus = 'pending';
           }
         }
       } catch (err) {
-        // Token invalid, ignore friendship check
+        // ignore friendship check error
       }
     }
     

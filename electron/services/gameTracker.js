@@ -137,9 +137,9 @@ class GameTracker {
   }
 
   async sendHeartbeat() {
-    // throttle heartbeat to every 1 minute
+    // throttle heartbeat to every 30 seconds for better real-time updates
     const now = Date.now();
-    if (this.lastHeartbeat && (now - this.lastHeartbeat < 60000)) {
+    if (this.lastHeartbeat && (now - this.lastHeartbeat < 30000)) {
       return;
     }
 

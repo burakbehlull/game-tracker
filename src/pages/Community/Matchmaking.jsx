@@ -305,7 +305,14 @@ export default function Matchmaking({ user }) {
               Anlık
             </button>
             <button
-              onClick={() => { setMode('passive'); stopInstantSearch(); if (matches.length === 0) fetchMatches(); }}
+              onClick={() => { 
+                setMode('passive'); 
+                stopInstantSearch(); 
+                if (matches.length === 0) {
+                  setIsSearching(true);
+                  fetchMatches(); 
+                }
+              }}
               className={cn(
                 "px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all",
                 mode === 'passive' ? "bg-primary text-white shadow-lg shadow-primary/20" : "text-gray-500 hover:text-gray-300"

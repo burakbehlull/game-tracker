@@ -240,21 +240,34 @@ router.get('/match', auth, async (req, res) => {
       };
     });
 
-    // If no specific game requested and not enough common game matches found, 
-    // add some active users as fallback
-    if (!gameName && matchesWithCommonGames.length < 5) {
+    // If not enough matches found, add some active users as fallback (even if gameName was requested)
+    if (matchesWithCommonGames.length < 15) {
       const currentMatchIds = matchesWithCommonGames.map(m => String(m._id));
-      const fallbackExcludeIds = [...excludeIds, ...currentMatchIds];
+      const fallbackExcludeIds = [...new Set([...finalExcludeIds, ...currentMatchIds])];
       
-      const fallbackMatches = await User.find({
-        _id: { $nin: fallbackExcludeIds }
-      })
-      .select('username globalName avatar level xp')
-      .sort({ lastLogin: -1 })
-      .limit(10 - matchesWithCommonGames.length)
-      .lean();
+      // Get some random active users who haven't been matched yet
+      const fallbackMatches = await User.aggregate([
+        { $match: { 
+          _id: { $nin: fallbackExcludeIds.map(id => new mongoose.Types.ObjectId(id)) },
+          'settings.privacy.passiveMatchmakingEnabled': { $ne: false }
+        }},
+        { $sample: { size: 20 } }, // Randomly sample users
+        { $project: { username: 1, globalName: 1, avatar: 1, level: 1, xp: 1, library: 1, lastLogin: 1 } }
+      ]);
       
-      const fallbacks = fallbackMatches.map(m => ({ ...m, commonGames: [] }));
+      const fallbacks = fallbackMatches.map(match => {
+        const matchLibrary = match.library || [];
+        const commonGames = matchLibrary
+          .filter(g => g.gameName && currentUserGames.includes(g.gameName.toLowerCase()))
+          .map(g => g.gameName);
+          
+        return {
+          ...match,
+          commonGames,
+          library: undefined
+        };
+      });
+      
       return res.json([...matchesWithCommonGames, ...fallbacks]);
     }
 

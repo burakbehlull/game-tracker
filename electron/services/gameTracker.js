@@ -3,15 +3,21 @@ const { exec } = require('child_process');
 const { Notification } = require('electron');
 const path = require('path');
 const log = require('electron-log');
-// Use a more robust way to load env or defaults
-// In production (asar), .env might not exist.
 const dotenv = require('dotenv');
 
-// Attempt to load .env only if likely in dev environment
-if (process.env.NODE_ENV !== 'production') {
+// Always try to load .env (no-op if not found in production)
+try {
   const envPath = path.join(__dirname, '../../.env');
   dotenv.config({ path: envPath });
-}
+} catch (_) {}
+
+// The remote API URL where the game list (processNames) is stored.
+// VITE_API_URL is a frontend Vite variable and is NOT injected into the
+// Electron main process in a packaged (production) build.
+// We therefore hardcode the remote URL here as the authoritative source
+// for game data, and fall back to the embedded local server only when
+// running in development (where the remote may be unreachable).
+const REMOTE_GAMES_API_URL = 'https://game-tracker-4axf.onrender.com/api';
 
 const DiscordService = require('./discordService');
 
@@ -26,10 +32,16 @@ class GameTracker {
     this.discordRPCEnabled = true; // Default to true as requested
     this.healthNotificationsEnabled = true; // Default to true
     this.disabledTrackingGames = []; // New field
-    // Hardcoded fallback because internal server listens on 3000
-    this.apiUrl = process.env.VITE_API_URL || 'http://localhost:3000/api'; 
-    
-    log.info(`[GameTracker] Initialized. API URL: ${this.apiUrl}`);
+    // Remote API URL – used for session start/end/heartbeat calls.
+    // In production, VITE_API_URL is not available to the main process,
+    // so we fall back to the authoritative remote URL to ensure data is saved
+    // to the real database, not the local embedded one.
+    this.apiUrl = process.env.VITE_API_URL || REMOTE_GAMES_API_URL;
+
+    // Remote API URL – used for syncing the game list (processNames).
+    this.gamesApiUrl = REMOTE_GAMES_API_URL;
+
+    log.info(`[GameTracker] Initialized. apiUrl: ${this.apiUrl} | gamesApiUrl: ${this.gamesApiUrl}`);
   }
 
   setHealthNotifications(enabled) {
@@ -86,19 +98,33 @@ class GameTracker {
   }
 
   async syncGamesFromDB() {
-    try {
-      const res = await fetch(`${this.apiUrl}/games`);
-      if (res.ok) {
-        const games = await res.json();
-        log.debug(`[GameTracker] Raw data from API: ${JSON.stringify(games)}`);
-        this.processMonitor.updateGameProcesses(games);
-        log.info(`[GameTracker] Synced ${games.length} games from database`);
-      } else {
-        log.warn(`[GameTracker] Failed to sync games: ${res.status} ${res.statusText}`);
+    // Try remote API first (authoritative source for game list).
+    // Fall back to local embedded server if remote is unreachable.
+    const urlsToTry = [this.gamesApiUrl, this.apiUrl].filter(
+      (u, i, arr) => arr.indexOf(u) === i  // deduplicate
+    );
+
+    for (const baseUrl of urlsToTry) {
+      try {
+        log.info(`[GameTracker] Syncing games from: ${baseUrl}/games`);
+        const res = await fetch(`${baseUrl}/games`, { signal: AbortSignal.timeout(8000) });
+        if (res.ok) {
+          const games = await res.json();
+          this.processMonitor.updateGameProcesses(games);
+          log.info(`[GameTracker] Synced ${games.length} games from ${baseUrl}`);
+          if (games.length === 0) {
+            log.warn('[GameTracker] Remote returned 0 games – check the database.');
+          }
+          return; // success – stop trying
+        } else {
+          log.warn(`[GameTracker] ${baseUrl}/games returned ${res.status} ${res.statusText}`);
+        }
+      } catch (err) {
+        log.warn(`[GameTracker] Could not reach ${baseUrl}/games: ${err.message}`);
       }
-    } catch (err) {
-      log.warn('[GameTracker] Failed to sync games from DB:', err.message);
     }
+
+    log.error('[GameTracker] All game-sync attempts failed. Tracking will not work until next retry.');
   }
 
   async setSessionLimit(minutes) {

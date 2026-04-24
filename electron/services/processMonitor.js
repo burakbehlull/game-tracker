@@ -61,9 +61,10 @@ class ProcessMonitor {
   async getRunningProcesses() {
     try {
       // Strategy 1: PowerShell (Preferred - Structured Data)
+      // log.debug('[ProcessMonitor] Scanning processes via PowerShell...');
       return await this.getProcessesFromPowershell();
     } catch (err) {
-      log.warn('PowerShell process scan failed, falling back to legacy tasklist method:', err);
+      log.warn('[ProcessMonitor] PowerShell scan failed, falling back to tasklist:', err.message);
       // Strategy 2: Tasklist (Fallback)
       return await this.getProcessesFromTasklist();
     }
@@ -74,9 +75,9 @@ class ProcessMonitor {
     const script = `
       Get-Process | ForEach-Object {
         try {
-          $name = $_.Name
-          $path = $_.Path
-          [PSCustomObject]@{ Name = $name; Path = $path }
+          $name = $_.Name;
+          $path = $_.Path;
+          [PSCustomObject]@{ Name = $name; Path = $path };
         } catch {}
       } | ConvertTo-Json -Compress
     `.replace(/\n/g, ' ').trim();
@@ -94,12 +95,22 @@ class ProcessMonitor {
 
       processList.forEach(p => {
         if (p.Name) {
-          runningExes.add(this.normalize(p.Name + '.exe'));
+          const normalizedName = this.normalize(p.Name);
+          runningExes.add(normalizedName);
+          // Always add .exe version if it doesn't have it
+          if (!normalizedName.endsWith('.exe')) {
+            runningExes.add(normalizedName + '.exe');
+          }
         }
         if (p.Path) {
           try {
             const winBasename = path.win32.basename(p.Path);
-            runningExes.add(this.normalize(winBasename));
+            const normalizedBasename = this.normalize(winBasename);
+            runningExes.add(normalizedBasename);
+            // Also add without .exe if it has it
+            if (normalizedBasename.endsWith('.exe')) {
+              runningExes.add(normalizedBasename.slice(0, -4));
+            }
           } catch (e) {}
         }
       });
@@ -121,7 +132,12 @@ class ProcessMonitor {
       if (parts.length > 0) {
         // Remove quotes and whitespace
         const exeName = parts[0].replace(/"/g, '');
-        runningExes.add(this.normalize(exeName));
+        const normalized = this.normalize(exeName);
+        runningExes.add(normalized);
+        // Also add without .exe if it has it
+        if (normalized.endsWith('.exe')) {
+          runningExes.add(normalized.slice(0, -4));
+        }
       }
     });
 
@@ -149,6 +165,13 @@ class ProcessMonitor {
         }
       }
     }
+
+    // Optional: Log what we are looking for if nothing was found (only occasionally)
+    if (!this.lastLookLog || Date.now() - this.lastLookLog > 300000) {
+      log.debug(`[ProcessMonitor] Scanning for: ${Object.keys(this.gameProcesses).length} games. Sample: ${Object.keys(this.gameProcesses).slice(0, 5).join(', ')}`);
+      this.lastLookLog = Date.now();
+    }
+
     return null;
   }
 }

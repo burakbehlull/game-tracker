@@ -191,33 +191,47 @@ class GameTracker {
   }
 
   async sendHeartbeat() {
-    // throttle heartbeat to every 30 seconds for better real-time updates
+    // Heartbeat her 10 saniyede bir gönderilir (daha sık güncelleme)
     const now = Date.now();
-    if (this.lastHeartbeat && (now - this.lastHeartbeat < 30000)) {
+    if (this.lastHeartbeat && (now - this.lastHeartbeat < 10000)) {
       return;
     }
 
-    if (!this.currentSession || !this.authToken) return;
+    if (!this.currentSession || !this.authToken) {
+      log.warn('[GameTracker] Heartbeat skipped: no session or no token');
+      return;
+    }
 
-    // Check health notifications once a minute along with heartbeat
+    // Session ID kontrolü - local session'ları atla
+    if (this.currentSession.id.startsWith('local-')) {
+      log.warn('[GameTracker] Heartbeat skipped: local session (not synced to backend yet)');
+      return;
+    }
+
+    // Check health notifications
     this.checkHealthNotifications();
 
     try {
+      log.info(`[GameTracker] Sending heartbeat for session: ${this.currentSession.id}`);
+      
       const res = await fetch(`${this.apiUrl}/games/${this.currentSession.id}/heartbeat`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${this.authToken}`
-        }
+        },
+        timeout: 5000
       });
       
       if (res.ok) {
+        const data = await res.json();
         this.lastHeartbeat = now;
-        // log.info('Heartbeat sent');
+        log.info(`[GameTracker] ✅ Heartbeat successful. Duration: ${data.duration}s`);
       } else {
-        log.warn(`Heartbeat failed: ${res.status} ${res.statusText}`);
+        const text = await res.text();
+        log.error(`[GameTracker] ❌ Heartbeat failed: ${res.status} ${res.statusText} - ${text}`);
       }
     } catch (err) {
-      log.error('Heartbeat failed:', err);
+      log.error('[GameTracker] ❌ Heartbeat error:', err.message);
     }
   }
 
@@ -238,10 +252,17 @@ class GameTracker {
   }
 
   async startSession(game) {
-    if (this.currentSession) return;
+    if (this.currentSession) {
+      log.warn('[GameTracker] Session already exists, skipping');
+      return;
+    }
 
     try {
-      log.info(`[GameTracker] Starting session for: ${game.gameName}`);
+      log.info(`[GameTracker] ========================================`);
+      log.info(`[GameTracker] Starting NEW session for: ${game.gameName}`);
+      log.info(`[GameTracker] Process: ${game.processName}`);
+      log.info(`[GameTracker] Auth Token: ${this.authToken ? 'YES' : 'NO'}`);
+      log.info(`[GameTracker] ========================================`);
       
       // 1. Set local state immediately for instant feedback
       let sessionId = 'local-' + Date.now();
@@ -262,32 +283,46 @@ class GameTracker {
       // 3. Notify main process to update tray
       this.notifyMainProcess('game-started', { gameName: game.gameName });
 
-      // 4. Perform backend sync in background (if token available)
+      // 4. CRITICAL: Perform backend sync (if token available)
       if (this.authToken) {
         try {
+          log.info(`[GameTracker] Syncing session to backend: ${this.apiUrl}/games/start`);
+          
           const res = await fetch(`${this.apiUrl}/games/start`, {
             method: 'POST',
             headers: {
               'Authorization': `Bearer ${this.authToken}`,
               'Content-Type': 'application/json'
             },
-            body: JSON.stringify(game)
+            body: JSON.stringify({
+              gameName: game.gameName,
+              processName: game.processName
+            }),
+            timeout: 10000
           });
 
           if (res.ok) {
             const data = await res.json();
             this.currentSession.id = data.sessionId;
             this.currentSession.startTime = new Date(data.startTime);
-            log.info(`[GameTracker] Remote session established: ${this.currentSession.id}`);
+            log.info(`[GameTracker] ✅ Remote session established!`);
+            log.info(`[GameTracker] Session ID: ${this.currentSession.id}`);
+            log.info(`[GameTracker] Start Time: ${this.currentSession.startTime}`);
           } else {
             const text = await res.text();
-            log.warn(`[GameTracker] Remote session failed: ${res.statusText} ${text}`);
+            log.error(`[GameTracker] ❌ Remote session failed: ${res.status} ${res.statusText}`);
+            log.error(`[GameTracker] Response: ${text}`);
+            log.error(`[GameTracker] WARNING: Session will NOT be saved to database!`);
           }
           
           await this.syncPresence(true, game.gameName);
         } catch (syncErr) {
-          log.warn(`[GameTracker] Background sync error:`, syncErr.message);
+          log.error(`[GameTracker] ❌ Backend sync FAILED:`, syncErr.message);
+          log.error(`[GameTracker] WARNING: Session will NOT be saved to database!`);
         }
+      } else {
+        log.error(`[GameTracker] ❌ NO AUTH TOKEN - Session will NOT be saved!`);
+        log.error(`[GameTracker] Please login to save game sessions.`);
       }
     } catch (err) {
       log.error('[GameTracker] Fatal error in startSession:', err);
@@ -306,31 +341,62 @@ class GameTracker {
   }
 
   async endSession() {
-    if (!this.currentSession) return;
+    if (!this.currentSession) {
+      log.warn('[GameTracker] No session to end');
+      return;
+    }
 
     try {
       const gameName = this.currentSession.gameName;
+      const sessionId = this.currentSession.id;
+      const isLocalSession = sessionId.startsWith('local-');
+      
+      log.info(`[GameTracker] ========================================`);
       log.info(`[GameTracker] Ending session for: ${gameName}`);
+      log.info(`[GameTracker] Session ID: ${sessionId}`);
+      log.info(`[GameTracker] Is Local: ${isLocalSession}`);
+      log.info(`[GameTracker] Auth Token: ${this.authToken ? 'YES' : 'NO'}`);
+      log.info(`[GameTracker] ========================================`);
       
       // 1. Clear Discord RPC immediately when game closes
       if (this.discordService) {
         await this.discordService.clearActivity();
-        log.info(`[GameTracker] Discord RPC cleared for: ${gameName}`);
+        log.info(`[GameTracker] Discord RPC cleared`);
       }
       
       // 2. Notify main process to update tray
       this.notifyMainProcess('game-stopped', { gameName });
       
-      // 3. End backend session
-      if (this.authToken && !this.currentSession.id.startsWith('local-')) {
-        await fetch(`${this.apiUrl}/games/end`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${this.authToken}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ sessionId: this.currentSession.id })
-        }).catch(err => log.error(`[GameTracker] Failed to end remote session: ${err.message}`));
+      // 3. CRITICAL: End backend session (if not local)
+      if (this.authToken && !isLocalSession) {
+        try {
+          log.info(`[GameTracker] Ending remote session: ${this.apiUrl}/games/end`);
+          
+          const res = await fetch(`${this.apiUrl}/games/end`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${this.authToken}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ sessionId: sessionId }),
+            timeout: 10000
+          });
+          
+          if (res.ok) {
+            const data = await res.json();
+            log.info(`[GameTracker] ✅ Session ended successfully!`);
+            log.info(`[GameTracker] Duration: ${data.duration}s (${Math.floor(data.duration / 60)} minutes)`);
+          } else {
+            const text = await res.text();
+            log.error(`[GameTracker] ❌ Failed to end session: ${res.status} ${res.statusText}`);
+            log.error(`[GameTracker] Response: ${text}`);
+          }
+        } catch (err) {
+          log.error(`[GameTracker] ❌ Failed to end remote session:`, err.message);
+        }
+      } else if (isLocalSession) {
+        log.error(`[GameTracker] ❌ Session was LOCAL - NOT saved to database!`);
+        log.error(`[GameTracker] This means the session start failed or no auth token.`);
       }
       
       // 4. Update presence to idle
@@ -340,7 +406,7 @@ class GameTracker {
 
       // 5. Clear current session
       this.currentSession = null;
-      log.info(`[GameTracker] Session ended successfully for: ${gameName}`);
+      log.info(`[GameTracker] Session cleared from memory`);
     } catch (err) {
       log.error('[GameTracker] Error ending session:', err);
       this.currentSession = null;

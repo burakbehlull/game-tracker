@@ -409,7 +409,7 @@ export default function Profile({ user: currentUser }) {
                     {friendshipStatus === 'accepted' ? (
                       <Button className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold gap-2 h-11 px-6 rounded-xl transition-all cursor-default">
                         <ShieldCheck className="w-4 h-4" />
-                        Arkadaş Ekli
+                        Arkadaş
                       </Button>
                     ) : friendshipStatus === 'pending' ? (
                       <Button className="bg-amber-600 hover:bg-amber-700 text-white font-bold gap-2 h-11 px-6 rounded-xl transition-all cursor-default">

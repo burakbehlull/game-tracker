@@ -134,6 +134,11 @@ router.post('/end', auth, async (req, res) => {
 
     await session.save();
     await setPlaying(req.userId, null);
+    
+    // Clear profile stats cache so new games appear immediately
+    const { clearProfileStatsCache } = require('./users');
+    clearProfileStatsCache(req.userId);
+    
     res.json(session);
   } catch (error) {
     console.error('[Games API Error]', error);
@@ -200,6 +205,11 @@ router.put('/:id/heartbeat', auth, async (req, res) => {
 
     await session.save();
     await setPlaying(req.userId, session.gameName);
+    
+    // Clear cache periodically during heartbeat to ensure fresh stats
+    const { clearProfileStatsCache } = require('./users');
+    clearProfileStatsCache(req.userId);
+    
     res.json({ success: true, duration: session.duration });
   } catch (error) {
     console.error('[Games API Error]', error);

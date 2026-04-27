@@ -118,9 +118,13 @@ export default function Profile({ user: currentUser }) {
       const targetUsername = username || currentUser?.username;
       if (!targetUsername) return;
       
+      console.log('[Profile] Profil yükleniyor:', targetUsername);
       const userRes = await api.getUserProfile(targetUsername);
       const userData = userRes.user || userRes;
       const userStats = userRes.stats || [];
+      
+      console.log('[Profile] Yüklenen oyun sayısı:', userStats.length);
+      console.log('[Profile] Oyunlar:', userStats.map(s => s._id).join(', '));
       
       setProfileUser(userData);
       setStats((userStats || []).sort((a, b) => new Date(b.lastPlayed || 0) - new Date(a.lastPlayed || 0)));
@@ -146,6 +150,30 @@ export default function Profile({ user: currentUser }) {
 
   useEffect(() => {
     fetchProfile();
+    
+    // Refresh profile when page becomes visible (user returns from game)
+    const handleVisibilityChange = () => {
+      if (!document.hidden && isOwnProfile) {
+        console.log('[Profile] Sayfa görünür oldu, profil yenileniyor...');
+        fetchProfile();
+      }
+    };
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    // Also refresh every 30 seconds if it's own profile (to catch new games)
+    let refreshInterval;
+    if (isOwnProfile) {
+      refreshInterval = setInterval(() => {
+        console.log('[Profile] Otomatik yenileme...');
+        fetchProfile();
+      }, 30000); // 30 seconds
+    }
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      if (refreshInterval) clearInterval(refreshInterval);
+    };
   }, [username, currentUser]);
 
   const badgeIcons = {

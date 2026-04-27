@@ -10,6 +10,17 @@ const ImageUploadService = require('../services/imageUploadService');
 const profileStatsCache = new Map();
 const STATS_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
+// Export function to clear cache when game sessions end
+function clearProfileStatsCache(userId) {
+  if (userId) {
+    const cacheKey = `stats_${userId}`;
+    profileStatsCache.delete(cacheKey);
+    console.log(`[Cache] Cleared profile stats cache for user ${userId}`);
+  }
+}
+
+module.exports.clearProfileStatsCache = clearProfileStatsCache;
+
 const ChallengeService = require('../services/challengeService');
 
 // Badges definitions

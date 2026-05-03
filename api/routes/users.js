@@ -384,6 +384,42 @@ router.delete('/library/:gameName', auth, async (req, res) => {
   }
 });
 
+// Legacy endpoint for backward compatibility (gameId based)
+router.delete('/library/remove/:gameId', auth, async (req, res) => {
+  const { gameId } = req.params;
+  try {
+    console.log('========================================');
+    console.log('[Library API] REMOVE REQUEST (Legacy - gameId)');
+    console.log('User ID:', req.userId);
+    console.log('Game ID:', gameId);
+    console.log('========================================');
+    
+    const user = await User.findById(req.userId);
+    if (!user) return res.status(404).json({ error: 'Kullanıcı bulunamadı' });
+
+    const beforeCount = user.library.length;
+    user.library = user.library.filter(g => g._id.toString() !== gameId);
+    const afterCount = user.library.length;
+    
+    console.log('[Library API] Before:', beforeCount, 'games');
+    console.log('[Library API] After:', afterCount, 'games');
+    console.log('[Library API] Removed:', beforeCount - afterCount, 'game(s)');
+    
+    if (beforeCount === afterCount) {
+      console.log('[Library API] ⚠️ Game not found in library with ID:', gameId);
+      return res.status(404).json({ error: 'Oyun kütüphanede bulunamadı' });
+    }
+    
+    await user.save();
+    console.log('[Library API] ✅ Game removed successfully');
+    console.log('========================================');
+    res.json(user.library);
+  } catch (error) {
+    console.error('[Library API Error] ❌ REMOVE FAILED:', error);
+    res.status(500).json({ error: 'Oyun silinemedi' });
+  }
+});
+
 // User Blocking
 router.post('/block/:userId', auth, async (req, res) => {
   try {

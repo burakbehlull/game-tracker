@@ -12,6 +12,8 @@ export default function Library({ user }) {
   const [library, setLibrary] = useState(user?.library || []);
   const [supportedGames, setSupportedGames] = useState([]);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [gameToDelete, setGameToDelete] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [currentGame, setCurrentGame] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -133,14 +135,23 @@ export default function Library({ user }) {
     }
   };
 
-  const handleRemove = async (gameName) => {
-    if (!window.confirm(`${gameName} kütüphaneden çıkarılsın mı?`)) return;
+  const handleRemove = async (game) => {
+    setGameToDelete(game);
+    setShowDeleteModal(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!gameToDelete) return;
+    
     try {
-      const updatedLibrary = await api.removeFromLibrary(gameName);
+      const updatedLibrary = await api.removeFromLibrary(gameToDelete.gameName);
       setLibrary(updatedLibrary);
-      toast({ title: 'Silindi', description: `${gameName} kütüphaneden çıkarıldı.` });
+      toast({ title: 'Silindi', description: `${gameToDelete.gameName} kütüphaneden çıkarıldı.` });
     } catch (err) {
       toast({ title: 'Hata', description: getErrorMessage(err, 'Oyun silinemedi') });
+    } finally {
+      setShowDeleteModal(false);
+      setGameToDelete(null);
     }
   };
 
@@ -219,7 +230,7 @@ export default function Library({ user }) {
                   )}
 
                   <button 
-                    onClick={() => handleRemove(game.gameName)}
+                    onClick={() => handleRemove(game)}
                     className="absolute top-4 right-4 p-2 rounded-xl bg-black/50 text-white/50 hover:bg-red-500 hover:text-white opacity-0 group-hover:opacity-100 transition-all duration-200"
                   >
                     <X className="w-4 h-4" />
@@ -272,6 +283,7 @@ export default function Library({ user }) {
         )}
       </div>
 
+      {/* Add Game Modal */}
       {showAddModal && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
           <Card className="w-full max-w-md bg-[#0d1117] border border-white/10 rounded-[2.5rem] shadow-3xl animate-in fade-in zoom-in duration-300 overflow-hidden">
@@ -314,6 +326,52 @@ export default function Library({ user }) {
                   ))
                 )}
 
+              </div>
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && gameToDelete && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <Card className="w-full max-w-md bg-[#0d1117] border border-red-500/20 rounded-[2rem] shadow-3xl animate-in zoom-in duration-300 overflow-hidden">
+            <div className="p-8 space-y-6">
+              {/* Header */}
+              <div className="flex items-start gap-4">
+                <div className="p-3 rounded-2xl bg-red-500/10 border border-red-500/20">
+                  <X className="w-6 h-6 text-red-500" />
+                </div>
+                <div className="flex-1">
+                  <h2 className="text-2xl font-black text-white uppercase italic tracking-tighter">Oyunu Sil</h2>
+                  <p className="text-sm text-muted-foreground font-medium mt-1">Bu işlem geri alınamaz</p>
+                </div>
+              </div>
+
+              {/* Game Info */}
+              <div className="p-4 rounded-2xl bg-white/5 border border-white/5">
+                <p className="text-white/70 font-medium text-sm mb-2">Silmek istediğin oyun:</p>
+                <p className="text-xl font-black text-white uppercase italic">{gameToDelete.gameName}</p>
+              </div>
+
+              {/* Actions */}
+              <div className="flex gap-3">
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                    setShowDeleteModal(false);
+                    setGameToDelete(null);
+                  }}
+                  className="flex-1 h-12 rounded-xl border-white/10 hover:bg-white/5 font-black uppercase tracking-widest"
+                >
+                  İptal
+                </Button>
+                <Button 
+                  onClick={confirmDelete}
+                  className="flex-1 h-12 rounded-xl bg-red-500 hover:bg-red-600 text-white font-black uppercase tracking-widest shadow-lg shadow-red-500/20"
+                >
+                  Sil
+                </Button>
               </div>
             </div>
           </Card>

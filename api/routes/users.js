@@ -315,40 +315,71 @@ router.post('/library/add', auth, async (req, res) => {
   }
 });
 
-router.put('/library/update/:gameId', auth, async (req, res) => {
-  const { gameName, exeName, exePath, genre } = req.body;
-  const { gameId } = req.params;
+router.put('/library/update', auth, async (req, res) => {
+  const { gameName, exePath } = req.body;
   try {
+    console.log('========================================');
+    console.log('[Library API] UPDATE REQUEST');
+    console.log('User ID:', req.userId);
+    console.log('Game Name:', gameName);
+    console.log('Exe Path:', exePath);
+    console.log('========================================');
+    
     const user = await User.findById(req.userId);
     if (!user) return res.status(404).json({ error: 'Kullanıcı bulunamadı' });
 
-    const gameIndex = user.library.findIndex(g => g._id.toString() === gameId);
-    if (gameIndex === -1) return res.status(404).json({ error: 'Oyun bulunamadı' });
+    const gameIndex = user.library.findIndex(g => g.gameName === gameName);
+    if (gameIndex === -1) {
+      console.log('[Library API] ⚠️ Game not found in library:', gameName);
+      return res.status(404).json({ error: 'Oyun bulunamadı' });
+    }
 
-    if (gameName) user.library[gameIndex].gameName = gameName;
-    if (exeName !== undefined) user.library[gameIndex].exeName = exeName;
-    if (exePath !== undefined) user.library[gameIndex].exePath = exePath;
-    if (genre !== undefined) user.library[gameIndex].genre = genre;
+    if (exePath !== undefined) {
+      user.library[gameIndex].exePath = exePath;
+    }
 
     await user.save();
+    console.log('[Library API] ✅ Game updated successfully');
+    console.log('========================================');
     res.json(user.library);
   } catch (error) {
-    console.error('[Library API Error]', error);
+    console.error('[Library API Error] ❌ UPDATE FAILED:', error);
     res.status(500).json({ error: 'Oyun güncellenemedi' });
   }
 });
 
-router.delete('/library/remove/:gameId', auth, async (req, res) => {
-  const { gameId } = req.params;
+router.delete('/library/:gameName', auth, async (req, res) => {
+  const { gameName } = req.params;
   try {
+    console.log('========================================');
+    console.log('[Library API] REMOVE REQUEST');
+    console.log('User ID:', req.userId);
+    console.log('Game Name:', decodeURIComponent(gameName));
+    console.log('========================================');
+    
     const user = await User.findById(req.userId);
     if (!user) return res.status(404).json({ error: 'Kullanıcı bulunamadı' });
 
-    user.library = user.library.filter(g => g._id.toString() !== gameId);
+    const decodedGameName = decodeURIComponent(gameName);
+    const beforeCount = user.library.length;
+    user.library = user.library.filter(g => g.gameName !== decodedGameName);
+    const afterCount = user.library.length;
+    
+    console.log('[Library API] Before:', beforeCount, 'games');
+    console.log('[Library API] After:', afterCount, 'games');
+    console.log('[Library API] Removed:', beforeCount - afterCount, 'game(s)');
+    
+    if (beforeCount === afterCount) {
+      console.log('[Library API] ⚠️ Game not found in library:', decodedGameName);
+      return res.status(404).json({ error: 'Oyun kütüphanede bulunamadı' });
+    }
+    
     await user.save();
+    console.log('[Library API] ✅ Game removed successfully');
+    console.log('========================================');
     res.json(user.library);
   } catch (error) {
-    console.error('[Library API Error]', error);
+    console.error('[Library API Error] ❌ REMOVE FAILED:', error);
     res.status(500).json({ error: 'Oyun silinemedi' });
   }
 });

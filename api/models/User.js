@@ -155,6 +155,53 @@ const userSchema = new mongoose.Schema({
     lastLoginDate: { type: Date, default: null },
     totalPlayTimeMinutes: { type: Number, default: 0 },
     differentGamesPlayed: { type: [String], default: [] }
+  },
+  // Bağlı Hesaplar
+  connectedAccounts: {
+    steam: {
+      username: { type: String, default: '' },
+      profileUrl: { type: String, default: '' },
+      verified: { type: Boolean, default: false },
+      connectedAt: { type: Date, default: null }
+    },
+    epic: {
+      username: { type: String, default: '' },
+      profileUrl: { type: String, default: '' },
+      verified: { type: Boolean, default: false },
+      connectedAt: { type: Date, default: null }
+    },
+    playstation: {
+      username: { type: String, default: '' },
+      profileUrl: { type: String, default: '' },
+      verified: { type: Boolean, default: false },
+      connectedAt: { type: Date, default: null }
+    },
+    xbox: {
+      username: { type: String, default: '' },
+      profileUrl: { type: String, default: '' },
+      verified: { type: Boolean, default: false },
+      connectedAt: { type: Date, default: null }
+    },
+    riot: {
+      username: { type: String, default: '' },
+      profileUrl: { type: String, default: '' },
+      verified: { type: Boolean, default: false },
+      connectedAt: { type: Date, default: null }
+    },
+    lol: {
+      username: { type: String, default: '' },
+      region: { type: String, default: 'tr1' }, // tr1, euw1, na1, etc.
+      profileUrl: { type: String, default: '' },
+      verified: { type: Boolean, default: false },
+      connectedAt: { type: Date, default: null }
+    },
+    discord: {
+      username: { type: String, default: '' },
+      discriminator: { type: String, default: '' }, // Discord#1234
+      profileUrl: { type: String, default: '' },
+      verified: { type: Boolean, default: false },
+      connectedAt: { type: Date, default: null }
+    }
   }
 });
 

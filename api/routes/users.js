@@ -475,4 +475,119 @@ router.post('/unblock/:userId', auth, async (req, res) => {
   }
 });
 
+// Connected Accounts - Get all connected accounts
+router.get('/connected-accounts', auth, async (req, res) => {
+  try {
+    const user = await User.findById(req.userId).select('connectedAccounts');
+    res.json(user.connectedAccounts || {});
+  } catch (error) {
+    console.error('[Connected Accounts Error]', error);
+    res.status(500).json({ error: 'Bağlı hesaplar alınamadı' });
+  }
+});
+
+// Connected Accounts - Add/Update account
+router.post('/connected-accounts/:platform', auth, async (req, res) => {
+  try {
+    const { platform } = req.params;
+    const { username, region, discriminator } = req.body;
+
+    const validPlatforms = ['steam', 'epic', 'playstation', 'xbox', 'riot', 'lol', 'discord'];
+    if (!validPlatforms.includes(platform)) {
+      return res.status(400).json({ error: 'Geçersiz platform' });
+    }
+
+    if (!username || username.trim().length === 0) {
+      return res.status(400).json({ error: 'Kullanıcı adı gerekli' });
+    }
+
+    const user = await User.findById(req.userId);
+    if (!user) return res.status(404).json({ error: 'Kullanıcı bulunamadı' });
+
+    // Initialize connectedAccounts if not exists
+    if (!user.connectedAccounts) {
+      user.connectedAccounts = {};
+    }
+
+    // Generate profile URL based on platform
+    let profileUrl = '';
+    switch (platform) {
+      case 'steam':
+        profileUrl = `https://steamcommunity.com/id/${username}`;
+        break;
+      case 'epic':
+        profileUrl = `https://www.epicgames.com/id/${username}`;
+        break;
+      case 'playstation':
+        profileUrl = `https://psnprofiles.com/${username}`;
+        break;
+      case 'xbox':
+        profileUrl = `https://account.xbox.com/en-us/profile?gamertag=${username}`;
+        break;
+      case 'riot':
+        profileUrl = `https://account.riotgames.com/`;
+        break;
+      case 'lol':
+        const regionCode = region || 'tr1';
+        profileUrl = `https://www.op.gg/summoners/${regionCode}/${username}`;
+        break;
+      case 'discord':
+        // Discord doesn't have public profile URLs, but we can store the username
+        profileUrl = discriminator ? `https://discord.com/users/${username}` : '';
+        break;
+    }
+
+    // Update or create account connection
+    user.connectedAccounts[platform] = {
+      username: username.trim(),
+      profileUrl,
+      verified: true, // Şimdilik otomatik doğrulama
+      connectedAt: new Date(),
+      ...(platform === 'lol' && region ? { region } : {}),
+      ...(platform === 'discord' && discriminator ? { discriminator: discriminator.trim() } : {})
+    };
+
+    user.markModified('connectedAccounts');
+    await user.save();
+
+    console.log(`[Connected Accounts] ${platform} hesabı eklendi: ${username}`);
+    res.json(user.connectedAccounts);
+  } catch (error) {
+    console.error('[Connected Accounts Error]', error);
+    res.status(500).json({ error: 'Hesap eklenemedi' });
+  }
+});
+
+// Connected Accounts - Remove account
+router.delete('/connected-accounts/:platform', auth, async (req, res) => {
+  try {
+    const { platform } = req.params;
+
+    const validPlatforms = ['steam', 'epic', 'playstation', 'xbox', 'riot', 'lol', 'discord'];
+    if (!validPlatforms.includes(platform)) {
+      return res.status(400).json({ error: 'Geçersiz platform' });
+    }
+
+    const user = await User.findById(req.userId);
+    if (!user) return res.status(404).json({ error: 'Kullanıcı bulunamadı' });
+
+    if (user.connectedAccounts && user.connectedAccounts[platform]) {
+      user.connectedAccounts[platform] = {
+        username: '',
+        profileUrl: '',
+        verified: false,
+        connectedAt: null
+      };
+      user.markModified('connectedAccounts');
+      await user.save();
+    }
+
+    console.log(`[Connected Accounts] ${platform} hesabı kaldırıldı`);
+    res.json(user.connectedAccounts);
+  } catch (error) {
+    console.error('[Connected Accounts Error]', error);
+    res.status(500).json({ error: 'Hesap kaldırılamadı' });
+  }
+});
+
 module.exports = router;

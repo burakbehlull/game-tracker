@@ -529,6 +529,28 @@ export const api = {
     });
   },
 
+  // Connected Accounts
+  getConnectedAccounts: async () => {
+    return request(`${API_URL}/users/connected-accounts`, {
+      headers: getHeaders()
+    });
+  },
+
+  addConnectedAccount: async (platform, username, region = null, discriminator = null) => {
+    return request(`${API_URL}/users/connected-accounts/${platform}`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify({ username, region, discriminator })
+    });
+  },
+
+  removeConnectedAccount: async (platform) => {
+    return request(`${API_URL}/users/connected-accounts/${platform}`, {
+      method: 'DELETE',
+      headers: getHeaders()
+    });
+  },
+
   // Admin CDN
   getCDNStatus: async () => {
     return request(`${API_URL}/admin/cdn-status`, { headers: getHeaders() });

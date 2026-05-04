@@ -1,12 +1,13 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Settings, Monitor, Clock, Trophy, Zap, Eye, EyeOff, LibraryBig, Archive, 
-  Heart, Flame, Gamepad2, Swords, TrendingUp, Crown, ShieldCheck, Rocket, Users2, UserPlus, MessageSquare, Camera, Trash2, Loader2 } from 'lucide-react';
+  Heart, Flame, Gamepad2, Swords, TrendingUp, Crown, ShieldCheck, Rocket, Users2, UserPlus, MessageSquare, Camera, Trash2, Loader2, ExternalLink, X } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { Button } from '../components/ui/button';
 import { useToast } from '../components/ui/toaster';
 import { api } from '../services/api';
 import { getAssetUrl } from '../lib/assetHelper';
+
 
 
 export default function Profile({ user: currentUser }) {
@@ -22,6 +23,7 @@ export default function Profile({ user: currentUser }) {
   const [allBadges, setAllBadges] = useState([]);
   const [totalTime, setTotalTime] = useState(0);
   const [communities, setCommunities] = useState([]);
+  const [connectedAccounts, setConnectedAccounts] = useState({});
   const [friendshipStatus, setFriendshipStatus] = useState('none'); // none, pending, accepted
   const [loading, setLoading] = useState(true);
   const [requestLoading, setRequestLoading] = useState(false);
@@ -134,17 +136,32 @@ export default function Profile({ user: currentUser }) {
       setTotalTime(total);
 
       const userId = userData._id || userData.id;
-      const [badgesRes, commsRes] = await Promise.all([
+      const [badgesRes, commsRes, accountsRes] = await Promise.all([
         api.getAllBadges(),
-        userId ? api.getUserCommunities(userId) : Promise.resolve([])
+        userId ? api.getUserCommunities(userId) : Promise.resolve([]),
+        isOwnProfile ? api.getConnectedAccounts() : Promise.resolve({})
       ]);
       console.log('User Communities:', commsRes);
+      console.log('Connected Accounts:', accountsRes);
       setAllBadges(badgesRes || []);
       setCommunities(commsRes || []);
+      setConnectedAccounts(accountsRes || {});
     } catch (err) {
       console.error('Profil yükleme hatası:', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleRemoveAccount = async (platformId, platformName) => {
+    if (!window.confirm(`${platformName} hesabını kaldırmak istediğinize emin misiniz?`)) return;
+
+    try {
+      const updatedAccounts = await api.removeConnectedAccount(platformId);
+      setConnectedAccounts(updatedAccounts);
+      toast({ title: 'Başarılı', description: `${platformName} hesabı kaldırıldı` });
+    } catch (err) {
+      toast({ title: 'Hata', description: 'Hesap kaldırılamadı' });
     }
   };
 
@@ -671,6 +688,161 @@ export default function Profile({ user: currentUser }) {
                  )}
                </div>
             </div>
+
+            {/* Connected Accounts */}
+            {isOwnProfile && (
+              <div className="rounded-[2rem] border border-white/5 bg-[#0d1117] p-8">
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">Bağlı Hesaplar</h3>
+                  <Link to="/settings?tab=accounts">
+                    <Button variant="ghost" size="sm" className="h-7 px-3 text-[9px] font-black uppercase tracking-widest hover:bg-primary/10 hover:text-primary">
+                      Düzenle
+                    </Button>
+                  </Link>
+                </div>
+                
+                <div className="space-y-3">
+                  {(() => {
+                    const platforms = [
+                      { 
+                        id: 'steam', 
+                        name: 'Steam', 
+                        color: 'from-blue-500 to-blue-600',
+                        icon: (
+                          <svg className="w-6 h-6 fill-current" viewBox="0 0 24 24">
+                            <path d="M11.979 0C5.678 0 .511 4.86.022 11.037l6.432 2.658c.545-.371 1.203-.59 1.912-.59.063 0 .125.004.188.006l2.861-4.142V8.91c0-2.495 2.028-4.524 4.524-4.524 2.494 0 4.524 2.031 4.524 4.527s-2.03 4.525-4.524 4.525h-.105l-4.076 2.911c0 .052.004.105.004.159 0 1.875-1.515 3.396-3.39 3.396-1.635 0-3.016-1.173-3.331-2.727L.436 15.27C1.862 20.307 6.486 24 11.979 24c6.627 0 11.999-5.373 11.999-12S18.605 0 11.979 0zM7.54 18.21l-1.473-.61c.262.543.714.999 1.314 1.25 1.297.539 2.793-.076 3.332-1.375.263-.63.264-1.319.005-1.949s-.75-1.121-1.377-1.383c-.624-.26-1.29-.249-1.878-.03l1.523.63c.956.4 1.409 1.5 1.009 2.455-.397.957-1.497 1.41-2.454 1.012H7.54zm11.415-9.303c0-1.662-1.353-3.015-3.015-3.015-1.665 0-3.015 1.353-3.015 3.015 0 1.665 1.35 3.015 3.015 3.015 1.663 0 3.015-1.35 3.015-3.015zm-5.273-.005c0-1.252 1.013-2.266 2.265-2.266 1.249 0 2.266 1.014 2.266 2.266 0 1.251-1.017 2.265-2.266 2.265-1.253 0-2.265-1.014-2.265-2.265z"/>
+                          </svg>
+                        )
+                      },
+                      { 
+                        id: 'discord', 
+                        name: 'Discord', 
+                        color: 'from-indigo-500 to-indigo-600',
+                        icon: (
+                          <svg className="w-6 h-6 fill-current" viewBox="0 0 24 24">
+                            <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.419 0 1.334-.956 2.419-2.157 2.419zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.946-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.419 0 1.334-.946 2.419-2.157 2.419z"/>
+                          </svg>
+                        )
+                      },
+                      { 
+                        id: 'epic', 
+                        name: 'Epic Games', 
+                        color: 'from-gray-700 to-gray-800',
+                        icon: (
+                          <svg className="w-6 h-6 fill-current" viewBox="0 0 24 24">
+                            <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 17.894c-.447.447-1.062.671-1.789.671-.394 0-.841-.056-1.342-.168-.502-.112-1.006-.28-1.513-.504-.506-.224-1.006-.504-1.499-.84-.493-.336-.95-.728-1.37-1.176-.42.448-.877.84-1.37 1.176-.493.336-.993.616-1.499.84-.507.224-1.011.392-1.513.504-.501.112-.948.168-1.342.168-.727 0-1.342-.224-1.789-.671-.447-.447-.671-1.062-.671-1.789 0-.394.056-.841.168-1.342.112-.502.28-1.006.504-1.513.224-.506.504-1.006.84-1.499.336-.493.728-.95 1.176-1.37-.448-.42-.84-.877-1.176-1.37-.336-.493-.616-.993-.84-1.499-.224-.507-.392-1.011-.504-1.513C3.056 6.841 3 6.394 3 6c0-.727.224-1.342.671-1.789C4.118 3.764 4.733 3.54 5.46 3.54c.394 0 .841.056 1.342.168.502.112 1.006.28 1.513.504.506.224 1.006.504 1.499.84.493.336.95.728 1.37 1.176.42-.448.877-.84 1.37-1.176.493-.336.993-.616 1.499-.84.507-.224 1.011-.392 1.513-.504.501-.112.948-.168 1.342-.168.727 0 1.342.224 1.789.671.447.447.671 1.062.671 1.789 0 .394-.056.841-.168 1.342-.112.502-.28 1.006-.504 1.513-.224.506-.504 1.006-.84 1.499-.336.493-.728.95-1.176 1.37.448.42.84.877 1.176 1.37.336.493.616.993.84 1.499.224.507.392 1.011.504 1.513.112.501.168.948.168 1.342 0 .727-.224 1.342-.671 1.789z"/>
+                          </svg>
+                        )
+                      },
+                      { 
+                        id: 'playstation', 
+                        name: 'PlayStation', 
+                        color: 'from-blue-600 to-blue-700',
+                        icon: (
+                          <svg className="w-6 h-6 fill-current" viewBox="0 0 24 24">
+                            <path d="M8.985 2.596v17.548l3.915 1.261V6.688c0-.69.304-1.151.794-.991.636.181.794.814.794 1.505v5.876c2.441 1.193 4.362-.002 4.362-3.153 0-3.237-1.126-4.675-4.438-5.827-1.307-.448-3.728-1.186-5.427-1.502zm4.656 16.242l6.296-2.275c.715-.258.826-.625.246-.818-.586-.192-1.637-.139-2.357.123l-4.205 1.5v-2.042l.24-.085s1.201-.42 2.913-.615c1.696-.18 3.785.029 5.437.661 1.848.601 2.041 1.472 1.576 2.072-.465.6-1.622 1.036-1.622 1.036l-8.544 3.107V18.84l.02-.002zM1.808 18.6c-1.9-.545-2.214-1.668-1.352-2.321.801-.585 2.159-1.051 2.159-1.051l5.616-2.013v2.155L4.181 16.83c-.718.258-.826.625-.246.818.586.192 1.637.139 2.357-.123l2.939-1.039v1.795c-.121.019-.241.041-.361.066-2.064.426-4.29.413-7.062-.747z"/>
+                          </svg>
+                        )
+                      },
+                      { 
+                        id: 'xbox', 
+                        name: 'Xbox', 
+                        color: 'from-green-500 to-green-600',
+                        icon: (
+                          <svg className="w-6 h-6 fill-current" viewBox="0 0 24 24">
+                            <path d="M4.102 21.033A11.947 11.947 0 0 0 12 24a11.96 11.96 0 0 0 7.902-2.967c1.877-1.912-4.316-8.709-7.902-11.417-3.582 2.708-9.779 9.505-7.898 11.417zm11.16-14.406c2.5 2.961 7.484 10.313 6.076 12.912A11.942 11.942 0 0 0 24 12.004a11.95 11.95 0 0 0-3.57-8.536 12.607 12.607 0 0 0-2.06-1.632 12.729 12.729 0 0 0-3.108-1.26c.96 1.368 1.917 3.6 0 6.051zm-6.524 0C6.82 3.227 7.777.995 8.738-.373A12.729 12.729 0 0 0 5.63 1.887 12.607 12.607 0 0 0 3.57 3.519 11.95 11.95 0 0 0 0 12.055a11.942 11.942 0 0 0 2.662 7.535c-1.408-2.599 3.576-9.951 6.076-12.963z"/>
+                          </svg>
+                        )
+                      },
+                      { 
+                        id: 'riot', 
+                        name: 'Riot Games', 
+                        color: 'from-red-500 to-red-600',
+                        icon: (
+                          <svg className="w-6 h-6 fill-current" viewBox="0 0 24 24">
+                            <path d="M12 0L1.608 4.542v7.124c0 7.555 4.77 14.64 10.392 17.334 5.622-2.694 10.392-9.779 10.392-17.334V4.542L12 0zm-.896 17.347l-4.396-4.396 1.268-1.268 3.128 3.128 6.628-6.628 1.268 1.268-7.896 7.896z"/>
+                          </svg>
+                        )
+                      },
+                      { 
+                        id: 'lol', 
+                        name: 'League of Legends', 
+                        color: 'from-yellow-500 to-yellow-600',
+                        icon: (
+                          <svg className="w-6 h-6 fill-current" viewBox="0 0 24 24">
+                            <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm0 2.182c5.423 0 9.818 4.395 9.818 9.818 0 5.423-4.395 9.818-9.818 9.818-5.423 0-9.818-4.395-9.818-9.818 0-5.423 4.395-9.818 9.818-9.818zM8.727 6.545L6.545 8.727l3.273 3.273-3.273 3.273 2.182 2.182L12 14.182l3.273 3.273 2.182-2.182L14.182 12l3.273-3.273-2.182-2.182L12 9.818 8.727 6.545z"/>
+                          </svg>
+                        )
+                      }
+                    ];
+
+                    const connectedPlatforms = platforms.filter(p => 
+                      connectedAccounts[p.id]?.username && connectedAccounts[p.id]?.verified
+                    );
+
+                    if (connectedPlatforms.length === 0) {
+                      return (
+                        <div className="text-center py-6">
+                          <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest italic mb-3">
+                            Henüz hesap bağlanmadı
+                          </p>
+                          <Link to="/settings?tab=accounts">
+                            <Button size="sm" className="h-8 px-4 text-[9px] font-black uppercase tracking-widest bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20">
+                              Hesap Bağla
+                            </Button>
+                          </Link>
+                        </div>
+                      );
+                    }
+
+                    return connectedPlatforms.map((platform) => {
+                      const account = connectedAccounts[platform.id];
+                      const displayName = platform.id === 'discord' && account.discriminator 
+                        ? `${account.username}#${account.discriminator}`
+                        : account.username;
+                      
+                      return (
+                        <div
+                          key={platform.id}
+                          className="flex items-center gap-3 p-3 rounded-xl bg-white/5 border border-white/5 transition-all duration-200 group relative"
+                        >
+                          <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${platform.color} flex items-center justify-center text-xl shrink-0`}>
+                            {platform.icon}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">
+                              {platform.name}
+                            </div>
+                            <div className="text-sm font-black text-white truncate">
+                              {displayName}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2 shrink-0">
+                            {account.profileUrl && (
+                              <a
+                                href={account.profileUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="p-2 rounded-lg hover:bg-white/10 text-muted-foreground hover:text-primary transition-colors"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <ExternalLink className="w-4 h-4" />
+                              </a>
+                            )}
+                            <button
+                              onClick={() => handleRemoveAccount(platform.id, platform.name)}
+                              className="p-2 rounded-lg hover:bg-red-500/10 text-muted-foreground hover:text-red-500 transition-colors"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    });
+                  })()}
+                </div>
+              </div>
+            )}
 
           </div>
         </div>

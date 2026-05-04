@@ -273,10 +273,13 @@ export default function Profile({ user: currentUser }) {
 
   if (loading && !profileUser) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center" role="status" aria-live="polite">
         <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
-          <p className="text-sm font-black text-muted-foreground uppercase tracking-widest animate-pulse">Profil Yükleniyor</p>
+          <div className="w-12 h-12 border-4 border-primary/20 border-t-primary rounded-full animate-spin" aria-hidden="true" />
+          <p className="text-sm font-black text-muted-foreground uppercase tracking-widest animate-pulse">
+            Profil Yükleniyor
+          </p>
+          <span className="sr-only">Profil bilgileri yükleniyor, lütfen bekleyin</span>
         </div>
       </div>
     );
@@ -284,10 +287,12 @@ export default function Profile({ user: currentUser }) {
 
   if (!profileUser && !loading) {
      return (
-        <div className="min-h-full flex items-center justify-center">
+        <div className="min-h-full flex items-center justify-center" role="alert">
            <div className="text-center">
               <h2 className="text-2xl font-bold mb-2">Kullanıcı bulunamadı</h2>
-              <Link to="/" className="text-blue-500 hover:underline">Ana sayfaya dön</Link>
+              <Link to="/" className="text-blue-500 hover:underline" aria-label="Ana sayfaya dön">
+                Ana sayfaya dön
+              </Link>
            </div>
         </div>
      )
@@ -296,18 +301,26 @@ export default function Profile({ user: currentUser }) {
   return (
     <div className="relative min-h-full pb-12">
       {/* Optimized Background - Removed heavy blur/glow layers */}
-      <div className="fixed inset-0 bg-background -z-10" />
+      <div className="fixed inset-0 bg-background -z-10" aria-hidden="true" />
       
       <div className="container max-w-6xl mx-auto pt-16 px-4 relative z-10">
         
         {/* Profile Header - Optimized */}
-        <div className="relative rounded-3xl overflow-hidden border border-white/10 shadow-xl bg-black/40 mb-8 group">
+        <div 
+          className="relative rounded-3xl overflow-hidden border border-white/10 shadow-xl bg-black/40 mb-8 group"
+          role="banner"
+          aria-label="Profil başlığı"
+        >
           {/* Header Banners - Removed Noise SVG */}
-          <div className="h-48 w-full bg-gradient-to-r from-blue-900/40 to-purple-900/40 relative">
+          <div className="h-48 w-full bg-gradient-to-r from-blue-900/40 to-purple-900/40 relative" aria-hidden="true">
             
             {/* Online Status Indicator */}
-            <div className="absolute top-4 right-4 flex items-center gap-2 bg-black/50 px-3 py-1.5 rounded-full border border-white/10">
-              <span className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)]" />
+            <div 
+              className="absolute top-4 right-4 flex items-center gap-2 bg-black/50 px-3 py-1.5 rounded-full border border-white/10"
+              role="status"
+              aria-label="Kullanıcı çevrimiçi"
+            >
+              <span className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)]" aria-hidden="true" />
               <span className="text-xs font-medium text-white/90">Çevrimiçi</span>
             </div>
           </div>
@@ -317,28 +330,35 @@ export default function Profile({ user: currentUser }) {
               
               {/* Avatar */}
               <div 
-                className={cn(
-                  "relative shrink-0 group",
-                  isOwnProfile && "cursor-pointer"
-                )}
+                className="relative shrink-0 group"
                 onClick={handleAvatarClick}
+                role="button"
+                tabIndex={isOwnProfile ? 0 : -1}
+                aria-label={isOwnProfile ? "Profil fotoğrafını değiştir" : undefined}
+                onKeyDown={(e) => {
+                  if (isOwnProfile && (e.key === 'Enter' || e.key === ' ')) {
+                    e.preventDefault();
+                    handleAvatarClick();
+                  }
+                }}
               >
                 <div className="w-32 h-32 rounded-2xl p-1 bg-black/50 border border-white/10 shadow-xl overflow-hidden">
                   {uploadingAvatar ? (
                     <div className="absolute inset-0 bg-black/60 flex items-center justify-center z-20 rounded-xl">
-                      <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                      <Loader2 className="w-8 h-8 animate-spin text-primary" aria-hidden="true" />
+                      <span className="sr-only">Profil fotoğrafı yükleniyor...</span>
                     </div>
                   ) : profileUser?.avatar ? (
                     <img 
                       src={profileUser.avatar} 
-                      alt="Avatar" 
+                      alt={`${profileUser.username} profil fotoğrafı`}
                       className="w-full h-full object-cover rounded-xl"
                       loading="lazy"
                     />
                   ) : (
                     <img 
                       src="https://placehold.co/128x128/2a2a2a/FFF?text=Avatar" 
-                      alt="Avatar" 
+                      alt="Varsayılan profil fotoğrafı"
                       className="w-full h-full object-cover rounded-xl"
                       loading="lazy"
                     />
@@ -347,12 +367,16 @@ export default function Profile({ user: currentUser }) {
 
                 {isOwnProfile && (
                   <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/40 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity m-1">
-                    <Camera className="w-8 h-8 text-white" />
+                    <Camera className="w-8 h-8 text-white" aria-hidden="true" />
                   </div>
                 )}
 
                 {/* Level Badge */}
-                <div className="absolute -bottom-3 -right-3 w-10 h-10 rounded-full bg-gradient-to-br from-yellow-500 to-amber-600 border-2 border-background shadow-lg flex items-center justify-center font-bold text-white text-sm">
+                <div 
+                  className="absolute -bottom-3 -right-3 w-10 h-10 rounded-full bg-gradient-to-br from-yellow-500 to-amber-600 border-2 border-background shadow-lg flex items-center justify-center font-bold text-white text-sm"
+                  role="status"
+                  aria-label={`Seviye ${profileUser?.level || 1}`}
+                >
                   {profileUser?.level || 1}
                 </div>
 
@@ -361,7 +385,8 @@ export default function Profile({ user: currentUser }) {
                   ref={fileInputRef} 
                   onChange={handleFileChange} 
                   className="hidden" 
-                  accept="image/*" 
+                  accept="image/*"
+                  aria-label="Profil fotoğrafı dosyası seç"
                 />
               </div>
 
@@ -372,14 +397,20 @@ export default function Profile({ user: currentUser }) {
                     {profileUser?.globalName || profileUser?.username}
                   </h1>
                   {profileUser?.role === 'admin' && (
-                    <div className="px-2 py-0.5 bg-red-500/20 text-red-500 border border-red-500/20 rounded text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5">
-                      <ShieldCheck className="w-3 h-3" />
+                    <div 
+                      className="px-2 py-0.5 bg-red-500/20 text-red-500 border border-red-500/20 rounded text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5"
+                      role="status"
+                      aria-label="Yönetici"
+                    >
+                      <ShieldCheck className="w-3 h-3" aria-hidden="true" />
                       ADMIN
                     </div>
                   )}
                 </div>
                 <div className="flex flex-wrap items-center gap-4 text-xs font-bold text-muted-foreground uppercase tracking-widest">
-                  <span className="lowercase">@{profileUser?.username}</span>
+                  <span className="lowercase" aria-label={`Kullanıcı adı: ${profileUser?.username}`}>
+                    @{profileUser?.username}
+                  </span>
                 </div>
               </div>
 
@@ -391,41 +422,55 @@ export default function Profile({ user: currentUser }) {
                       onClick={() => setIsEditModalOpen(true)}
                       variant="outline" 
                       className="bg-white/5 border-white/10 hover:bg-white/10 gap-2"
+                      aria-label="Profili düzenle"
                     >
-                      <Settings className="w-4 h-4" />
+                      <Settings className="w-4 h-4" aria-hidden="true" />
                       Düzenle
                     </Button>
                     
                     {/* Edit Profile Modal */}
                     {isEditModalOpen && (
-                      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+                      <div 
+                        className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
+                        role="dialog"
+                        aria-modal="true"
+                        aria-labelledby="edit-profile-modal-title"
+                      >
                         <div className="w-full max-w-md bg-[#121212] border border-white/10 rounded-2xl shadow-2xl p-6 relative animate-in zoom-in-95 duration-200">
                           <button 
                             onClick={() => setIsEditModalOpen(false)}
                             className="absolute top-4 right-4 text-gray-400 hover:text-white"
+                            aria-label="Modalı kapat"
                           >
                             ✕
                           </button>
                           
-                          <h2 className="text-xl font-bold mb-1">Profili Düzenle</h2>
+                          <h2 id="edit-profile-modal-title" className="text-xl font-bold mb-1">Profili Düzenle</h2>
                           <p className="text-sm text-muted-foreground mb-6">Kullanıcı bilgilerinizi güncelleyin.</p>
                           
                           <div className="space-y-4">
 
                             <div className="space-y-2">
-                              <label className="text-sm font-medium text-gray-300">Kullanıcı Adınız</label>
+                              <label htmlFor="edit-username" className="text-sm font-medium text-gray-300">
+                                Kullanıcı Adınız
+                              </label>
                               <input 
+                                id="edit-username"
                                 type="text" 
                                 value={newUsername}
                                 onChange={(e) => setNewUsername(e.target.value)}
                                 className="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-primary/50 transition-colors"
                                 placeholder="Yeni kullanıcı adı"
+                                aria-required="true"
                               />
                             </div>
 
                             <div className="space-y-2">
-                              <label className="text-sm font-medium text-gray-300">Görünen Adınız</label>
+                              <label htmlFor="edit-globalname" className="text-sm font-medium text-gray-300">
+                                Görünen Adınız
+                              </label>
                               <input 
+                                id="edit-globalname"
                                 type="text" 
                                 value={newGlobalName}
                                 onChange={(e) => setNewGlobalName(e.target.value)}
@@ -434,13 +479,26 @@ export default function Profile({ user: currentUser }) {
                               />
                             </div>
 
-                            {editError && <div className="text-sm text-red-400">{editError}</div>}
+                            {editError && (
+                              <div className="text-sm text-red-400" role="alert" aria-live="polite">
+                                {editError}
+                              </div>
+                            )}
                             
-                            <div className="flex justify-end gap-3 pt-2">
-                              <Button variant="ghost" onClick={() => setIsEditModalOpen(false)}>
+                            <div className="flex justify-end gap-3 pt-2" role="group" aria-label="Modal işlem butonları">
+                              <Button 
+                                variant="ghost" 
+                                onClick={() => setIsEditModalOpen(false)}
+                                aria-label="İptal et ve modalı kapat"
+                              >
                                 İptal
                               </Button>
-                              <Button onClick={handleUpdateProfile} disabled={updateLoading}>
+                              <Button 
+                                onClick={handleUpdateProfile} 
+                                disabled={updateLoading}
+                                aria-label="Profil değişikliklerini kaydet"
+                                aria-disabled={updateLoading}
+                              >
                                 {updateLoading ? 'Kaydediliyor...' : 'Kaydet'}
                               </Button>
                             </div>
@@ -452,13 +510,21 @@ export default function Profile({ user: currentUser }) {
                 ) : (
                   <>
                     {friendshipStatus === 'accepted' ? (
-                      <Button className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold gap-2 h-11 px-6 rounded-xl transition-all cursor-default">
-                        <ShieldCheck className="w-4 h-4" />
+                      <Button 
+                        className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold gap-2 h-11 px-6 rounded-xl transition-all cursor-default"
+                        aria-label="Arkadaş olarak eklendi"
+                        disabled
+                      >
+                        <ShieldCheck className="w-4 h-4" aria-hidden="true" />
                         Arkadaş
                       </Button>
                     ) : friendshipStatus === 'pending' ? (
-                      <Button className="bg-amber-600 hover:bg-amber-700 text-white font-bold gap-2 h-11 px-6 rounded-xl transition-all cursor-default">
-                        <Clock className="w-4 h-4" />
+                      <Button 
+                        className="bg-amber-600 hover:bg-amber-700 text-white font-bold gap-2 h-11 px-6 rounded-xl transition-all cursor-default"
+                        aria-label="Arkadaşlık isteği gönderildi, beklemede"
+                        disabled
+                      >
+                        <Clock className="w-4 h-4" aria-hidden="true" />
                         İstek Atıldı
                       </Button>
                     ) : (
@@ -466,14 +532,29 @@ export default function Profile({ user: currentUser }) {
                         onClick={handleSendFriendRequest}
                         disabled={requestLoading}
                         className="bg-primary hover:bg-primary/90 text-white font-bold shadow-lg shadow-primary/20 gap-2 h-11 px-6 rounded-xl transition-all"
+                        aria-label={`${profileUser?.username} kullanıcısına arkadaşlık isteği gönder`}
+                        aria-disabled={requestLoading}
                       >
-                        {requestLoading ? <Rocket className="w-4 h-4 animate-spin" /> : <UserPlus className="w-4 h-4" />}
-                        Arkadaş Ekle
+                        {requestLoading ? (
+                          <>
+                            <Rocket className="w-4 h-4 animate-spin" aria-hidden="true" />
+                            <span className="sr-only">Gönderiliyor...</span>
+                          </>
+                        ) : (
+                          <>
+                            <UserPlus className="w-4 h-4" aria-hidden="true" />
+                            Arkadaş Ekle
+                          </>
+                        )}
                       </Button>
                     )}
                     <Link to={`/chat`}>
-                      <Button variant="outline" className="bg-white/5 border-white/10 hover:bg-white/10 gap-2 h-11 px-6 rounded-xl">
-                        <MessageSquare className="w-4 h-4" />
+                      <Button 
+                        variant="outline" 
+                        className="bg-white/5 border-white/10 hover:bg-white/10 gap-2 h-11 px-6 rounded-xl"
+                        aria-label={`${profileUser?.username} kullanıcısına mesaj gönder`}
+                      >
+                        <MessageSquare className="w-4 h-4" aria-hidden="true" />
                         Mesaj
                       </Button>
                     </Link>
@@ -490,20 +571,26 @@ export default function Profile({ user: currentUser }) {
           <div className="space-y-6">
             <div className="flex items-center justify-between">
               <h2 className="text-xl font-semibold flex items-center gap-2">
-                <Zap className="w-5 h-5 text-yellow-500" />
+                <Zap className="w-5 h-5 text-yellow-500" aria-hidden="true" />
                 Son Aktiviteler
               </h2>
-              <span className="text-sm text-muted-foreground bg-secondary/50 px-3 py-1 rounded-full border border-white/5">
+              <span 
+                className="text-sm text-muted-foreground bg-secondary/50 px-3 py-1 rounded-full border border-white/5"
+                role="status"
+                aria-label={`Son 2 haftada toplam ${formatTotalHours(totalTime)}`}
+              >
                 Son 2 haftada {formatTotalHours(totalTime)}
               </span>
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-4" role="list" aria-label="Oyun aktiviteleri">
               {stats.length > 0 ? (
                 stats.map((stat, i) => (
                   <div 
                     key={stat._id} 
                     className="group relative overflow-hidden rounded-2xl border border-white/5 bg-[#0d1117] p-5 transition-all duration-300 hover:bg-[#161b22]"
+                    role="listitem"
+                    aria-label={`${stat._id} oyunu, toplam ${formatTotalHours(stat.totalTime)}, son oynanma ${formatLastPlayed(stat.lastPlayed)}`}
                   >
                     <div className="flex items-center gap-6">
                       {/* Game Art */}
@@ -511,7 +598,7 @@ export default function Profile({ user: currentUser }) {
                         {getGameImage(stat._id) ? (
                             <img 
                                 src={getGameImage(stat._id)} 
-                                alt={stat._id}
+                                alt={`${stat._id} oyun kapağı`}
                                 className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                                 onError={(e) => {
                                     e.target.style.display = 'none';
@@ -526,7 +613,7 @@ export default function Profile({ user: currentUser }) {
                             <span className="text-[10px] font-black text-gray-700 uppercase tracking-tighter leading-tight">{stat._id}</span>
                         </div>
                         {getGameImage(stat._id) && (
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" aria-hidden="true" />
                         )}
                       </div>
  
@@ -573,11 +660,14 @@ export default function Profile({ user: currentUser }) {
                                     ? "text-emerald-500 hover:text-emerald-400" 
                                     : "text-gray-500 hover:text-white"
                                 )}
+                                aria-label={profileUser?.settings?.privacy?.hiddenGames?.includes(stat._id) 
+                                  ? `${stat._id} oyununu görünür yap` 
+                                  : `${stat._id} oyununu gizle`}
                               >
                                 {profileUser?.settings?.privacy?.hiddenGames?.includes(stat._id) ? (
-                                  <><Eye className="w-3.5 h-3.5 mr-2" /> Görünür Yap</>
+                                  <><Eye className="w-3.5 h-3.5 mr-2" aria-hidden="true" /> Görünür Yap</>
                                 ) : (
-                                  <><EyeOff className="w-3.5 h-3.5 mr-2" /> Gizli Yap</>
+                                  <><EyeOff className="w-3.5 h-3.5 mr-2" aria-hidden="true" /> Gizli Yap</>
                                 )}
                               </Button>
                             )}
@@ -587,7 +677,11 @@ export default function Profile({ user: currentUser }) {
                   </div>
                 ))
               ) : (
-                <div className="text-center py-12 rounded-2xl border border-dashed border-white/10 bg-white/5">
+                <div 
+                  className="text-center py-12 rounded-2xl border border-dashed border-white/10 bg-white/5"
+                  role="status"
+                  aria-live="polite"
+                >
                   <p className="text-muted-foreground">Henüz oyun aktivitesi bulunmuyor.</p>
                 </div>
               )}
@@ -598,30 +692,50 @@ export default function Profile({ user: currentUser }) {
           <div className="space-y-6">
             
             {/* Quick Stats Card */}
-            <div className="rounded-[2rem] border border-white/5 bg-[#0d1117] p-8">
-              <h3 className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] mb-6">İstatistikler</h3>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="p-6 rounded-2xl bg-black/40 border border-white/5">
-                  <div className="text-4xl font-black text-white">{stats.length}</div>
+            <div 
+              className="rounded-[2rem] border border-white/5 bg-[#0d1117] p-8"
+              role="region"
+              aria-labelledby="stats-heading"
+            >
+              <h3 id="stats-heading" className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] mb-6">
+                İstatistikler
+              </h3>
+              <div className="grid grid-cols-2 gap-4" role="list" aria-label="Oyun istatistikleri">
+                <div className="p-6 rounded-2xl bg-black/40 border border-white/5" role="listitem">
+                  <div className="text-4xl font-black text-white" aria-label={`${stats.length} oyun`}>
+                    {stats.length}
+                  </div>
                   <div className="text-[10px] font-bold text-muted-foreground mt-2 uppercase tracking-widest">Oyun</div>
                 </div>
-                <div className="p-6 rounded-2xl bg-black/40 border border-white/5">
-                  <div className="text-4xl font-black text-white">{formatTotalHours2(totalTime)}</div>
+                <div className="p-6 rounded-2xl bg-black/40 border border-white/5" role="listitem">
+                  <div className="text-4xl font-black text-white" aria-label={`Toplam ${formatTotalHours2(totalTime)}`}>
+                    {formatTotalHours2(totalTime)}
+                  </div>
                   <div className="text-[10px] font-bold text-muted-foreground mt-2 uppercase tracking-widest">Toplam Süre</div>
                 </div>
               </div>
             </div>
 
             {/* Badges */}
-            <div className="rounded-[2rem] border border-white/5 bg-[#0d1117] p-8">
+            <div 
+              className="rounded-[2rem] border border-white/5 bg-[#0d1117] p-8"
+              role="region"
+              aria-labelledby="badges-heading"
+            >
               <div className="flex items-center justify-between mb-6">
-                <h3 className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">Rozetler</h3>
-                <span className="text-[10px] font-black bg-blue-500/10 text-blue-400 px-2 py-1 rounded-full">
+                <h3 id="badges-heading" className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">
+                  Rozetler
+                </h3>
+                <span 
+                  className="text-[10px] font-black bg-blue-500/10 text-blue-400 px-2 py-1 rounded-full"
+                  role="status"
+                  aria-label={`${profileUser?.badges?.length || 0} rozet kazanıldı`}
+                >
                   {profileUser?.badges?.length || 0} Kazanıldı
                 </span>
               </div>
               
-              <div className="grid grid-cols-4 gap-4">
+              <div className="grid grid-cols-4 gap-4" role="list" aria-label="Kazanılan rozetler">
                 {allBadges.filter(badge => profileUser?.badges?.includes(badge.id)).map((badge) => {
                   const Icon = badgeIcons[badge.icon] || Trophy;
                   
@@ -633,8 +747,11 @@ export default function Profile({ user: currentUser }) {
                         "group relative aspect-square rounded-2xl flex items-center justify-center transition-all duration-300",
                         `bg-gradient-to-br ${badge.color} shadow-lg cursor-pointer hover:scale-110 active:scale-95`
                       )}
+                      role="listitem"
+                      aria-label={`${badge.title} rozeti: ${badge.description}`}
+                      tabIndex={0}
                     >
-                      <Icon className="w-7 h-7 text-white drop-shadow-md" />
+                      <Icon className="w-7 h-7 text-white drop-shadow-md" aria-hidden="true" />
                       
                       {/* Tooltip on hover */}
                       <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-black/90 border border-white/10 rounded-xl text-[10px] w-32 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity z-50">
@@ -645,7 +762,7 @@ export default function Profile({ user: currentUser }) {
                   );
                 })}
                 {(profileUser?.badges?.length || 0) === 0 && (
-                  <div className="col-span-4 py-4 text-center">
+                  <div className="col-span-4 py-4 text-center" role="status" aria-live="polite">
                     <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Henüz rozet kazanılmadı</p>
                   </div>
                 )}
@@ -653,22 +770,42 @@ export default function Profile({ user: currentUser }) {
             </div>
 
             {/* Groups/Community */}
-            <div className="rounded-[2rem] border border-white/5 bg-[#0d1117] p-8">
+            <div 
+              className="rounded-[2rem] border border-white/5 bg-[#0d1117] p-8"
+              role="region"
+              aria-labelledby="communities-heading"
+            >
                <div className="flex items-center justify-between mb-6">
-                 <h3 className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">Topluluklar</h3>
-                 <span className="text-[10px] font-black bg-emerald-500/10 text-emerald-400 px-2 py-1 rounded-full">
+                 <h3 id="communities-heading" className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">
+                   Topluluklar
+                 </h3>
+                 <span 
+                   className="text-[10px] font-black bg-emerald-500/10 text-emerald-400 px-2 py-1 rounded-full"
+                   role="status"
+                   aria-label={`${communities.length} topluluğa katılım`}
+                 >
                    {communities.length} Katılım
                  </span>
                </div>
                
-               <div className="space-y-4">
+               <div className="space-y-4" role="list" aria-label="Katılınan topluluklar">
                  {communities.map((community) => (
-                   <Link key={community._id} to={`/community/${community.slug}`} className="flex items-center gap-4 group cursor-pointer">
+                   <Link 
+                     key={community._id} 
+                     to={`/community/${community.slug}`} 
+                     className="flex items-center gap-4 group cursor-pointer"
+                     role="listitem"
+                     aria-label={`${community.name} topluluğu, ${community.memberCount || 0} üye`}
+                   >
                      <div className="w-12 h-12 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center border border-emerald-500/20 group-hover:bg-emerald-500 group-hover:text-white transition-all shrink-0 overflow-hidden">
                        {community.avatar ? (
-                         <img src={community.avatar} alt={community.name} className="w-full h-full object-cover" />
+                         <img 
+                           src={community.avatar} 
+                           alt={`${community.name} logosu`}
+                           className="w-full h-full object-cover" 
+                         />
                        ) : (
-                         <Users2 className="w-5 h-5" />
+                         <Users2 className="w-5 h-5" aria-hidden="true" />
                        )}
                      </div>
                      <div className="min-w-0">
@@ -682,7 +819,7 @@ export default function Profile({ user: currentUser }) {
                    </Link>
                  ))}
                  {communities.length === 0 && (
-                   <div className="text-center py-4">
+                   <div className="text-center py-4" role="status" aria-live="polite">
                      <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest italic">Henüz bir topluluğa katılmadı</p>
                    </div>
                  )}
@@ -691,11 +828,25 @@ export default function Profile({ user: currentUser }) {
 
             {/* Connected Accounts */}
             {isOwnProfile && (
-              <div className="rounded-[2rem] border border-white/5 bg-[#0d1117] p-8">
+              <div 
+                className="rounded-[2rem] border border-white/5 bg-[#0d1117] p-8"
+                role="region"
+                aria-labelledby="connected-accounts-heading"
+              >
                 <div className="flex items-center justify-between mb-6">
-                  <h3 className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">Bağlı Hesaplar</h3>
+                  <h3 
+                    id="connected-accounts-heading"
+                    className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]"
+                  >
+                    Bağlı Hesaplar
+                  </h3>
                   <Link to="/settings?tab=accounts">
-                    <Button variant="ghost" size="sm" className="h-7 px-3 text-[9px] font-black uppercase tracking-widest hover:bg-primary/10 hover:text-primary">
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="h-7 px-3 text-[9px] font-black uppercase tracking-widest hover:bg-primary/10 hover:text-primary"
+                      aria-label="Bağlı hesapları düzenle"
+                    >
                       Düzenle
                     </Button>
                   </Link>
@@ -782,12 +933,16 @@ export default function Profile({ user: currentUser }) {
 
                     if (connectedPlatforms.length === 0) {
                       return (
-                        <div className="text-center py-6">
+                        <div className="text-center py-6" role="status" aria-live="polite">
                           <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest italic mb-3">
                             Henüz hesap bağlanmadı
                           </p>
                           <Link to="/settings?tab=accounts">
-                            <Button size="sm" className="h-8 px-4 text-[9px] font-black uppercase tracking-widest bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20">
+                            <Button 
+                              size="sm" 
+                              className="h-8 px-4 text-[9px] font-black uppercase tracking-widest bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20"
+                              aria-label="Yeni platform hesabı bağla"
+                            >
                               Hesap Bağla
                             </Button>
                           </Link>
@@ -805,8 +960,14 @@ export default function Profile({ user: currentUser }) {
                         <div
                           key={platform.id}
                           className="flex items-center gap-3 p-3 rounded-xl bg-white/5 border border-white/5 transition-all duration-200 group relative"
+                          role="article"
+                          aria-label={`${platform.name} hesabı: ${displayName}`}
                         >
-                          <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${platform.color} flex items-center justify-center text-xl shrink-0`}>
+                          <div 
+                            className={`w-10 h-10 rounded-lg bg-gradient-to-br ${platform.color} flex items-center justify-center text-xl shrink-0`}
+                            role="img"
+                            aria-label={`${platform.name} logosu`}
+                          >
                             {platform.icon}
                           </div>
                           <div className="flex-1 min-w-0">
@@ -825,15 +986,17 @@ export default function Profile({ user: currentUser }) {
                                 rel="noopener noreferrer"
                                 className="p-2 rounded-lg hover:bg-white/10 text-muted-foreground hover:text-primary transition-colors"
                                 onClick={(e) => e.stopPropagation()}
+                                aria-label={`${platform.name} profilini yeni sekmede aç`}
                               >
-                                <ExternalLink className="w-4 h-4" />
+                                <ExternalLink className="w-4 h-4" aria-hidden="true" />
                               </a>
                             )}
                             <button
                               onClick={() => handleRemoveAccount(platform.id, platform.name)}
                               className="p-2 rounded-lg hover:bg-red-500/10 text-muted-foreground hover:text-red-500 transition-colors"
+                              aria-label={`${platform.name} hesabını kaldır`}
                             >
-                              <X className="w-4 h-4" />
+                              <X className="w-4 h-4" aria-hidden="true" />
                             </button>
                           </div>
                         </div>

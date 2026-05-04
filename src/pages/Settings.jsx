@@ -733,20 +733,27 @@ export default function SettingsPage({ user: currentUser }) {
           )}
 
           {activeTab === 'accounts' && (
-            <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
+            <div 
+              className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300"
+              role="region"
+              aria-labelledby="accounts-settings-heading"
+            >
               <div className="rounded-[2rem] border border-white/5 bg-[#0d1117] p-8">
                 <div className="flex items-center justify-between mb-8">
                   <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-xl bg-primary/10 text-primary">
+                    <div className="p-2 rounded-xl bg-primary/10 text-primary" aria-hidden="true">
                       <Users className="w-5 h-5" />
                     </div>
-                    <h1 className="text-lg font-black text-white uppercase tracking-tight">Bağlı Hesaplar</h1>
+                    <h1 id="accounts-settings-heading" className="text-lg font-black text-white uppercase tracking-tight">
+                      Bağlı Hesaplar
+                    </h1>
                   </div>
                   <Button 
                     onClick={() => setShowAddAccountModal(true)}
                     className="bg-primary hover:bg-primary/90 gap-2 font-black uppercase text-[10px] tracking-widest rounded-xl"
+                    aria-label="Yeni platform hesabı ekle"
                   >
-                    <Plus className="w-4 h-4" />
+                    <Plus className="w-4 h-4" aria-hidden="true" />
                     Hesap Ekle
                   </Button>
                 </div>
@@ -838,9 +845,18 @@ export default function SettingsPage({ user: currentUser }) {
                       const isConnected = account?.username && account?.verified;
 
                       return (
-                        <div key={platform.id} className="p-6 rounded-2xl bg-white/[0.02] border border-white/5 hover:border-white/10 transition-colors">
+                        <div 
+                          key={platform.id} 
+                          className="p-6 rounded-2xl bg-white/[0.02] border border-white/5 hover:border-white/10 transition-colors"
+                          role="article"
+                          aria-label={`${platform.name} ${isConnected ? 'bağlı' : 'bağlı değil'}`}
+                        >
                           <div className="flex items-center gap-4">
-                            <div className={`w-14 h-14 rounded-xl bg-gradient-to-br ${platform.color} flex items-center justify-center text-2xl shrink-0`}>
+                            <div 
+                              className={`w-14 h-14 rounded-xl bg-gradient-to-br ${platform.color} flex items-center justify-center text-2xl shrink-0`}
+                              role="img"
+                              aria-label={`${platform.name} logosu`}
+                            >
                               {platform.icon}
                             </div>
                             <div className="flex-1 min-w-0">
@@ -848,7 +864,7 @@ export default function SettingsPage({ user: currentUser }) {
                               <div className="text-xs text-muted-foreground font-medium">{platform.desc}</div>
                               {isConnected && (
                                 <div className="flex items-center gap-2 mt-2">
-                                  <Check className="w-3 h-3 text-emerald-500" />
+                                  <Check className="w-3 h-3 text-emerald-500" aria-hidden="true" />
                                   <span className="text-sm font-bold text-white">{account.username}</span>
                                   {account.profileUrl && (
                                     <a 
@@ -856,8 +872,9 @@ export default function SettingsPage({ user: currentUser }) {
                                       target="_blank" 
                                       rel="noopener noreferrer"
                                       className="text-primary hover:text-primary/80 transition-colors"
+                                      aria-label={`${platform.name} profilini yeni sekmede aç`}
                                     >
-                                      <ExternalLink className="w-3 h-3" />
+                                      <ExternalLink className="w-3 h-3" aria-hidden="true" />
                                     </a>
                                   )}
                                 </div>
@@ -869,6 +886,7 @@ export default function SettingsPage({ user: currentUser }) {
                                 size="sm"
                                 onClick={() => handleRemoveAccount(platform.id, platform.name)}
                                 className="border-red-500/20 text-red-500 hover:bg-red-500/10 font-bold uppercase text-[10px] tracking-widest rounded-xl"
+                                aria-label={`${platform.name} hesabını kaldır`}
                               >
                                 Kaldır
                               </Button>
@@ -881,6 +899,7 @@ export default function SettingsPage({ user: currentUser }) {
                                   setShowAddAccountModal(true);
                                 }}
                                 className="border-primary/20 text-primary hover:bg-primary/10 font-bold uppercase text-[10px] tracking-widest rounded-xl"
+                                aria-label={`${platform.name} hesabını bağla`}
                               >
                                 Bağla
                               </Button>
@@ -897,11 +916,19 @@ export default function SettingsPage({ user: currentUser }) {
 
           {/* Add Account Modal */}
           {showAddAccountModal && (
-            <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-in fade-in duration-200">
+            <div 
+              className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-in fade-in duration-200"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="add-account-modal-title"
+            >
               <div className="w-full max-w-md bg-[#0d1117] border border-white/10 rounded-[2rem] shadow-3xl animate-in zoom-in duration-300 overflow-hidden">
                 <div className="p-8 space-y-6">
                   <div className="flex items-center justify-between">
-                    <h2 className="text-2xl font-black text-white uppercase italic tracking-tighter">
+                    <h2 
+                      id="add-account-modal-title"
+                      className="text-2xl font-black text-white uppercase italic tracking-tighter"
+                    >
                       {selectedPlatform ? `${selectedPlatform.name} Bağla` : 'Hesap Ekle'}
                     </h2>
                     <Button 
@@ -913,14 +940,19 @@ export default function SettingsPage({ user: currentUser }) {
                         setAccountUsername('');
                       }}
                       className="rounded-full hover:bg-white/5"
+                      aria-label="Modalı kapat"
                     >
-                      <X className="w-6 h-6" />
+                      <X className="w-6 h-6" aria-hidden="true" />
                     </Button>
                   </div>
 
                   {selectedPlatform && (
                     <div className="space-y-4">
-                      <div className="flex items-center gap-4 p-4 rounded-xl bg-white/5">
+                      <div 
+                        className="flex items-center gap-4 p-4 rounded-xl bg-white/5"
+                        role="img"
+                        aria-label={`${selectedPlatform.name} platform bilgisi`}
+                      >
                         <div className={`w-12 h-12 rounded-lg bg-gradient-to-br ${selectedPlatform.color} flex items-center justify-center text-xl`}>
                           {selectedPlatform.icon}
                         </div>
@@ -931,37 +963,61 @@ export default function SettingsPage({ user: currentUser }) {
                       </div>
 
                       <div className="space-y-2">
-                        <Label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Kullanıcı Adı</Label>
+                        <Label 
+                          htmlFor="account-username"
+                          className="text-xs font-bold text-gray-400 uppercase tracking-widest"
+                        >
+                          Kullanıcı Adı
+                        </Label>
                         <Input 
+                          id="account-username"
                           value={accountUsername}
                           onChange={(e) => setAccountUsername(e.target.value)}
                           placeholder={selectedPlatform.id === 'discord' ? 'Discord kullanıcı adın' : `${selectedPlatform.name} kullanıcı adın`}
                           className="h-12 bg-white/5 border-white/10 rounded-xl font-medium"
                           autoFocus
+                          aria-required="true"
+                          aria-describedby={selectedPlatform.id === 'discord' ? 'discord-help' : undefined}
                         />
                       </div>
 
                       {selectedPlatform.id === 'discord' && (
                         <div className="space-y-2">
-                          <Label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Discriminator (Opsiyonel)</Label>
+                          <Label 
+                            htmlFor="account-discriminator"
+                            className="text-xs font-bold text-gray-400 uppercase tracking-widest"
+                          >
+                            Discriminator (Opsiyonel)
+                          </Label>
                           <Input 
+                            id="account-discriminator"
                             value={accountDiscriminator}
                             onChange={(e) => setAccountDiscriminator(e.target.value)}
                             placeholder="1234"
                             maxLength={4}
                             className="h-12 bg-white/5 border-white/10 rounded-xl font-medium"
+                            aria-describedby="discord-help"
                           />
-                          <p className="text-xs text-muted-foreground">Örnek: username#1234 için sadece "1234" yazın</p>
+                          <p id="discord-help" className="text-xs text-muted-foreground">
+                            Örnek: username#1234 için sadece "1234" yazın
+                          </p>
                         </div>
                       )}
 
                       {selectedPlatform.id === 'lol' && (
                         <div className="space-y-2">
-                          <Label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Bölge</Label>
+                          <Label 
+                            htmlFor="account-region"
+                            className="text-xs font-bold text-gray-400 uppercase tracking-widest"
+                          >
+                            Bölge
+                          </Label>
                           <select 
+                            id="account-region"
                             value={accountRegion}
                             onChange={(e) => setAccountRegion(e.target.value)}
                             className="w-full h-12 bg-white/5 border border-white/10 rounded-xl px-4 font-medium text-white focus:outline-none focus:border-primary/50"
+                            aria-label="League of Legends oyun bölgesi seçin"
                           >
                             <option value="tr1">TR - Türkiye</option>
                             <option value="euw1">EUW - Batı Avrupa</option>
@@ -978,7 +1034,7 @@ export default function SettingsPage({ user: currentUser }) {
                         </div>
                       )}
 
-                      <div className="flex gap-3 pt-2">
+                      <div className="flex gap-3 pt-2" role="group" aria-label="Modal işlem butonları">
                         <Button 
                           variant="outline" 
                           onClick={() => {
@@ -988,6 +1044,7 @@ export default function SettingsPage({ user: currentUser }) {
                             setAccountDiscriminator('');
                           }}
                           className="flex-1 h-12 rounded-xl border-white/10 hover:bg-white/5 font-black uppercase tracking-widest"
+                          aria-label="İptal et ve modalı kapat"
                         >
                           İptal
                         </Button>
@@ -995,8 +1052,17 @@ export default function SettingsPage({ user: currentUser }) {
                           onClick={handleAddAccount}
                           disabled={accountLoading || !accountUsername.trim()}
                           className="flex-1 h-12 rounded-xl bg-primary hover:bg-primary/90 font-black uppercase tracking-widest"
+                          aria-label={`${selectedPlatform.name} hesabını bağla`}
+                          aria-disabled={accountLoading || !accountUsername.trim()}
                         >
-                          {accountLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Bağla'}
+                          {accountLoading ? (
+                            <>
+                              <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
+                              <span className="sr-only">Yükleniyor...</span>
+                            </>
+                          ) : (
+                            'Bağla'
+                          )}
                         </Button>
                       </div>
                     </div>
